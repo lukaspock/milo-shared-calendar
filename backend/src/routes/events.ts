@@ -1,0 +1,138 @@
+import db from "../db/client";
+import { json, error } from "../router";
+import type { RequestContext } from "../types";
+import { broadcastToCalendar } from "../ws/websocket";
+
+export async function createEvent(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  let body: {
+    calendar_id?: string;
+    title?: string;
+    description?: string;
+    start_time?: string;
+    end_time?: string;
+    color?: string;
+  };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { calendar_id, title, start_time, end_time, description, color } = body;
+  if (!calendar_id || !title || !start_time || !end_time) {
+    return error("calendar_id, title, start_time and end_time are required");
+  }
+
+  // Verify membership
+  const membership = await db`
+    SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${calendar_id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  // Get user color as default event color
+  let eventColor = color;
+  if (!eventColor) {
+    const users = await db`SELECT color FROM users WHERE id = ${userId}`;
+    eventColor = users[0]?.color ?? "#6C63FF";
+  }
+
+  const events = await db`
+    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color)
+    VALUES (${calendar_id}, ${userId}, ${title}, ${description ?? null}, ${start_time}, ${end_time}, ${eventColor})
+    RETURNING *
+  `;
+
+  return json(events[0], 201);
+}
+
+export async function updateEvent(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+  let body: {
+    title?: string;
+    description?: string;
+    start_time?: string;
+    end_time?: string;
+    color?: string;
+  };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  // Fetch event to verify existence and membership
+  const events = await db`SELECT * FROM events WHERE id = ${id}`;
+  if (events.length === 0) return error("Event not found", 404);
+  const event = events[0];
+
+  const membership = await db`
+    SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  const updated = await db`
+    UPDATE events SET
+      title = ${body.title ?? event.title},
+      description = ${body.description ?? event.description},
+      start_time = ${body.start_time ?? event.start_time},
+      end_time = ${body.end_time ?? event.end_time},
+      color = ${body.color ?? event.color}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+
+  return json(updated[0]);
+}
+
+export async function deleteEvent(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const events = await db`SELECT * FROM events WHERE id = ${id}`;
+  if (events.length === 0) return error("Event not found", 404);
+  const event = events[0];
+
+  // Must be member of the calendar
+  const membership = await db`
+    SELECT role FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  // Only creator or calendar owner can delete
+  const isCreator = event.created_by === userId;
+  const isOwner = membership[0].role === "owner";
+  if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can delete events", 403);
+
+  await db`DELETE FROM events WHERE id = ${id}`;
+
+  return json({ message: "Event deleted" });
+}
+
+export async function notifyMembers(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const events = await db`SELECT * FROM events WHERE id = ${id}`;
+  if (events.length === 0) return error("Event not found", 404);
+  const event = events[0];
+
+  const membership = await db`
+    SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  const sender = await db`SELECT name FROM users WHERE id = ${userId}`;
+  const senderName = sender[0]?.name ?? "Someone";
+
+  broadcastToCalendar(event.calendar_id, {
+    type: "member_notification",
+    event_id: event.id,
+    event_title: event.title,
+    sender_name: senderName,
+    message: `${senderName} is reminding you about "${event.title}"`,
+  });
+
+  return json({ message: "Members notified" });
+}
