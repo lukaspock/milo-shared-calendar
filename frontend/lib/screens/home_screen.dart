@@ -829,14 +829,18 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                   onPressed: () async {
                     if (widget.ctrl.text.trim().isEmpty) return;
                     final name = widget.ctrl.text.trim();
+                    final chosenHue = _selectedHue;
                     Navigator.pop(context);
                     final cal = await widget.ref
                         .read(calendarProvider.notifier)
                         .createCalendar(name);
-                    if (cal != null && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Created! Code: ${cal.inviteCode}')),
-                      );
+                    if (cal != null) {
+                      await persistCalendarHue(cal.id, chosenHue);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Created! Code: ${cal.inviteCode}')),
+                        );
+                      }
                     }
                   },
                   child: Text(

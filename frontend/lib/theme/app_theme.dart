@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calendar.dart';
 
 class AppTheme {
@@ -178,8 +179,36 @@ const List<CalHue> stickerHues = [
   CalHue('coral',  Color(0xFFFFCFC2), Color(0xFF7A2A1A), Color(0xFFF37961), Color(0xFFE85535)),
 ];
 
-CalHue hueFor(CalendarModel c) =>
-    stickerHues[c.id.hashCode.abs() % stickerHues.length];
+// In-memory hue overrides set when a calendar is created/joined.
+// Persisted to SharedPreferences so the choice survives restarts.
+final Map<String, int> _calendarHueOverrides = {};
+
+CalHue hueFor(CalendarModel c) {
+  final override = _calendarHueOverrides[c.id];
+  if (override != null) return stickerHues[override.clamp(0, stickerHues.length - 1)];
+  return stickerHues[c.id.hashCode.abs() % stickerHues.length];
+}
+
+void setCalendarHue(String calendarId, int hueIndex) {
+  _calendarHueOverrides[calendarId] = hueIndex;
+}
+
+/// Call once at startup to restore saved hue choices.
+Future<void> loadCalendarHues() async {
+  final prefs = await SharedPreferences.getInstance();
+  final keys = prefs.getKeys().where((k) => k.startsWith('cal_hue_'));
+  for (final k in keys) {
+    final id = k.substring('cal_hue_'.length);
+    final idx = prefs.getInt(k);
+    if (idx != null) _calendarHueOverrides[id] = idx;
+  }
+}
+
+Future<void> persistCalendarHue(String calendarId, int hueIndex) async {
+  setCalendarHue(calendarId, hueIndex);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt('cal_hue_$calendarId', hueIndex);
+}
 
 // ─── StickerTile ────────────────────────────────────────────────────────────
 
