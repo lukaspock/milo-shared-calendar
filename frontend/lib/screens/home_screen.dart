@@ -444,12 +444,15 @@ class _CalendarCardState extends State<_CalendarCard> {
                       // Member avatar stack
                       _MemberDots(hue: hue, count: widget.calendar.memberCount),
                       const SizedBox(width: 8),
-                      Text(
-                        '${widget.calendar.memberCount} member${widget.calendar.memberCount == 1 ? '' : 's'}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppTheme.inkMuted,
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          '${widget.calendar.memberCount} member${widget.calendar.memberCount == 1 ? '' : 's'}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppTheme.inkMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
