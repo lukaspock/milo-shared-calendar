@@ -1,6 +1,7 @@
 import db from "../db/client";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
+import { broadcastToCalendar } from "../ws/websocket";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -85,8 +86,16 @@ export async function joinCalendar(ctx: RequestContext): Promise<Response> {
   `;
 
   const count = await db`SELECT COUNT(*) AS member_count FROM calendar_members WHERE calendar_id = ${calendar.id}`;
+  const memberCount = Number(count[0].member_count);
 
-  return json({ ...calendar, role: "member", member_count: Number(count[0].member_count) });
+  // Notify existing members that someone joined
+  broadcastToCalendar(calendar.id, {
+    type: "member_joined",
+    calendar_id: calendar.id,
+    member_count: memberCount,
+  });
+
+  return json({ ...calendar, role: "member", member_count: memberCount });
 }
 
 export async function getCalendarEvents(ctx: RequestContext): Promise<Response> {

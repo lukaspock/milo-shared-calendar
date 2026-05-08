@@ -28,6 +28,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
 
   void _listenToWebSocket() {
     _ws.addListener(_onWsMessage);
+    _ws.subscribeToCalendar(calendarId);
   }
 
   void _onWsMessage(Map<String, dynamic> msg) {

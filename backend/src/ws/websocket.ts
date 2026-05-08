@@ -22,7 +22,11 @@ function removeFromRooms(ws: ServerWebSocket<WsData>) {
   }
 }
 
-export function broadcastToCalendar(calendarId: string, payload: unknown, excludeWs?: ServerWebSocket<WsData>) {
+export function broadcastToCalendar(
+  calendarId: string,
+  payload: unknown,
+  excludeWs?: ServerWebSocket<WsData>,
+) {
   const clients = rooms.get(calendarId);
   if (!clients) return;
   const msg = JSON.stringify(payload);
@@ -74,7 +78,7 @@ export const websocketHandler = {
       // Verify user is member of each calendar before subscribing
       for (const calendarId of calendarIds) {
         const membership = await db`
-          SELECT 1 FROM calendar_members 
+          SELECT 1 FROM calendar_members
           WHERE user_id = ${ws.data.user.sub} AND calendar_id = ${calendarId}
         `;
         if (membership.length > 0) {
@@ -82,7 +86,12 @@ export const websocketHandler = {
           ws.data.calendarIds.push(calendarId);
         }
       }
-      ws.send(JSON.stringify({ type: "subscribed", calendarIds: ws.data.calendarIds }));
+      ws.send(
+        JSON.stringify({
+          type: "subscribed",
+          calendarIds: ws.data.calendarIds,
+        }),
+      );
     }
   },
 
@@ -133,6 +142,6 @@ export async function startNotifyListener() {
   });
 
   console.log(
-    "[WS] Listening for PostgreSQL NOTIFY on channel 'calendar_events'"
+    "[WS] Listening for PostgreSQL NOTIFY on channel 'calendar_events'",
   );
 }

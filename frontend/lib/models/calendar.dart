@@ -28,4 +28,14 @@ class CalendarModel {
       );
 
   bool get isOwner => role == 'owner';
+
+  CalendarModel copyWithMemberCount(int count) => CalendarModel(
+        id: id,
+        name: name,
+        ownerId: ownerId,
+        inviteCode: inviteCode,
+        role: role,
+        memberCount: count,
+        createdAt: createdAt,
+      );
 }

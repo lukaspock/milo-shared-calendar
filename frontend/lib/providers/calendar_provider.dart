@@ -2,16 +2,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/calendar.dart';
 import '../models/member.dart';
 import '../services/api_service.dart';
+import '../services/websocket_service.dart';
 import 'auth_provider.dart';
 
 class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
   CalendarNotifier(this.ref) : super(const AsyncValue.loading()) {
-    // Automatically fetch when the notifier is created
     fetch();
+    _ws.addListener(_onWsMessage);
   }
 
   final Ref ref;
   final _api = ApiService();
+  final _ws = WebSocketService();
+
+  void _onWsMessage(Map<String, dynamic> msg) {
+    if (msg['type'] == 'member_joined') {
+      final calendarId = msg['calendar_id'] as String?;
+      final memberCount = msg['member_count'] as int?;
+      if (calendarId == null || memberCount == null) return;
+      state.whenData((list) {
+        state = AsyncValue.data(list.map((c) {
+          if (c.id == calendarId) return c.copyWithMemberCount(memberCount);
+          return c;
+        }).toList());
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ws.removeListener(_onWsMessage);
+    super.dispose();
+  }
 
   Future<void> fetch() async {
     final auth = ref.read(authProvider);
