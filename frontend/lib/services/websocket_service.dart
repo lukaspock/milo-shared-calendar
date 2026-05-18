@@ -3,8 +3,12 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/auth_service.dart';
 
-const _apiHost = String.fromEnvironment('API_HOST', defaultValue: '127.0.0.1');
-const _wsUrl = 'ws://$_apiHost:3000/ws';
+const _apiHost = String.fromEnvironment(
+  'API_HOST',
+  defaultValue: 'flutterprojectvibecoding.onrender.com',
+);
+const _isLocal = _apiHost == '127.0.0.1' || _apiHost == 'localhost';
+const _wsUrl = _isLocal ? 'ws://$_apiHost:3000/ws' : 'wss://$_apiHost/ws';
 
 typedef WsMessageCallback = void Function(Map<String, dynamic> message);
 
