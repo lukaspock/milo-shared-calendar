@@ -48,6 +48,13 @@ class HomeScreen extends ConsumerWidget {
                   onPressed: () => ref.read(calendarProvider.notifier).fetch(),
                   child: const Text('Retry'),
                 ),
+                TextButton(
+                  onPressed: () async {
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) context.go('/login');
+                  },
+                  child: const Text('Sign out'),
+                ),
               ],
             ),
           ),
@@ -444,12 +451,15 @@ class _CalendarCardState extends State<_CalendarCard> {
                       // Member avatar stack
                       _MemberDots(hue: hue, count: widget.calendar.memberCount),
                       const SizedBox(width: 8),
-                      Text(
-                        '${widget.calendar.memberCount} member${widget.calendar.memberCount == 1 ? '' : 's'}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppTheme.inkMuted,
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          '${widget.calendar.memberCount} member${widget.calendar.memberCount == 1 ? '' : 's'}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppTheme.inkMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
