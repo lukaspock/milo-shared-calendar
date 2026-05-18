@@ -1,8 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _apiHost = String.fromEnvironment('API_HOST', defaultValue: '127.0.0.1');
-const _baseUrl = 'http://$_apiHost:3000';
+const _apiHost = String.fromEnvironment(
+  'API_HOST',
+  defaultValue: 'flutterprojectvibecoding.onrender.com',
+);
+const _isLocal = _apiHost == '127.0.0.1' || _apiHost == 'localhost';
+const _baseUrl = _isLocal ? 'http://$_apiHost:3000' : 'https://$_apiHost';
 
 class ApiService {
   static final ApiService _instance = ApiService._();
