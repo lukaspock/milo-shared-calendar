@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/auth_service.dart';
 
-const _wsUrl = 'ws://127.0.0.1:3000/ws';
+const _apiHost = String.fromEnvironment('API_HOST', defaultValue: '127.0.0.1');
+const _wsUrl = 'ws://$_apiHost:3000/ws';
 
 typedef WsMessageCallback = void Function(Map<String, dynamic> message);
 
@@ -32,7 +33,10 @@ class WebSocketService {
       _calendarIds.add(calendarId);
     }
     if (_channel != null && _authed) {
-      _send({'type': 'subscribe', 'calendarIds': [calendarId]});
+      _send({
+        'type': 'subscribe',
+        'calendarIds': [calendarId],
+      });
     } else if (_channel == null) {
       _shouldReconnect = true;
       await _connect();

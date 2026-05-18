@@ -48,6 +48,13 @@ class HomeScreen extends ConsumerWidget {
                   onPressed: () => ref.read(calendarProvider.notifier).fetch(),
                   child: const Text('Retry'),
                 ),
+                TextButton(
+                  onPressed: () async {
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) context.go('/login');
+                  },
+                  child: const Text('Sign out'),
+                ),
               ],
             ),
           ),

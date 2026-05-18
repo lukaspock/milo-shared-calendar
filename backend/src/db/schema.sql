@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS calendar_members (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   calendar_id UUID REFERENCES calendars(id) ON DELETE CASCADE,
   role TEXT DEFAULT 'member',
+  joined_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (user_id, calendar_id)
 );
 

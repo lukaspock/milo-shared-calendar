@@ -14,7 +14,7 @@ export async function listCalendars(ctx: RequestContext): Promise<Response> {
   const calendars = await db`
     SELECT c.id, c.name, c.owner_id, c.invite_code, c.created_at,
            cm.role,
-           (SELECT COUNT(*) FROM calendar_members WHERE calendar_id = c.id) AS member_count
+           (SELECT COUNT(*)::integer FROM calendar_members WHERE calendar_id = c.id) AS member_count
     FROM calendars c
     INNER JOIN calendar_members cm ON cm.calendar_id = c.id AND cm.user_id = ${userId}
     ORDER BY c.created_at DESC
@@ -134,7 +134,7 @@ export async function listMembers(ctx: RequestContext): Promise<Response> {
     FROM users u
     INNER JOIN calendar_members cm ON cm.user_id = u.id
     WHERE cm.calendar_id = ${id}
-    ORDER BY cm.joined_at ASC
+    ORDER BY cm.joined_at ASC NULLS LAST
   `;
 
   return json(members);
