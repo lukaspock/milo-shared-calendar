@@ -3,6 +3,7 @@ import { authMiddleware } from "./src/middleware/auth.middleware";
 import { register, login } from "./src/routes/auth";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
+import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
 
 const router = new Router();
@@ -24,6 +25,14 @@ router.post("/events", createEvent, [authMiddleware]);
 router.put("/events/:id", updateEvent, [authMiddleware]);
 router.delete("/events/:id", deleteEvent, [authMiddleware]);
 router.post("/events/:id/notify", notifyMembers, [authMiddleware]);
+
+// --- Polls (protected) ---
+router.post("/calendars/:calendarId/polls", createPoll, [authMiddleware]);
+router.get("/calendars/:calendarId/polls", listPolls, [authMiddleware]);
+router.get("/polls/:id", getPoll, [authMiddleware]);
+router.post("/polls/:id/vote", votePoll, [authMiddleware]);
+router.post("/polls/:id/confirm", confirmPoll, [authMiddleware]);
+router.delete("/polls/:id", deletePoll, [authMiddleware]);
 
 const PORT = Number(process.env.PORT ?? 3000);
 

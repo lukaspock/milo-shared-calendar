@@ -7,6 +7,8 @@ import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/event_detail_screen.dart';
+import 'screens/create_poll_screen.dart';
+import 'screens/poll_detail_screen.dart';
 import 'theme/app_theme.dart';
 
 final _router = GoRouter(
@@ -26,6 +28,20 @@ final _router = GoRouter(
           builder: (_, state) => EventDetailScreen(
             calendarId: state.pathParameters['calendarId']!,
             eventId: state.pathParameters['eventId']!,
+            extra: state.extra,
+          ),
+        ),
+        GoRoute(
+          path: 'polls/new',
+          builder: (_, state) => CreatePollScreen(
+            calendarId: state.pathParameters['calendarId']!,
+          ),
+        ),
+        GoRoute(
+          path: 'polls/:pollId',
+          builder: (_, state) => PollDetailScreen(
+            calendarId: state.pathParameters['calendarId']!,
+            pollId: state.pathParameters['pollId']!,
             extra: state.extra,
           ),
         ),
