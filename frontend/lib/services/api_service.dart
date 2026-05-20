@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/poll.dart';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
@@ -55,4 +56,60 @@ class ApiService {
       _dio.put<T>(path, data: data);
 
   Future<Response<T>> delete<T>(String path) => _dio.delete<T>(path);
+
+  // ── Polls ──────────────────────────────────────────────────────────────────
+
+  Future<EventPoll> createPoll({
+    required String calendarId,
+    required String title,
+    String? description,
+    required List<PollOptionInput> options,
+  }) async {
+    final res = await post('/calendars/$calendarId/polls', data: {
+      'title': title,
+      if (description != null && description.isNotEmpty) 'description': description,
+      'options': options
+          .map((o) => {
+                'start_time': o.start.toIso8601String(),
+                'end_time': o.end.toIso8601String(),
+              })
+          .toList(),
+    });
+    return EventPoll.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<List<EventPoll>> fetchPolls(String calendarId) async {
+    final res = await get('/calendars/$calendarId/polls');
+    return (res.data as List)
+        .map((e) => EventPoll.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<EventPoll> fetchPoll(String pollId) async {
+    final res = await get('/polls/$pollId');
+    return EventPoll.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<EventPoll> votePoll({
+    required String pollId,
+    required String optionId,
+    required String vote,
+  }) async {
+    final res = await post('/polls/$pollId/vote',
+        data: {'option_id': optionId, 'vote': vote});
+    return EventPoll.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> confirmPoll({
+    required String pollId,
+    required String optionId,
+  }) async {
+    final res =
+        await post('/polls/$pollId/confirm', data: {'option_id': optionId});
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    await delete('/polls/$pollId');
+  }
 }

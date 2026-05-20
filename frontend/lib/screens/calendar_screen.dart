@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
+import '../models/poll.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
+import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/members_dialog.dart';
 
@@ -24,11 +26,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   String _fmt(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
+  void _showCreateSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _CreateChoiceSheet(
+        calendarId: widget.calendarId,
+        selectedDay: _selectedDay,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
-    final calendarsAsync = ref.watch(calendarProvider);
+    final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
+    final openPolls = polls.where((p) => !p.closed).toList();
 
+    final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
         ?.where((c) => c.id == widget.calendarId)
         .firstOrNull;
@@ -44,7 +60,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => context.go('/home'),
                     child: Container(
@@ -55,19 +70,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: AppTheme.line, width: 1.5),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: AppTheme.ink),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: AppTheme.ink,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
 
-                  // Sticker tile + title
                   StickerTile(
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: const Icon(Icons.calendar_today_rounded,
-                        size: 18, color: Colors.black54),
+                    child: const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: Colors.black54,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -97,7 +117,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
 
-                  // Members + refresh
                   if (calendar != null)
                     GestureDetector(
                       onTap: () => showModalBottomSheet(
@@ -114,13 +133,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: AppTheme.line, width: 1.5),
                         ),
-                        child: const Icon(Icons.people_rounded,
-                            size: 18, color: AppTheme.ink),
+                        child: const Icon(
+                          Icons.people_rounded,
+                          size: 18,
+                          color: AppTheme.ink,
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => ref.read(eventsProvider(widget.calendarId).notifier).fetch(),
+                    onTap: () => ref
+                        .read(eventsProvider(widget.calendarId).notifier)
+                        .fetch(),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -129,8 +153,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: AppTheme.line, width: 1.5),
                       ),
-                      child: const Icon(Icons.refresh_rounded,
-                          size: 18, color: AppTheme.ink),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                        color: AppTheme.ink,
+                      ),
                     ),
                   ),
                 ],
@@ -146,23 +173,41 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   child: CircularProgressIndicator(color: AppTheme.ink),
                 ),
                 error: (e, _) => Center(
-                  child: Text('Error: $e',
-                      style: const TextStyle(color: AppTheme.inkSoft)),
+                  child: Text(
+                    'Error: $e',
+                    style: const TextStyle(color: AppTheme.inkSoft),
+                  ),
                 ),
                 data: (events) {
                   final eventsByDay = <DateTime, List<CalendarEvent>>{};
                   for (final e in events) {
-                    final key = DateTime(
-                        e.startTime.year, e.startTime.month, e.startTime.day);
-                    eventsByDay.putIfAbsent(key, () => []).add(e);
+                    final startDate = DateTime(
+                      e.startTime.year,
+                      e.startTime.month,
+                      e.startTime.day,
+                    );
+                    final endDate = DateTime(
+                      e.endTime.year,
+                      e.endTime.month,
+                      e.endTime.day,
+                    );
+                    var current = startDate;
+                    while (!current.isAfter(endDate)) {
+                      eventsByDay.putIfAbsent(current, () => []).add(e);
+                      current = current.add(const Duration(days: 1));
+                    }
                   }
 
                   final selKey = _selectedDay == null
                       ? null
-                      : DateTime(_selectedDay!.year, _selectedDay!.month,
-                          _selectedDay!.day);
-                  final selectedEvents =
-                      selKey == null ? <CalendarEvent>[] : (eventsByDay[selKey] ?? []);
+                      : DateTime(
+                          _selectedDay!.year,
+                          _selectedDay!.month,
+                          _selectedDay!.day,
+                        );
+                  final selectedEvents = selKey == null
+                      ? <CalendarEvent>[]
+                      : (eventsByDay[selKey] ?? []);
 
                   return Column(
                     children: [
@@ -173,7 +218,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           decoration: BoxDecoration(
                             color: AppTheme.surface,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: AppTheme.line, width: 1.5),
+                            border: Border.all(
+                              color: AppTheme.line,
+                              width: 1.5,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.line.withOpacity(0.5),
@@ -198,14 +246,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                       const SizedBox(height: 16),
 
-                      // ── Day detail ─────────────────────────────────────────
+                      // ── Day header ─────────────────────────────────────
                       if (_selectedDay != null)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
                             children: [
                               Text(
-                                DateFormat('EEE, MMM d').format(_selectedDay!).toUpperCase(),
+                                DateFormat('EEE, MMM d')
+                                    .format(_selectedDay!)
+                                    .toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -238,9 +288,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                       const SizedBox(height: 8),
 
+                      // ── Events + Polls ─────────────────────────────────
                       Expanded(
-                        child: selectedEvents.isEmpty
-                            ? Center(
+                        child: ListView(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                          children: [
+                            // Events for selected day
+                            if (selectedEvents.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8),
                                 child: Text(
                                   _selectedDay == null
                                       ? 'Tap a date to see events'
@@ -252,13 +310,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                 ),
                               )
-                            : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                itemCount: selectedEvents.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                                itemBuilder: (_, i) {
-                                  final ev = selectedEvents[i];
-                                  return _EventRow(
+                            else
+                              ...selectedEvents.asMap().entries.map((e) {
+                                final ev = e.value;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                      bottom: e.key <
+                                              selectedEvents.length - 1
+                                          ? 10
+                                          : 0),
+                                  child: _EventRow(
                                     event: ev,
                                     calHue: calHue,
                                     onTap: () => context.go(
@@ -266,9 +327,68 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       extra: ev,
                                     ),
                                     fmtTime: _fmt,
-                                  );
-                                },
+                                  ),
+                                );
+                              }),
+
+                            // ── Polls section ─────────────────────────────
+                            if (openPolls.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Text(
+                                    'OPEN POLLS',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.inkMuted,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: calHue.bg,
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${openPolls.length}',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: calHue.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 10),
+                              ...openPolls.asMap().entries.map((e) {
+                                final poll = e.value;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                      bottom:
+                                          e.key < openPolls.length - 1
+                                              ? 10
+                                              : 0),
+                                  child: _PollCard(
+                                    poll: poll,
+                                    calHue: calHue,
+                                    onTap: () => context.go(
+                                      '/calendar/${widget.calendarId}/polls/${poll.id}',
+                                      extra: poll,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -290,17 +410,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () => context.go(
-            '/calendar/${widget.calendarId}/event/new',
-            extra: _selectedDay,
-          ),
+          onPressed: _showCreateSheet,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
           ),
           child: Text(
-            '+ Add event',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+            '+ Add',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
         ),
       ),
@@ -309,6 +431,259 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+// ── Create-choice bottom sheet ────────────────────────────────────────────────
+
+class _CreateChoiceSheet extends StatelessWidget {
+  const _CreateChoiceSheet({
+    required this.calendarId,
+    required this.selectedDay,
+  });
+  final String calendarId;
+  final DateTime? selectedDay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.line, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.line.withOpacity(0.5),
+            offset: const Offset(0, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            child: Text(
+              'What do you want to create?',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.ink,
+              ),
+            ),
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            color: AppTheme.line,
+          ),
+          const SizedBox(height: 8),
+          _ChoiceTile(
+            emoji: '📅',
+            title: 'Regular event',
+            subtitle: 'Fixed date and time slot',
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/calendar/$calendarId/event/new', extra: selectedDay);
+            },
+          ),
+          _ChoiceTile(
+            emoji: '📊',
+            title: 'Poll',
+            subtitle: 'Let the group vote on a time',
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/calendar/$calendarId/polls/new');
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceTile extends StatelessWidget {
+  const _ChoiceTile({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceSoft,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppTheme.inkMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppTheme.inkMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Poll card (in list) ───────────────────────────────────────────────────────
+
+class _PollCard extends StatefulWidget {
+  const _PollCard({
+    required this.poll,
+    required this.calHue,
+    required this.onTap,
+  });
+  final EventPoll poll;
+  final CalHue calHue;
+  final VoidCallback onTap;
+
+  @override
+  State<_PollCard> createState() => _PollCardState();
+}
+
+class _PollCardState extends State<_PollCard> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hue = widget.calHue;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 80),
+        transform: Matrix4.translationValues(0, _pressed ? 2 : 0, 0),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.line, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.line.withOpacity(0.5),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 52,
+              decoration: BoxDecoration(
+                color: hue.bg,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: hue.deep.withOpacity(0.13),
+                    offset: const Offset(0, 3),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text('📊', style: TextStyle(fontSize: 20)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.poll.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.ink,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: hue.dot,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${widget.poll.options.length} option${widget.poll.options.length == 1 ? '' : 's'}'
+                        ' · ${widget.poll.totalVoters} vote${widget.poll.totalVoters == 1 ? '' : 's'}',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppTheme.inkSoft,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.inkMuted,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Custom calendar grid ──────────────────────────────────────────────────────
@@ -335,7 +710,6 @@ class _CalendarGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstOfMonth = DateTime(month.year, month.month, 1);
-    // Monday-based: 0=Mon … 6=Sun
     final startOffset = (firstOfMonth.weekday - 1) % 7;
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     final today = DateTime.now();
@@ -346,9 +720,8 @@ class _CalendarGrid extends StatelessWidget {
         Row(
           children: [
             GestureDetector(
-              onTap: () => onMonthChanged(
-                DateTime(month.year, month.month - 1),
-              ),
+              onTap: () =>
+                  onMonthChanged(DateTime(month.year, month.month - 1)),
               child: Container(
                 width: 32,
                 height: 32,
@@ -357,8 +730,11 @@ class _CalendarGrid extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.line),
                 ),
-                child: const Icon(Icons.chevron_left_rounded,
-                    size: 18, color: AppTheme.inkMuted),
+                child: const Icon(
+                  Icons.chevron_left_rounded,
+                  size: 18,
+                  color: AppTheme.inkMuted,
+                ),
               ),
             ),
             Expanded(
@@ -374,9 +750,8 @@ class _CalendarGrid extends StatelessWidget {
               ),
             ),
             GestureDetector(
-              onTap: () => onMonthChanged(
-                DateTime(month.year, month.month + 1),
-              ),
+              onTap: () =>
+                  onMonthChanged(DateTime(month.year, month.month + 1)),
               child: Container(
                 width: 32,
                 height: 32,
@@ -385,8 +760,11 @@ class _CalendarGrid extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.line),
                 ),
-                child: const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: AppTheme.inkMuted),
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppTheme.inkMuted,
+                ),
               ),
             ),
           ],
@@ -394,7 +772,6 @@ class _CalendarGrid extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // Weekday labels
         Row(
           children: _weekdays
               .map(
@@ -417,7 +794,6 @@ class _CalendarGrid extends StatelessWidget {
 
         const SizedBox(height: 6),
 
-        // Day cells grid
         GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
@@ -434,8 +810,8 @@ class _CalendarGrid extends StatelessWidget {
             final date = DateTime(month.year, month.month, day);
             final key = DateTime(date.year, date.month, date.day);
             final dayEvents = eventsByDay[key] ?? [];
-            final isSelected = selectedDay != null &&
-                _isSameDay(date, selectedDay!);
+            final isSelected =
+                selectedDay != null && _isSameDay(date, selectedDay!);
             final isToday = _isSameDay(date, today);
 
             return GestureDetector(
@@ -502,8 +878,8 @@ class _DayCell extends StatelessWidget {
               color: isSelected
                   ? calHue.ink
                   : isToday
-                      ? calHue.deep
-                      : AppTheme.ink,
+                  ? calHue.deep
+                  : AppTheme.ink,
             ),
           ),
           if (events.isNotEmpty) ...[
@@ -518,9 +894,7 @@ class _DayCell extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  events.length > 1
-                      ? '+${events.length}'
-                      : events[0].title,
+                  events.length > 1 ? '+${events.length}' : events[0].title,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 8,
                     color: calHue.ink,
@@ -564,11 +938,27 @@ class _EventRowState extends State<_EventRow> {
   Widget build(BuildContext context) {
     final hue = widget.calHue;
     final start = widget.event.startTime;
-    final months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    final months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
@@ -588,7 +978,6 @@ class _EventRowState extends State<_EventRow> {
         ),
         child: Row(
           children: [
-            // Date sticker badge
             Container(
               width: 44,
               height: 52,
@@ -666,8 +1055,11 @@ class _EventRowState extends State<_EventRow> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppTheme.inkMuted, size: 18),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.inkMuted,
+              size: 18,
+            ),
           ],
         ),
       ),

@@ -398,9 +398,15 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/material_color_utilities-0.13.0/lib/utils/color_utils.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/material_color_utilities-0.13.0/lib/utils/math_utils.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/material_color_utilities-0.13.0/lib/utils/string_utils.dart
+<<<<<<< HEAD
 /Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.17.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.17.0/lib/meta.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.17.0/lib/meta_meta.dart
+=======
+/Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.18.0/LICENSE
+/Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.18.0/lib/meta.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/meta-1.18.0/lib/meta_meta.dart
+>>>>>>> dev
 /Users/lukaspock/.pub-cache/hosted/pub.dev/mime-2.0.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/mime-2.0.0/lib/mime.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/mime-2.0.0/lib/src/bound_multipart_stream.dart
@@ -661,7 +667,11 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/term_glyph-1.2.2/lib/src/generated/top_level.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/term_glyph-1.2.2/lib/src/generated/unicode_glyph_set.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/term_glyph-1.2.2/lib/term_glyph.dart
+<<<<<<< HEAD
 /Users/lukaspock/.pub-cache/hosted/pub.dev/test_api-0.7.10/LICENSE
+=======
+/Users/lukaspock/.pub-cache/hosted/pub.dev/test_api-0.7.11/LICENSE
+>>>>>>> dev
 /Users/lukaspock/.pub-cache/hosted/pub.dev/typed_data-1.4.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/typed_data-1.4.0/lib/src/typed_buffer.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/typed_data-1.4.0/lib/src/typed_queue.dart
@@ -995,14 +1005,28 @@
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/models/calendar.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/models/event.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/models/member.dart
+<<<<<<< HEAD
+=======
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/models/poll.dart
+>>>>>>> dev
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/models/user.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/providers/auth_provider.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/providers/calendar_provider.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/providers/events_provider.dart
+<<<<<<< HEAD
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/calendar_screen.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/event_detail_screen.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/home_screen.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/login_screen.dart
+=======
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/providers/polls_provider.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/calendar_screen.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/create_poll_screen.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/event_detail_screen.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/home_screen.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/login_screen.dart
+/Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/poll_detail_screen.dart
+>>>>>>> dev
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/register_screen.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/screens/splash_screen.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/services/api_service.dart
@@ -1064,6 +1088,10 @@
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/list_tile.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/localizations.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/magnifier.dart
+<<<<<<< HEAD
+=======
+/opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/menu_anchor.dart
+>>>>>>> dev
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/nav_bar.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/page_scaffold.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/cupertino/picker.dart
@@ -1091,6 +1119,10 @@
 /opt/homebrew/share/flutter/packages/flutter/lib/src/dart_plugin_registrant.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_bitfield_io.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_capabilities_io.dart
+<<<<<<< HEAD
+=======
+/opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_error_dumper_io.dart
+>>>>>>> dev
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_features.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_isolates_io.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/_platform_io.dart
@@ -1107,6 +1139,10 @@
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/constants.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/debug.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/diagnostics.dart
+<<<<<<< HEAD
+=======
+/opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/error_dumper.dart
+>>>>>>> dev
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/isolates.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/key.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/foundation/licenses.dart
@@ -1512,6 +1548,10 @@
 /opt/homebrew/share/flutter/packages/flutter/lib/src/services/text_input.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/services/text_layout_metrics.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/services/undo_manager.dart
+<<<<<<< HEAD
+=======
+/opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/_accessibility_evaluations.dart
+>>>>>>> dev
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/_html_element_view_io.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/_platform_selectable_region_context_menu_io.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/_web_browser_detection_io.dart
@@ -1550,6 +1590,10 @@
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/default_selection_style.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/default_text_editing_shortcuts.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/desktop_text_selection_toolbar_layout_delegate.dart
+<<<<<<< HEAD
+=======
+/opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/dialog.dart
+>>>>>>> dev
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/dismissible.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/display_feature_sub_screen.dart
 /opt/homebrew/share/flutter/packages/flutter/lib/src/widgets/disposable_build_context.dart
