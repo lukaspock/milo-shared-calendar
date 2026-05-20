@@ -56,6 +56,8 @@ docker compose down -v
 docker compose up --build
 ```
 
+Required after adding the poll tables (`event_polls`, `poll_options`, `poll_votes`).
+
 ## Known gotchas
 
 - PostgreSQL `COUNT(*)` returns `bigint` — cast to `::integer` in all queries or `JSON.stringify` will throw.

@@ -84,3 +84,44 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER event_change_trigger
 AFTER INSERT OR UPDATE OR DELETE ON events
 FOR EACH ROW EXECUTE FUNCTION notify_event_change();
+
+-- Polls
+CREATE TABLE IF NOT EXISTS event_polls (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  calendar_id UUID REFERENCES calendars(id) ON DELETE CASCADE,
+  created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  title       TEXT NOT NULL,
+  description TEXT,
+  closed      BOOLEAN DEFAULT false,
+  confirmed_option_id UUID,
+  created_at  TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS poll_options (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  poll_id    UUID REFERENCES event_polls(id) ON DELETE CASCADE,
+  start_time TIMESTAMP NOT NULL,
+  end_time   TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+  option_id  UUID REFERENCES poll_options(id) ON DELETE CASCADE,
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  vote       TEXT NOT NULL CHECK (vote IN ('yes','no','maybe')),
+  voted_at   TIMESTAMP DEFAULT now(),
+  PRIMARY KEY (option_id, user_id)
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_confirmed_option'
+  ) THEN
+    ALTER TABLE event_polls
+      ADD CONSTRAINT fk_confirmed_option
+      FOREIGN KEY (confirmed_option_id)
+      REFERENCES poll_options(id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;
