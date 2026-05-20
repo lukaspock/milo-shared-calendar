@@ -1,51 +1,71 @@
 # SharedCal
 
-A shared calendar app with a Flutter frontend and a Bun/TypeScript backend backed by PostgreSQL.
+A shared calendar app — Flutter frontend + Bun/TypeScript REST API + WebSocket + PostgreSQL.
 
 ## Architecture
 
 ```
 /
-├── frontend/   Flutter mobile/desktop app
-├── backend/    Bun + TypeScript REST API + WebSocket server
+├── frontend/        Flutter mobile/desktop app (iOS, Android, macOS)
+├── backend/         Bun + TypeScript REST API + WebSocket server
 └── docker-compose.yml
 ```
 
-## Running the stack
+## Running the stack locally
 
 ```bash
 docker compose up --build
 ```
 
 - Backend: `http://localhost:3000`
-- Frontend: run via `flutter run` in `frontend/`
+- Frontend: `flutter run` in `frontend/`
 
-The `frontend` service was intentionally removed from docker-compose — Flutter runs natively, not in Docker.
+The `frontend` service is intentionally absent from docker-compose — Flutter runs natively.
+
+## Production (Render.com)
+
+Both the backend API and PostgreSQL database are hosted on Render.com.
+
+| Service  | URL                                          |
+|----------|----------------------------------------------|
+| Backend  | `https://flutterprojectvibecoding.onrender.com` |
+| DB (internal) | `postgresql://sharedcal_db_user:...@dpg-d85c41p9rddc73a7i9eg-a/sharedcal_db` |
+| DB (external) | `postgresql://sharedcal_db_user:...@dpg-d85c41p9rddc73a7i9eg-a.oregon-postgres.render.com/sharedcal_db` |
+
+The internal DB hostname only works from within Render. Use the external hostname for local psql access or `backend/.env`.
+
+**Render Free Tier caveat:** The backend sleeps after 15 min of inactivity. First request after sleep takes 30–60 s. This is the main cause of perceived slowness on physical devices.
 
 ## Running on a physical device
-
-The Flutter app uses `--dart-define=API_HOST` to set the backend URL at build time:
 
 ```bash
 # macOS desktop (default: 127.0.0.1)
 flutter run -d macos
 
-# Android / iPhone (use Mac's local network IP)
+# Release build (much faster than debug)
+flutter run --release
+
+# Android / iPhone on local network
 ipconfig getifaddr en0
 flutter run --dart-define=API_HOST=<your-mac-ip>
+
+# Against production backend
+flutter run --dart-define=API_HOST=flutterprojectvibecoding.onrender.com
 ```
 
-Phone and Mac must be on the same network. If the phone can't reach the backend, check macOS Firewall (System Settings → Network → Firewall).
+Phone and Mac must be on the same network for local dev. Check macOS Firewall if the phone can't connect (System Settings → Network → Firewall).
 
 ## Environment
 
-Backend config lives in `backend/.env` for local dev and is overridden by `docker-compose.yml` for containers. Keep `JWT_SECRET` in sync between both — a mismatch causes 401 errors for existing sessions.
+Backend config is in `backend/.env` for local dev and overridden by `docker-compose.yml` for containers.
 
-| Variable       | docker-compose value                             |
-|----------------|--------------------------------------------------|
-| `DATABASE_URL` | `postgres://postgres:postgres@db:5432/sharedcal` |
-| `JWT_SECRET`   | `change_me_in_production`                        |
-| `PORT`         | `3000`                                           |
+| Variable       | Local value                                          | docker-compose value                             |
+|----------------|------------------------------------------------------|--------------------------------------------------|
+| `DATABASE_URL` | Render external postgres URL                         | `postgres://postgres:postgres@db:5432/sharedcal` |
+| `JWT_SECRET`   | `change_me_in_production`                            | `change_me_in_production`                        |
+| `PORT`         | `3000`                                               | `3000`                                           |
+
+Keep `JWT_SECRET` identical between `.env` and docker-compose — a mismatch causes silent 401s.
 
 ## Resetting the database
 
@@ -57,9 +77,32 @@ docker compose up --build
 ```
 
 Required after adding the poll tables (`event_polls`, `poll_options`, `poll_votes`).
+The production Render DB was migrated manually via psql — those tables already exist there.
+
+## Database schema (summary)
+
+| Table              | Purpose                                              |
+|--------------------|------------------------------------------------------|
+| `users`            | Accounts — email, password_hash, name, color         |
+| `calendars`        | Calendars — name, owner_id, invite_code              |
+| `calendar_members` | Junction — user_id, calendar_id, role (owner/member) |
+| `events`           | Calendar events — title, start_time, end_time, color |
+| `event_polls`      | Polls — title, options, open/closed state            |
+| `poll_options`     | Time-slot options for a poll                         |
+| `poll_votes`       | Per-user votes (yes/no/maybe) per option             |
+
+## Features
+
+- **Auth:** Register / login with JWT. Token stored in SharedPreferences.
+- **Calendars:** Create, join via invite code, view members, kick members (owner only).
+- **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket.
+- **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event.
+- **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`.
 
 ## Known gotchas
 
 - PostgreSQL `COUNT(*)` returns `bigint` — cast to `::integer` in all queries or `JSON.stringify` will throw.
-- `JWT_SECRET` mismatch between `.env` and docker-compose causes silent 401s. If the app shows "Could not load calendars" instantly after login, this is the likely cause — clear app data and re-login.
-- `.claude/worktrees/` should be in `.gitignore` — these are temporary Claude Code working directories.
+- `JWT_SECRET` mismatch between `.env` and docker-compose causes silent 401s. Symptom: "Could not load calendars" immediately after login — clear app data and re-login.
+- Render Free Tier cold starts take 30–60 s. Always test performance with `flutter run --release`.
+- `.claude/worktrees/` is in `.gitignore` — these are temporary Claude Code working directories.
+- The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.

@@ -1,106 +1,144 @@
+# SharedCal Backend
 
-Default to using Bun instead of Node.js.
+Bun + TypeScript REST API with WebSocket support, backed by PostgreSQL.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+## Stack
 
-## APIs
+- **Runtime:** Bun (not Node.js — use `bun`, `bunx`, `bun test`)
+- **Database:** `Bun.sql` (built-in Postgres client, no `pg` or `postgres.js`)
+- **WebSocket:** Built-in via `Bun.serve()` (no `ws` package)
+- **Auth:** JWT (`jsonwebtoken` package), bcrypt for passwords
+- **Config:** `.env` auto-loaded by Bun — no `dotenv` needed
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+## Project layout
 
-## Testing
-
-Use `bun test` to run tests.
-
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+```
+backend/
+├── index.ts               Entry point — registers all routes, starts WS + NOTIFY listener
+├── src/
+│   ├── router.ts          Minimal regex-based router (Router class, json(), error() helpers)
+│   ├── types.ts           RequestContext, JwtPayload types
+│   ├── db/
+│   │   ├── client.ts      Bun.sql singleton — import as `db`
+│   │   └── schema.sql     Full DB schema (run once on first Postgres start)
+│   ├── middleware/
+│   │   └── auth.middleware.ts  JWT verification → attaches ctx.user
+│   ├── routes/
+│   │   ├── auth.ts        POST /auth/register, POST /auth/login
+│   │   ├── calendars.ts   Calendar CRUD + member management
+│   │   ├── events.ts      Event CRUD + notify endpoint
+│   │   └── polls.ts       Poll CRUD + vote + confirm
+│   └── ws/
+│       └── websocket.ts   WS handler + room management + Postgres NOTIFY listener
 ```
 
-## Frontend
+## API routes
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+### Auth
+| Method | Path               | Description              |
+|--------|--------------------|--------------------------|
+| POST   | `/auth/register`   | Create account           |
+| POST   | `/auth/login`      | Get JWT token            |
 
-Server:
+### Calendars (all require JWT)
+| Method | Path                                | Description                      |
+|--------|-------------------------------------|----------------------------------|
+| GET    | `/calendars`                        | List user's calendars            |
+| POST   | `/calendars`                        | Create calendar                  |
+| POST   | `/calendars/join`                   | Join via invite code             |
+| GET    | `/calendars/:id/events`             | List events (with creator info)  |
+| GET    | `/calendars/:id/members`            | List members                     |
+| DELETE | `/calendars/:id/members/:userId`    | Kick member (owner only)         |
 
-```ts#index.ts
-import index from "./index.html"
+### Events (all require JWT)
+| Method | Path                 | Description                        |
+|--------|----------------------|------------------------------------|
+| POST   | `/events`            | Create event                       |
+| PUT    | `/events/:id`        | Update event (any member)          |
+| DELETE | `/events/:id`        | Delete event (creator or owner)    |
+| POST   | `/events/:id/notify` | Push WS notification to members   |
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
+### Polls (all require JWT)
+| Method | Path                            | Description                                          |
+|--------|---------------------------------|------------------------------------------------------|
+| POST   | `/calendars/:calendarId/polls`  | Create poll with time options                        |
+| GET    | `/calendars/:calendarId/polls`  | List all polls (open + closed)                       |
+| GET    | `/polls/:id`                    | Get single poll with options + votes                 |
+| POST   | `/polls/:id/vote`               | Vote yes/no/maybe on an option (upsert)              |
+| POST   | `/polls/:id/confirm`            | Creator confirms winning option → creates event      |
+| DELETE | `/polls/:id`                    | Delete poll (creator or calendar owner)              |
+
+## WebSocket protocol
+
+Connect to `/ws`. Messages are JSON.
+
+**Client → Server:**
+```json
+{ "type": "auth", "token": "<jwt>" }
+{ "type": "subscribe", "calendarIds": ["uuid", ...] }
 ```
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
+**Server → Client:**
+```json
+{ "type": "auth_ok", "userId": "..." }
+{ "type": "subscribed", "calendarIds": [...] }
+{ "type": "event_created", "event": { ... } }
+{ "type": "event_updated", "event": { ... } }
+{ "type": "event_deleted", "event_id": "...", "calendar_id": "..." }
+{ "type": "poll_update", "poll_id": "...", "calendar_id": "..." }
+{ "type": "member_joined", "calendar_id": "...", "member_count": 3 }
+{ "type": "member_notification", "event_id": "...", "sender_name": "...", "message": "..." }
 ```
 
-With the following `frontend.tsx`:
+Events are also broadcast via PostgreSQL NOTIFY on channel `calendar_events` for cross-process sync.
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
+## Database patterns
 
-// import .css files directly and it works
-import './index.css';
+Use the `db` tagged template literal for all queries:
 
-const root = createRoot(document.body);
+```ts
+import db from "../db/client";
 
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
+// Single row
+const rows = await db`SELECT * FROM users WHERE id = ${userId}`;
+const user = rows[0]; // undefined if not found
 
-root.render(<Frontend />);
+// Insert returning
+const result = await db`INSERT INTO ... RETURNING *`;
+
+// COUNT must be cast — PostgreSQL returns bigint
+const count = await db`SELECT COUNT(*)::integer AS n FROM ...`;
+
+// Upsert
+await db`
+  INSERT INTO poll_votes (option_id, user_id, vote)
+  VALUES (${optionId}, ${userId}, ${vote})
+  ON CONFLICT (option_id, user_id) DO UPDATE SET vote = ${vote}, voted_at = now()
+`;
 ```
 
-Then, run index.ts
+**Never use `COUNT(*)` without `::integer` cast** — `JSON.stringify` will silently drop bigint values.
 
-```sh
-bun --hot ./index.ts
+## Auth middleware
+
+```ts
+import { authMiddleware } from "./middleware/auth.middleware";
+
+router.get("/protected", handler, [authMiddleware]);
+// ctx.user!.sub = userId (UUID string)
 ```
 
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+## Running locally
+
+```bash
+bun install
+bun run index.ts      # or: bun --hot index.ts for hot reload
+```
+
+Requires `DATABASE_URL` in `backend/.env`. See root `CLAUDE.md` for the Render connection strings.
+
+## Known gotchas
+
+- `Bun.sql` template tags are not `postgres.js` — array parameters work differently. Use `JOIN` queries instead of `WHERE id = ANY(${array})` to avoid driver issues.
+- The PostgreSQL NOTIFY listener uses a separate `postgres.js` connection (imported dynamically in `startNotifyListener`) because `Bun.sql` doesn't support `LISTEN` yet.
+- `tsconfig.json` has `strict: true` — all map/filter callbacks over `db` results need explicit `: Record<string, unknown>` or `any` types.
