@@ -181,12 +181,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 data: (events) {
                   final eventsByDay = <DateTime, List<CalendarEvent>>{};
                   for (final e in events) {
-                    final key = DateTime(
+                    final startDate = DateTime(
                       e.startTime.year,
                       e.startTime.month,
                       e.startTime.day,
                     );
-                    eventsByDay.putIfAbsent(key, () => []).add(e);
+                    final endDate = DateTime(
+                      e.endTime.year,
+                      e.endTime.month,
+                      e.endTime.day,
+                    );
+                    var current = startDate;
+                    while (!current.isAfter(endDate)) {
+                      eventsByDay.putIfAbsent(current, () => []).add(e);
+                      current = current.add(const Duration(days: 1));
+                    }
                   }
 
                   final selKey = _selectedDay == null
@@ -235,7 +244,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                       ),
 
-                      SliverToBoxAdapter(child: const SizedBox(height: 16)),
+                      const SizedBox(height: 16),
 
                       // ── Day header ─────────────────────────────────────
                       if (_selectedDay != null)
@@ -244,9 +253,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           child: Row(
                             children: [
                               Text(
-                                DateFormat(
-                                  'EEE, MMM d',
-                                ).format(_selectedDay!).toUpperCase(),
+                                DateFormat('EEE, MMM d')
+                                    .format(_selectedDay!)
+                                    .toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -258,9 +267,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               if (_isSameDay(_selectedDay!, DateTime.now()))
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
+                                      horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: calHue.bg,
                                     borderRadius: BorderRadius.circular(8),
@@ -281,9 +288,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                       const SizedBox(height: 8),
 
+                      // ── Events + Polls ─────────────────────────────────
                       Expanded(
-                        child: selectedEvents.isEmpty
-                            ? Center(
+                        child: ListView(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                          children: [
+                            // Events for selected day
+                            if (selectedEvents.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8),
                                 child: Text(
                                   _selectedDay == null
                                       ? 'Tap a date to see events'
@@ -295,19 +310,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                 ),
                               )
-                            : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  16,
-                                ),
-                                itemCount: selectedEvents.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 10),
-                                itemBuilder: (_, i) {
-                                  final ev = selectedEvents[i];
-                                  return _EventRow(
+                            else
+                              ...selectedEvents.asMap().entries.map((e) {
+                                final ev = e.value;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                      bottom: e.key <
+                                              selectedEvents.length - 1
+                                          ? 10
+                                          : 0),
+                                  child: _EventRow(
                                     event: ev,
                                     calHue: calHue,
                                     onTap: () => context.go(
@@ -315,9 +327,68 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       extra: ev,
                                     ),
                                     fmtTime: _fmt,
-                                  );
-                                },
+                                  ),
+                                );
+                              }),
+
+                            // ── Polls section ─────────────────────────────
+                            if (openPolls.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Text(
+                                    'OPEN POLLS',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.inkMuted,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: calHue.bg,
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${openPolls.length}',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: calHue.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 10),
+                              ...openPolls.asMap().entries.map((e) {
+                                final poll = e.value;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                      bottom:
+                                          e.key < openPolls.length - 1
+                                              ? 10
+                                              : 0),
+                                  child: _PollCard(
+                                    poll: poll,
+                                    calHue: calHue,
+                                    onTap: () => context.go(
+                                      '/calendar/${widget.calendarId}/polls/${poll.id}',
+                                      extra: poll,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -347,7 +418,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           ),
           child: Text(
-            '+ Add event',
+            '+ Add',
             style: GoogleFonts.plusJakartaSans(
               fontWeight: FontWeight.w700,
               fontSize: 14,
