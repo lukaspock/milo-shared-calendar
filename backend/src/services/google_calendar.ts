@@ -4,10 +4,6 @@ import db from "../db/client";
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-// Times are stored in the DB as "local time treated as UTC" (no tz conversion in the app).
-// Stripping the Z makes Google Calendar treat the value as floating local time,
-// so it uses the user's calendar timezone instead of UTC for display.
-const toFloatingISO = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "");
 
 function makeAuth(accessToken?: string | null, refreshToken?: string | null) {
   const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
@@ -93,8 +89,8 @@ async function createGoogleEvent(params: {
       requestBody: {
         summary: params.title,
         description: params.description ?? undefined,
-        start: { dateTime: toFloatingISO(params.startTime) },
-        end: { dateTime: toFloatingISO(params.endTime) },
+        start: { dateTime: params.startTime.toISOString() },
+        end: { dateTime: params.endTime.toISOString() },
       },
     });
     const googleEventId = res.data.id;
@@ -151,8 +147,8 @@ export async function syncEventUpdated(params: {
         requestBody: {
           summary: params.title,
           description: params.description ?? undefined,
-          start: { dateTime: toFloatingISO(params.startTime) },
-          end: { dateTime: toFloatingISO(params.endTime) },
+          start: { dateTime: params.startTime.toISOString() },
+          end: { dateTime: params.endTime.toISOString() },
         },
       });
     } catch (err) {
