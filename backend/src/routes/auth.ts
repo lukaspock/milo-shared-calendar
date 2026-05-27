@@ -73,3 +73,9 @@ export async function login(ctx: RequestContext): Promise<Response> {
 
   return json({ token, user: { id: user.id, email: user.email, name: user.name, color: user.color } });
 }
+
+export async function deleteUser(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  await db`DELETE FROM users WHERE id = ${userId}`;
+  return json({ message: "Account deleted" });
+}

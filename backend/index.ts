@@ -1,7 +1,7 @@
 import { Router } from "./src/router";
 import { authMiddleware } from "./src/middleware/auth.middleware";
-import { register, login } from "./src/routes/auth";
-import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember } from "./src/routes/calendars";
+import { register, login, deleteUser } from "./src/routes/auth";
+import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
@@ -11,11 +11,14 @@ const router = new Router();
 // --- Auth ---
 router.post("/auth/register", register);
 router.post("/auth/login", login);
+router.delete("/users/me", deleteUser, [authMiddleware]);
 
 // --- Calendars (protected) ---
 router.get("/calendars", listCalendars, [authMiddleware]);
 router.post("/calendars", createCalendar, [authMiddleware]);
 router.post("/calendars/join", joinCalendar, [authMiddleware]);
+router.delete("/calendars/:id", deleteCalendar, [authMiddleware]);
+router.post("/calendars/:id/leave", leaveCalendar, [authMiddleware]);
 router.get("/calendars/:id/events", getCalendarEvents, [authMiddleware]);
 router.get("/calendars/:id/members", listMembers, [authMiddleware]);
 router.delete("/calendars/:id/members/:userId", removeMember, [authMiddleware]);

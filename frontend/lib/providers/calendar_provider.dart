@@ -97,6 +97,30 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       return false;
     }
   }
+
+  Future<bool> deleteCalendar(String calendarId) async {
+    try {
+      await _api.delete('/calendars/$calendarId');
+      state.whenData((list) {
+        state = AsyncValue.data(list.where((c) => c.id != calendarId).toList());
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> leaveCalendar(String calendarId) async {
+    try {
+      await _api.post('/calendars/$calendarId/leave');
+      state.whenData((list) {
+        state = AsyncValue.data(list.where((c) => c.id != calendarId).toList());
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 final calendarProvider =

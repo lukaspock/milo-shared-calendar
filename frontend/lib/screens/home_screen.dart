@@ -110,6 +110,11 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           _CircleButton(
+                            icon: Icons.person_off_outlined,
+                            onTap: () => _confirmDeleteAccount(context, ref),
+                          ),
+                          const SizedBox(width: 8),
+                          _CircleButton(
                             icon: Icons.logout_rounded,
                             onTap: () async {
                               await ref.read(authProvider.notifier).logout();
@@ -150,10 +155,31 @@ class HomeScreen extends ConsumerWidget {
                       sliver: SliverList.separated(
                         itemCount: myCalendars.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _CalendarCard(
-                          calendar: myCalendars[i],
-                          onTap: () => _openCalendar(context, ref, myCalendars[i]),
-                        ),
+                        itemBuilder: (ctx, i) {
+                          final cal = myCalendars[i];
+                          return Dismissible(
+                            key: ValueKey(cal.id),
+                            direction: DismissDirection.endToStart,
+                            confirmDismiss: (_) => _confirmDeleteCalendar(ctx, cal.name),
+                            onDismissed: (_) => ref
+                                .read(calendarProvider.notifier)
+                                .deleteCalendar(cal.id),
+                            background: _DismissBackground(
+                              color: AppTheme.danger,
+                              icon: Icons.delete_outline_rounded,
+                            ),
+                            child: _CalendarCard(
+                              calendar: cal,
+                              onTap: () => _openCalendar(context, ref, cal),
+                              onDelete: () async {
+                                final ok = await _confirmDeleteCalendar(ctx, cal.name);
+                                if (ok == true && ctx.mounted) {
+                                  ref.read(calendarProvider.notifier).deleteCalendar(cal.id);
+                                }
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -172,10 +198,31 @@ class HomeScreen extends ConsumerWidget {
                       sliver: SliverList.separated(
                         itemCount: sharedCalendars.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _CalendarCard(
-                          calendar: sharedCalendars[i],
-                          onTap: () => _openCalendar(context, ref, sharedCalendars[i]),
-                        ),
+                        itemBuilder: (ctx, i) {
+                          final cal = sharedCalendars[i];
+                          return Dismissible(
+                            key: ValueKey(cal.id),
+                            direction: DismissDirection.endToStart,
+                            confirmDismiss: (_) => _confirmLeaveCalendar(ctx, cal.name),
+                            onDismissed: (_) => ref
+                                .read(calendarProvider.notifier)
+                                .leaveCalendar(cal.id),
+                            background: _DismissBackground(
+                              color: const Color(0xFFE87A35),
+                              icon: Icons.logout_rounded,
+                            ),
+                            child: _CalendarCard(
+                              calendar: cal,
+                              onTap: () => _openCalendar(context, ref, cal),
+                              onDelete: () async {
+                                final ok = await _confirmLeaveCalendar(ctx, cal.name);
+                                if (ok == true && ctx.mounted) {
+                                  ref.read(calendarProvider.notifier).leaveCalendar(cal.id);
+                                }
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -219,6 +266,83 @@ class HomeScreen extends ConsumerWidget {
   void _openCalendar(BuildContext context, WidgetRef ref, CalendarModel cal) {
     ref.read(selectedCalendarProvider.notifier).state = cal.id;
     context.go('/calendar/${cal.id}');
+  }
+
+  Future<bool?> _confirmDeleteCalendar(BuildContext context, String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete "$name"?'),
+        content: const Text('This will permanently delete the calendar and all its events and polls.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _confirmLeaveCalendar(BuildContext context, String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Leave "$name"?'),
+        content: const Text('You will no longer have access to this calendar.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFE87A35)),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This will permanently delete your account, all your owned calendars, and all their data. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final ok = await ref.read(authProvider.notifier).deleteAccount();
+      if (context.mounted) {
+        if (ok) {
+          context.go('/login');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not delete account. Please try again.')),
+          );
+        }
+      }
+    }
   }
 
   void _showCreateSheet(BuildContext context, WidgetRef ref) {
@@ -384,9 +508,10 @@ class _SectionHeader extends StatelessWidget {
 // ── Calendar card ─────────────────────────────────────────────────────────────
 
 class _CalendarCard extends StatefulWidget {
-  const _CalendarCard({required this.calendar, required this.onTap});
+  const _CalendarCard({required this.calendar, required this.onTap, this.onDelete});
   final CalendarModel calendar;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   @override
   State<_CalendarCard> createState() => _CalendarCardState();
@@ -503,7 +628,25 @@ class _CalendarCardState extends State<_CalendarCard> {
               ),
             ),
 
-            const Icon(Icons.chevron_right_rounded, color: AppTheme.inkMuted, size: 20),
+            if (widget.onDelete != null)
+              GestureDetector(
+                onTap: widget.onDelete,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    widget.calendar.isOwner
+                        ? Icons.delete_outline_rounded
+                        : Icons.exit_to_app_rounded,
+                    color: widget.calendar.isOwner
+                        ? AppTheme.danger
+                        : const Color(0xFFE87A35),
+                    size: 22,
+                  ),
+                ),
+              )
+            else
+              const Icon(Icons.chevron_right_rounded, color: AppTheme.inkMuted, size: 20),
           ],
         ),
       ),
@@ -617,6 +760,27 @@ class _PillFAB extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Dismiss background ────────────────────────────────────────────────────────
+
+class _DismissBackground extends StatelessWidget {
+  const _DismissBackground({required this.color, required this.icon});
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 24),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Icon(icon, color: Colors.white, size: 24),
     );
   }
 }
