@@ -173,12 +173,17 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const iosClientId = process.env.GOOGLE_IOS_CLIENT_ID;
   if (!clientId || !clientSecret) return error("Google OAuth not configured", 503);
+
+  // Accept both Web and iOS client IDs as valid audiences —
+  // iOS/macOS tokens have the iOS client ID as audience, not the Web client ID.
+  const validAudiences = [clientId, ...(iosClientId ? [iosClientId] : [])];
 
   const auth = new google.auth.OAuth2(clientId, clientSecret);
   let googleUser: { sub: string; email: string; name: string };
   try {
-    const ticket = await auth.verifyIdToken({ idToken, audience: clientId });
+    const ticket = await auth.verifyIdToken({ idToken, audience: validAudiences });
     const payload = ticket.getPayload();
     if (!payload?.sub || !payload?.email) return error("Invalid Google token", 401);
     googleUser = {
