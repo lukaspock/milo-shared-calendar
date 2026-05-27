@@ -13,6 +13,7 @@ Flutter app targeting iOS, Android, and macOS. State management via Riverpod, na
 | `shared_preferences`  | Persist JWT token + user data across restarts     |
 | `google_fonts`        | Plus Jakarta Sans used throughout                 |
 | `intl`                | Date formatting                                   |
+| `google_sign_in`      | Native Google OAuth2 — Sign in with Google + Calendar scope |
 
 ## Project layout
 
@@ -163,6 +164,14 @@ Each calendar card in `home_screen.dart` shows:
 - Both also available via `Dismissible` swipe gesture.
 
 Account deletion: `person_off_outlined` button in the home screen header → calls `DELETE /users/me` → logs out.
+
+## Google Sign-In (frontend)
+
+`google_sign_in` is configured with two scopes: `email` and `https://www.googleapis.com/auth/calendar`. The `serverClientId` is the Web Application client ID from Google Cloud Console — this enables the `serverAuthCode` that the backend uses to obtain a refresh token for Calendar sync.
+
+After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to email/password login. `AppUser.hasGoogleCalendar` is `true` for Google-authenticated users.
+
+**iOS/macOS setup required:** Both `ios/Runner/Info.plist` and `macos/Runner/Info.plist` contain a `CFBundleURLSchemes` entry with `REPLACE_WITH_REVERSED_CLIENT_ID`. Create an iOS OAuth client in Google Cloud Console (bundle ID: `com.sharedcal.sharedCal`) and replace this placeholder with the REVERSED_CLIENT_ID before building.
 
 ## Known gotchas
 

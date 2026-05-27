@@ -40,16 +40,13 @@ backend/
 ### Auth
 | Method | Path                          | Auth | Description                                      |
 |--------|-------------------------------|------|--------------------------------------------------|
-| POST   | `/auth/register`              | —    | Create account, sends verification email         |
+| POST   | `/auth/register`              | —    | Create account (email+password), sends verification email |
 | POST   | `/auth/login`                 | —    | Get JWT token, returns `email_verified`          |
+| POST   | `/auth/google`                | —    | Sign in / register via Google ID token           |
 | GET    | `/auth/verify/:token`         | —    | Verify email via link — returns HTML page        |
 | POST   | `/auth/resend-verification`   | JWT  | Regenerate + resend verification email           |
 | GET    | `/auth/me`                    | JWT  | Return current user (fresh from DB)              |
-
-### Users (require JWT)
-| Method | Path         | Description              |
-|--------|--------------|--------------------------|
-| DELETE | `/users/me`  | Delete own account       |
+| DELETE | `/users/me`                   | JWT  | Delete own account                               |
 
 ### Calendars (all require JWT)
 | Method | Path                                | Description                      |
@@ -152,11 +149,11 @@ Requires `DATABASE_URL` in `backend/.env`. See root `CLAUDE.md` for the Render c
 
 ## Email service
 
-`src/services/email.ts` wraps the Resend REST API via `fetch()`. No SDK dependency.
+`src/services/email.ts` uses the Gmail REST API via `googleapis`. No SMTP — Render Free Tier blocks outbound SMTP ports.
 
-- Graceful no-op when `RESEND_API_KEY` is not set (logs skip message).
-- `FROM` defaults to `onboarding@resend.dev` — do not set `FROM_EMAIL` to a Gmail or unverified domain (Resend returns 403).
-- All email sends in routes are fire-and-forget IIFEs: `(async () => { ... })().catch(console.error)` — they never block the HTTP response.
+- Graceful no-op when `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, or `GOOGLE_REFRESH_TOKEN` are not set.
+- `FROM` defaults to `lukaspock.dev@gmail.com` — override with `FROM_EMAIL` env var.
+- All email sends are fire-and-forget: `send(...).catch(console.error)` — never blocks the HTTP response.
 - Email notifications (event created, poll confirmed) only go to members with `email_verified = true`.
 
 | Function                       | Trigger                        |
@@ -164,6 +161,12 @@ Requires `DATABASE_URL` in `backend/.env`. See root `CLAUDE.md` for the Render c
 | `sendVerificationEmail`        | Register + resend-verification |
 | `sendEventNotification`        | New event created              |
 | `sendPollConfirmedNotification`| Poll confirmed as event        |
+
+## Google Calendar integration (backend)
+
+Users who signed in via Google have a row in `google_calendar_tokens`. All event mutations (create/update/delete) call sync functions from `src/services/google_calendar.ts` — fire-and-forget, errors are logged but never block the response.
+
+`POST /auth/google` body: `{ idToken: string, serverAuthCode?: string }`. The ID token identifies the user; the server auth code is exchanged for refresh+access tokens stored in `google_calendar_tokens`.
 
 ## Known gotchas
 

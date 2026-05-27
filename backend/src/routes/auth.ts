@@ -3,6 +3,8 @@ import { signToken } from "../middleware/auth.middleware";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { sendVerificationEmail } from "../services/email";
+import { google } from "googleapis";
+import { exchangeServerAuthCode } from "../services/google_calendar";
 
 export async function register(ctx: RequestContext): Promise<Response> {
   let body: { email?: string; password?: string; name?: string };
@@ -150,10 +152,96 @@ export async function getMe(ctx: RequestContext): Promise<Response> {
   `;
   if (users.length === 0) return error("User not found", 404);
   const user = users[0];
+  const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${userId}`;
   return json({
     id: user.id, email: user.email, name: user.name,
     color: user.color, email_verified: user.email_verified ?? false,
+    has_google_calendar: gcal.length > 0,
   });
+}
+
+export async function googleAuth(ctx: RequestContext): Promise<Response> {
+  let body: { idToken?: string; serverAuthCode?: string };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { idToken, serverAuthCode } = body;
+  if (!idToken) return error("idToken is required");
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const iosClientId = process.env.GOOGLE_IOS_CLIENT_ID;
+  if (!clientId || !clientSecret) return error("Google OAuth not configured", 503);
+
+  // Accept both Web and iOS client IDs as valid audiences —
+  // iOS/macOS tokens have the iOS client ID as audience, not the Web client ID.
+  const validAudiences = [clientId, ...(iosClientId ? [iosClientId] : [])];
+
+  const auth = new google.auth.OAuth2(clientId, clientSecret);
+  let googleUser: { sub: string; email: string; name: string };
+  try {
+    const ticket = await auth.verifyIdToken({ idToken, audience: validAudiences });
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload?.email) return error("Invalid Google token", 401);
+    googleUser = {
+      sub: payload.sub,
+      email: payload.email,
+      name: payload.name ?? payload.email.split("@")[0],
+    };
+  } catch {
+    return error("Invalid Google token", 401);
+  }
+
+  // Find existing user by Google ID or email
+  const existing = await db`SELECT * FROM users WHERE google_id = ${googleUser.sub} OR email = ${googleUser.email}`;
+  let user: Record<string, unknown>;
+  let isNew = false;
+
+  if (existing.length > 0) {
+    user = existing[0];
+    if (!user.google_id) {
+      await db`UPDATE users SET google_id = ${googleUser.sub}, email_verified = true WHERE id = ${user.id}`;
+    }
+  } else {
+    isNew = true;
+    const colors = ["#6C63FF", "#FF6584", "#43B89C", "#F5A623", "#4A90E2", "#E74C3C", "#2ECC71", "#9B59B6"];
+    const countResult = await db`SELECT COUNT(*)::integer AS n FROM users`;
+    const color = colors[Number(countResult[0].n) % colors.length];
+
+    const created = await db`
+      INSERT INTO users (email, name, color, google_id, email_verified)
+      VALUES (${googleUser.email}, ${googleUser.name}, ${color}, ${googleUser.sub}, true)
+      RETURNING *
+    `;
+    user = created[0];
+  }
+
+  // Exchange server auth code for Google Calendar refresh token
+  if (serverAuthCode) {
+    const tokens = await exchangeServerAuthCode(serverAuthCode);
+    if (tokens && tokens.refresh_token) {
+      await db`
+        INSERT INTO google_calendar_tokens (user_id, access_token, refresh_token, expiry)
+        VALUES (${user.id}, ${tokens.access_token}, ${tokens.refresh_token}, ${tokens.expiry})
+        ON CONFLICT (user_id) DO UPDATE SET
+          access_token = ${tokens.access_token},
+          refresh_token = ${tokens.refresh_token},
+          expiry = ${tokens.expiry}
+      `;
+    }
+  }
+
+  const token = await signToken({ sub: user.id as string, email: user.email as string, name: user.name as string });
+  return json({
+    token,
+    user: {
+      id: user.id, email: user.email, name: user.name,
+      color: user.color, email_verified: true, has_google_calendar: true,
+    },
+  }, isNew ? 201 : 200);
 }
 
 export async function deleteUser(ctx: RequestContext): Promise<Response> {

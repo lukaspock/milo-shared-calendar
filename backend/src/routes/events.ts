@@ -3,6 +3,7 @@ import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
 import { sendEventNotification } from "../services/email";
+import { syncEventCreated, syncEventUpdated, syncEventDeleted } from "../services/google_calendar";
 
 export async function createEvent(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
@@ -46,7 +47,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
 
   const event = events[0];
 
-  // Fire-and-forget email to all other calendar members
+  // Fire-and-forget: email notifications + Google Calendar sync
   (async () => {
     const creator = await db`SELECT name FROM users WHERE id = ${userId}`;
     const members = await db`
@@ -64,6 +65,14 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
         creatorName: creator[0]?.name as string ?? "Someone",
       });
     }
+    await syncEventCreated({
+      calendarId: calendar_id,
+      eventId: event.id as string,
+      title: event.title as string,
+      description: event.description as string | null,
+      startTime: new Date(event.start_time as string),
+      endTime: new Date(event.end_time as string),
+    });
   })().catch(console.error);
 
   return json(event, 201);
@@ -106,7 +115,16 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     RETURNING *
   `;
 
-  return json(updated[0]);
+  const u = updated[0];
+  syncEventUpdated({
+    eventId: id,
+    title: u.title as string,
+    description: u.description as string | null,
+    startTime: new Date(u.start_time as string),
+    endTime: new Date(u.end_time as string),
+  }).catch(console.error);
+
+  return json(u);
 }
 
 export async function deleteEvent(ctx: RequestContext): Promise<Response> {
@@ -127,6 +145,9 @@ export async function deleteEvent(ctx: RequestContext): Promise<Response> {
   const isCreator = event.created_by === userId;
   const isOwner = membership[0].role === "owner";
   if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can delete events", 403);
+
+  // Sync Google Calendar deletions before removing the DB row (cascade deletes google_event_ids)
+  syncEventDeleted(id).catch(console.error);
 
   await db`DELETE FROM events WHERE id = ${id}`;
 
