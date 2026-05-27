@@ -220,8 +220,10 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
   }
 
   // Exchange server auth code for Google Calendar refresh token
+  console.log(`[google-auth] serverAuthCode present: ${!!serverAuthCode}`);
   if (serverAuthCode) {
     const tokens = await exchangeServerAuthCode(serverAuthCode);
+    console.log(`[google-auth] tokens received: access=${!!tokens?.access_token} refresh=${!!tokens?.refresh_token}`);
     if (tokens && tokens.refresh_token) {
       await db`
         INSERT INTO google_calendar_tokens (user_id, access_token, refresh_token, expiry)
@@ -231,6 +233,7 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
           refresh_token = ${tokens.refresh_token},
           expiry = ${tokens.expiry}
       `;
+      console.log(`[google-auth] calendar tokens stored for user ${user.id}`);
     }
   }
 
