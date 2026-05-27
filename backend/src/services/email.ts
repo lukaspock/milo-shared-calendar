@@ -3,7 +3,7 @@ import { google } from "googleapis";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
-const FROM = process.env.FROM_EMAIL ?? "lukas1.pock@gmail.com";
+const FROM = process.env.FROM_EMAIL ?? "lukaspock.dev@gmail.com";
 const APP_URL = process.env.APP_URL ?? "https://flutterprojectvibecoding.onrender.com";
 
 function getGmailClient() {

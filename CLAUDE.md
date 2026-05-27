@@ -88,25 +88,49 @@ The production Render DB was migrated manually via psql — those tables already
 
 ## Database schema (summary)
 
-| Table              | Purpose                                                                          |
-|--------------------|----------------------------------------------------------------------------------|
-| `users`            | Accounts — email, password_hash, name, color, email_verified, verification_token |
-| `calendars`        | Calendars — name, owner_id, invite_code                                          |
-| `calendar_members` | Junction — user_id, calendar_id, role (owner/member)                             |
-| `events`           | Calendar events — title, start_time, end_time, color                             |
-| `event_polls`      | Polls — title, options, open/closed state                                        |
-| `poll_options`     | Time-slot options for a poll                                                     |
-| `poll_votes`       | Per-user votes (yes/no/maybe) per option                                         |
+| Table                    | Purpose                                                                          |
+|--------------------------|----------------------------------------------------------------------------------|
+| `users`                  | Accounts — email, password_hash (nullable), name, color, google_id               |
+| `calendars`              | Calendars — name, owner_id, invite_code                                          |
+| `calendar_members`       | Junction — user_id, calendar_id, role (owner/member)                             |
+| `events`                 | Calendar events — title, start_time, end_time, color                             |
+| `event_polls`            | Polls — title, options, open/closed state                                        |
+| `poll_options`           | Time-slot options for a poll                                                     |
+| `poll_votes`             | Per-user votes (yes/no/maybe) per option                                         |
+| `google_calendar_tokens` | Per-user Google OAuth tokens for Calendar sync                                   |
+| `google_event_ids`       | Mapping SharedCal event IDs → Google Calendar event IDs per user                 |
 
 ## Features
 
-- **Auth:** Register / login with JWT. Token stored in SharedPreferences.
-- **Email verification:** Verification email sent on register via Resend API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
+- **Auth:** Register / login with JWT (email+password) OR Sign in with Google. Token stored in SharedPreferences.
+- **Email verification:** Verification email sent on register via Gmail API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
 - **Calendars:** Create, join via invite code, view members, kick members (owner only). Owner can delete calendar (cascades all data), members can leave.
 - **Account deletion:** Users can delete their own account from the home screen.
 - **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
 - **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
 - **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`.
+- **Google Calendar sync** _(Google-signed-in users only)_: Events are mirrored to the user's personal Google Calendar automatically.
+
+## Google Sign-In & Calendar integration
+
+Users can authenticate via email+password or via Google Sign-In:
+
+| Auth method | Google Calendar sync |
+|-------------|---------------------|
+| Email + password | ❌ Not available |
+| Sign in with Google | ✅ Automatic |
+
+**Flow:**
+1. User taps "Sign in with Google" in the Flutter app
+2. `google_sign_in` package shows the native Google consent screen (requests Calendar scope)
+3. Flutter sends the Google ID token + server auth code to `POST /auth/google`
+4. Backend verifies the ID token, creates or finds the user, stores refresh token in `google_calendar_tokens`
+5. Returns a SharedCal JWT — app behaves identically from here
+6. Events created/updated/deleted call Google Calendar API in the background (fire-and-forget)
+
+**Google Cloud Project:** `SharedCal` — same project used for Gmail email sending.
+Enabled APIs: Gmail API, Google Calendar API v3.
+OAuth client: Web application type (Client ID `583283682704-...`).
 
 ## Known gotchas
 
