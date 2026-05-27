@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,6 +126,10 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+
+                  // ── Email verification polling (invisible) ────────────────
+                  if (user != null && !user.emailVerified)
+                    const SliverToBoxAdapter(child: _VerificationPoller()),
 
                   // ── Email verification banner ─────────────────────────────
                   if (user != null && !user.emailVerified)
@@ -791,6 +796,36 @@ class _PillFAB extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Verification poller (invisible, auto-refreshes every 5 s) ────────────────
+
+class _VerificationPoller extends ConsumerStatefulWidget {
+  const _VerificationPoller();
+
+  @override
+  ConsumerState<_VerificationPoller> createState() => _VerificationPollerState();
+}
+
+class _VerificationPollerState extends ConsumerState<_VerificationPoller> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      ref.read(authProvider.notifier).refreshUser();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 // ── Email verification banner ─────────────────────────────────────────────────

@@ -15,7 +15,11 @@ async function send(to: string, subject: string, html: string): Promise<void> {
     },
     body: JSON.stringify({ from: FROM, to, subject, html }),
   });
-  if (!res.ok) console.error("[email] send failed:", await res.text());
+  if (res.ok) {
+    console.log(`[email] sent "${subject}" to ${to}`);
+  } else {
+    console.error("[email] send failed:", await res.text());
+  }
 }
 
 function base(content: string): string {
