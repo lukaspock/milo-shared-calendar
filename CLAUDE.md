@@ -59,13 +59,18 @@ Phone and Mac must be on the same network for local dev. Check macOS Firewall if
 
 Backend config is in `backend/.env` for local dev and overridden by `docker-compose.yml` for containers.
 
-| Variable       | Local value                                          | docker-compose value                             |
-|----------------|------------------------------------------------------|--------------------------------------------------|
-| `DATABASE_URL` | Render external postgres URL                         | `postgres://postgres:postgres@db:5432/sharedcal` |
-| `JWT_SECRET`   | `change_me_in_production`                            | `change_me_in_production`                        |
-| `PORT`         | `3000`                                               | `3000`                                           |
+| Variable         | Local value                                          | docker-compose value                             |
+|------------------|------------------------------------------------------|--------------------------------------------------|
+| `DATABASE_URL`   | Render external postgres URL                         | `postgres://postgres:postgres@db:5432/sharedcal` |
+| `JWT_SECRET`     | `change_me_in_production`                            | `change_me_in_production`                        |
+| `PORT`           | `3000`                                               | `3000`                                           |
+| `RESEND_API_KEY` | your Resend API key                                  | `your_resend_api_key_here` (placeholder)         |
+| `APP_URL`        | `http://localhost:3000`                              | `http://localhost:3000`                          |
+| `FROM_EMAIL`     | omit — defaults to `onboarding@resend.dev`           | omit                                             |
 
 Keep `JWT_SECRET` identical between `.env` and docker-compose — a mismatch causes silent 401s.
+
+**Resend email:** Without a verified domain, `FROM_EMAIL` must be omitted or set to `onboarding@resend.dev`. Setting it to a Gmail or unverified domain causes a 403 from Resend. The `RESEND_API_KEY` in `docker-compose.yml` is a placeholder — set the real key only in `backend/.env` (never commit it).
 
 ## Resetting the database
 
@@ -79,24 +84,28 @@ docker compose up --build
 Required after adding the poll tables (`event_polls`, `poll_options`, `poll_votes`).
 The production Render DB was migrated manually via psql — those tables already exist there.
 
+`backend/src/db/migrate.ts` runs automatically on every backend start via `runMigrations()` in `index.ts`. It uses `ADD COLUMN IF NOT EXISTS` so it's safe to run repeatedly. Currently adds `email_verified`, `verification_token`, `verification_expires_at` to `users`.
+
 ## Database schema (summary)
 
-| Table              | Purpose                                              |
-|--------------------|------------------------------------------------------|
-| `users`            | Accounts — email, password_hash, name, color         |
-| `calendars`        | Calendars — name, owner_id, invite_code              |
-| `calendar_members` | Junction — user_id, calendar_id, role (owner/member) |
-| `events`           | Calendar events — title, start_time, end_time, color |
-| `event_polls`      | Polls — title, options, open/closed state            |
-| `poll_options`     | Time-slot options for a poll                         |
-| `poll_votes`       | Per-user votes (yes/no/maybe) per option             |
+| Table              | Purpose                                                                          |
+|--------------------|----------------------------------------------------------------------------------|
+| `users`            | Accounts — email, password_hash, name, color, email_verified, verification_token |
+| `calendars`        | Calendars — name, owner_id, invite_code                                          |
+| `calendar_members` | Junction — user_id, calendar_id, role (owner/member)                             |
+| `events`           | Calendar events — title, start_time, end_time, color                             |
+| `event_polls`      | Polls — title, options, open/closed state                                        |
+| `poll_options`     | Time-slot options for a poll                                                     |
+| `poll_votes`       | Per-user votes (yes/no/maybe) per option                                         |
 
 ## Features
 
 - **Auth:** Register / login with JWT. Token stored in SharedPreferences.
-- **Calendars:** Create, join via invite code, view members, kick members (owner only).
-- **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket.
-- **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event.
+- **Email verification:** Verification email sent on register via Resend API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
+- **Calendars:** Create, join via invite code, view members, kick members (owner only). Owner can delete calendar (cascades all data), members can leave.
+- **Account deletion:** Users can delete their own account from the home screen.
+- **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
+- **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
 - **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`.
 
 ## Known gotchas
@@ -106,3 +115,5 @@ The production Render DB was migrated manually via psql — those tables already
 - Render Free Tier cold starts take 30–60 s. Always test performance with `flutter run --release`.
 - `.claude/worktrees/` is in `.gitignore` — these are temporary Claude Code working directories.
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
+- Resend 403 "domain not verified": happens when `FROM_EMAIL` is set to a Gmail or unverified domain. Remove `FROM_EMAIL` to fall back to `onboarding@resend.dev`.
+- After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).

@@ -27,13 +27,13 @@ lib/
 │   ├── event.dart              CalendarEvent
 │   ├── member.dart             CalendarMember
 │   ├── poll.dart               EventPoll, PollOption, PollVote, PollOptionInput
-│   └── user.dart               AppUser
+│   └── user.dart               AppUser (includes emailVerified field)
 ├── services/
 │   ├── api_service.dart        Dio singleton — all HTTP calls, Bearer token interceptor
-│   ├── auth_service.dart       Login/register/logout + SharedPreferences session
+│   ├── auth_service.dart       Login/register/logout/delete + refreshUser + resendVerification
 │   └── websocket_service.dart  Singleton WS — auth + subscribe + reconnect logic
 ├── providers/
-│   ├── auth_provider.dart      AuthNotifier (loading → authenticated/unauthenticated)
+│   ├── auth_provider.dart      AuthNotifier — login/register/logout/delete/refreshUser/resendVerification
 │   ├── calendar_provider.dart  CalendarNotifier — re-created on auth status change
 │   ├── events_provider.dart    EventsNotifier per calendarId (family provider)
 │   └── polls_provider.dart     PollsNotifier per calendarId (family provider)
@@ -148,6 +148,22 @@ flutter analyze --no-pub                   # static analysis
 ipconfig getifaddr en0                     # get local IP for physical device testing
 ```
 
+## Email verification UI
+
+`home_screen.dart` shows a yellow banner when `user.emailVerified == false`:
+- **"Resend email"** button — calls `authProvider.notifier.resendVerification()`
+- **"I've verified"** button — triggers a manual `refreshUser()` call
+- `_VerificationPoller` (zero-size widget) auto-polls `GET /auth/me` every 5 s and updates `AuthState`. Disposed automatically when `emailVerified` becomes `true`.
+
+## Delete / leave calendar
+
+Each calendar card in `home_screen.dart` shows:
+- **Trash icon** (owner) — calls `DELETE /calendars/:id`, removes from list
+- **Exit icon** (member) — calls `POST /calendars/:id/leave`, removes from list
+- Both also available via `Dismissible` swipe gesture.
+
+Account deletion: `person_off_outlined` button in the home screen header → calls `DELETE /users/me` → logs out.
+
 ## Known gotchas
 
 - **Debug builds are 5–10× slower** than release. Always use `--release` for performance testing.
@@ -155,3 +171,4 @@ ipconfig getifaddr en0                     # get local IP for physical device te
 - `withOpacity()` is deprecated in Flutter 3.x — use `.withValues(alpha: ...)`. The codebase still uses `withOpacity` in many places; it still works but triggers analyzer warnings.
 - Multi-day events are displayed on every spanned day by iterating from `startDate` to `endDate` in `calendar_screen.dart`. Don't replace this with a single-day key lookup.
 - `extra:` in GoRouter is not type-safe — always null-check before casting (`widget.extra is EventPoll ? widget.extra as EventPoll : null`).
+- `AppUser` is encoded as pipe-separated string in SharedPreferences — `_decodeUser` is backwards-compatible (defaults `emailVerified` to `false` if field missing).
