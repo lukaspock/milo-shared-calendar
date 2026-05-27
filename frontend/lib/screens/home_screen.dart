@@ -166,9 +166,19 @@ class HomeScreen extends ConsumerWidget {
                             final url = await ref
                                 .read(authProvider.notifier)
                                 .getGoogleCalendarConnectUrl();
-                            if (url != null && context.mounted) {
-                              await launchUrl(Uri.parse(url),
-                                  mode: LaunchMode.externalApplication);
+                            if (!context.mounted) return;
+                            if (url == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not get connect URL. Is backend deployed?')),
+                              );
+                              return;
+                            }
+                            final launched = await launchUrl(Uri.parse(url),
+                                mode: LaunchMode.externalApplication);
+                            if (!launched && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not open browser.')),
+                              );
                             }
                           },
                           onDone: () => ref.read(authProvider.notifier).refreshUser(),
