@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -156,6 +157,26 @@ class HomeScreen extends ConsumerWidget {
                               );
                             }
                           },
+                        ),
+                      ),
+                    ),
+
+                  // ── Google Calendar connect banner ────────────────────────
+                  if (user != null && !user.hasGoogleCalendar)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                        child: _GoogleCalendarBanner(
+                          onConnect: () async {
+                            final url = await ref
+                                .read(authProvider.notifier)
+                                .getGoogleCalendarConnectUrl();
+                            if (url != null && context.mounted) {
+                              await launchUrl(Uri.parse(url),
+                                  mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          onDone: () => ref.read(authProvider.notifier).refreshUser(),
                         ),
                       ),
                     ),
@@ -1284,6 +1305,94 @@ class _JoinCalendarSheet extends StatelessWidget {
               child: Text(
                 'Join calendar',
                 style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoogleCalendarBanner extends StatelessWidget {
+  final VoidCallback onConnect;
+  final VoidCallback onDone;
+
+  const _GoogleCalendarBanner({required this.onConnect, required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F0FE),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF4285F4).withValues(alpha: 0.3), width: 1.5),
+        boxShadow: const [BoxShadow(color: Color(0x0A000000), offset: Offset(0, 4), blurRadius: 0)],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4285F4),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connect Google Calendar',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink,
+                  ),
+                ),
+                Text(
+                  'Sync your events automatically',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.inkSoft,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onConnect,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4285F4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Connect',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onDone,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.line, width: 1.5),
+              ),
+              child: Text(
+                'Done',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.inkSoft,
+                ),
               ),
             ),
           ),

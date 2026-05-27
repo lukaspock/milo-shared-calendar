@@ -5,30 +5,63 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 function makeAuth(accessToken?: string | null, refreshToken?: string | null) {
-  const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, "postmessage");
+  const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
   if (accessToken || refreshToken) {
     auth.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
   }
   return auth;
 }
 
-export async function exchangeServerAuthCode(code: string): Promise<{
-  access_token: string;
-  refresh_token: string;
-  expiry: Date;
-} | null> {
-  if (!CLIENT_ID || !CLIENT_SECRET) return null;
+// ── Web OAuth flow for Calendar connection ────────────────────────────────────
+
+const pendingCalendarConnects = new Map<string, { userId: string; expiresAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of pendingCalendarConnects) {
+    if (val.expiresAt < now) pendingCalendarConnects.delete(key);
+  }
+}, 60_000);
+
+export function generateCalendarConnectUrl(userId: string): string {
+  if (!CLIENT_ID) throw new Error("Google OAuth not configured");
+  const state = crypto.randomUUID();
+  pendingCalendarConnects.set(state, { userId, expiresAt: Date.now() + 15 * 60_000 });
+  const redirectUri = `${process.env.APP_URL}/auth/google-calendar/callback`;
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id", CLIENT_ID);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "https://www.googleapis.com/auth/calendar");
+  url.searchParams.set("access_type", "offline");
+  url.searchParams.set("prompt", "consent");
+  url.searchParams.set("state", state);
+  return url.toString();
+}
+
+export async function handleCalendarCallback(code: string, state: string): Promise<boolean> {
+  const pending = pendingCalendarConnects.get(state);
+  if (!pending || pending.expiresAt < Date.now()) return false;
+  pendingCalendarConnects.delete(state);
+  if (!CLIENT_ID || !CLIENT_SECRET) return false;
+  const redirectUri = `${process.env.APP_URL}/auth/google-calendar/callback`;
   try {
-    const { tokens } = await makeAuth().getToken(code);
-    if (!tokens.access_token) return null;
-    return {
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token ?? "",
-      expiry: tokens.expiry_date ? new Date(tokens.expiry_date) : new Date(Date.now() + 3_600_000),
-    };
+    const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, redirectUri);
+    const { tokens } = await auth.getToken(code);
+    if (!tokens.access_token || !tokens.refresh_token) return false;
+    const expiry = tokens.expiry_date ? new Date(tokens.expiry_date) : new Date(Date.now() + 3_600_000);
+    await db`
+      INSERT INTO google_calendar_tokens (user_id, access_token, refresh_token, expiry)
+      VALUES (${pending.userId}, ${tokens.access_token}, ${tokens.refresh_token}, ${expiry})
+      ON CONFLICT (user_id) DO UPDATE SET
+        access_token = ${tokens.access_token},
+        refresh_token = ${tokens.refresh_token},
+        expiry = ${expiry}
+    `;
+    return true;
   } catch (err) {
-    console.error("[gcal] exchangeServerAuthCode failed:", err);
-    return null;
+    console.error("[gcal] handleCalendarCallback failed:", err);
+    return false;
   }
 }
 
