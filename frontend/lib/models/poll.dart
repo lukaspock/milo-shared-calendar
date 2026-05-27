@@ -52,8 +52,8 @@ class PollOption {
   factory PollOption.fromJson(Map<String, dynamic> json) => PollOption(
         id: json['id'] as String,
         pollId: json['poll_id'] as String? ?? '',
-        startTime: DateTime.parse(json['start_time'] as String),
-        endTime: DateTime.parse(json['end_time'] as String),
+        startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+        endTime: DateTime.parse(json['end_time'] as String).toLocal(),
         votes: (json['votes'] as List? ?? [])
             .map((v) => PollVote.fromJson(v as Map<String, dynamic>))
             .toList(),

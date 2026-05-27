@@ -68,8 +68,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         'calendar_id': calendarId,
         'title': title,
         'description': description,
-        'start_time': startTime.toIso8601String(),
-        'end_time': endTime.toIso8601String(),
+        'start_time': startTime.toUtc().toIso8601String(),
+        'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
@@ -95,8 +95,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       final res = await _api.put('/events/$id', data: {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
-        if (startTime != null) 'start_time': startTime.toIso8601String(),
-        if (endTime != null) 'end_time': endTime.toIso8601String(),
+        if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
+        if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);

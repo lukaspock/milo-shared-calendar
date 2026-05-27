@@ -70,8 +70,8 @@ class ApiService {
       if (description != null && description.isNotEmpty) 'description': description,
       'options': options
           .map((o) => {
-                'start_time': o.start.toIso8601String(),
-                'end_time': o.end.toIso8601String(),
+                'start_time': o.start.toUtc().toIso8601String(),
+                'end_time': o.end.toUtc().toIso8601String(),
               })
           .toList(),
     });
