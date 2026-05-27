@@ -4,7 +4,7 @@ import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { sendVerificationEmail } from "../services/email";
 import { google } from "googleapis";
-import { exchangeServerAuthCode } from "../services/google_calendar";
+import { generateCalendarConnectUrl, handleCalendarCallback } from "../services/google_calendar";
 
 export async function register(ctx: RequestContext): Promise<Response> {
   let body: { email?: string; password?: string; name?: string };
@@ -214,27 +214,13 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
     user = created[0];
   }
 
-  // Exchange server auth code for Google Calendar refresh token
-  if (serverAuthCode) {
-    const tokens = await exchangeServerAuthCode(serverAuthCode);
-    if (tokens && tokens.refresh_token) {
-      await db`
-        INSERT INTO google_calendar_tokens (user_id, access_token, refresh_token, expiry)
-        VALUES (${user.id}, ${tokens.access_token}, ${tokens.refresh_token}, ${tokens.expiry})
-        ON CONFLICT (user_id) DO UPDATE SET
-          access_token = ${tokens.access_token},
-          refresh_token = ${tokens.refresh_token},
-          expiry = ${tokens.expiry}
-      `;
-    }
-  }
-
+  const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${user.id}`;
   const token = await signToken({ sub: user.id as string, email: user.email as string, name: user.name as string });
   return json({
     token,
     user: {
       id: user.id, email: user.email, name: user.name,
-      color: user.color, email_verified: true, has_google_calendar: true,
+      color: user.color, email_verified: true, has_google_calendar: gcal.length > 0,
     },
   }, isNew ? 201 : 200);
 }
@@ -245,7 +231,60 @@ export async function deleteUser(ctx: RequestContext): Promise<Response> {
   return json({ message: "Account deleted" });
 }
 
-// ── HTML pages for browser-based verification ─────────────────────────────────
+export async function connectGoogleCalendar(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  try {
+    const url = generateCalendarConnectUrl(userId);
+    return json({ url });
+  } catch {
+    return error("Google Calendar not configured", 503);
+  }
+}
+
+export async function googleCalendarCallback(ctx: RequestContext): Promise<Response> {
+  const urlObj = new URL(ctx.req.url);
+  const code = urlObj.searchParams.get("code");
+  const state = urlObj.searchParams.get("state");
+  const errParam = urlObj.searchParams.get("error");
+
+  if (errParam || !code || !state) {
+    return new Response(calendarErrorPage(errParam ?? "Missing parameters"), {
+      status: 400, headers: { "Content-Type": "text/html" },
+    });
+  }
+
+  const success = await handleCalendarCallback(code, state);
+  if (!success) {
+    return new Response(calendarErrorPage("Invalid or expired session. Please try again in the app."), {
+      status: 400, headers: { "Content-Type": "text/html" },
+    });
+  }
+  return new Response(calendarSuccessPage(), {
+    status: 200, headers: { "Content-Type": "text/html" },
+  });
+}
+
+// ── HTML pages ────────────────────────────────────────────────────────────────
+
+function calendarSuccessPage(): string {
+  return page(
+    "Google Calendar connected ✅",
+    "#2ECC71",
+    `<h1 style="color:#1F1B16;font-size:26px;font-weight:800;margin:0 0 8px;">Calendar connected!</h1>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">Your Google Calendar is now linked to SharedCal. Return to the app and tap <strong>Done</strong>.</p>
+     <span style="font-size:64px;">🎉</span>`,
+  );
+}
+
+function calendarErrorPage(message: string): string {
+  return page(
+    "Connection failed",
+    "#E85535",
+    `<h1 style="color:#1F1B16;font-size:24px;font-weight:800;margin:0 0 8px;">Connection failed</h1>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">${message}</p>
+     <span style="font-size:64px;">😕</span>`,
+  );
+}
 
 function successPage(name: string): string {
   return page(

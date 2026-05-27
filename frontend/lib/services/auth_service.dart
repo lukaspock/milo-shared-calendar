@@ -60,9 +60,6 @@ class AuthService {
   }
 
   Future<({String token, AppUser user})> signInWithGoogle() async {
-    // Disconnect first so Google always issues a fresh serverAuthCode.
-    // Without this, repeat sign-ins return serverAuthCode=null (consent cached).
-    try { await _googleSignIn.disconnect(); } catch (_) {}
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) throw Exception('Google sign-in cancelled');
 
@@ -70,16 +67,17 @@ class AuthService {
     final idToken = googleAuth.idToken;
     if (idToken == null) throw Exception('No ID token from Google');
 
-    final res = await _api.post('/auth/google', data: {
-      'idToken': idToken,
-      if (googleUser.serverAuthCode != null)
-        'serverAuthCode': googleUser.serverAuthCode,
-    });
+    final res = await _api.post('/auth/google', data: {'idToken': idToken});
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
     final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
     await _saveSession(token, user);
     return (token: token, user: user);
+  }
+
+  Future<String> getGoogleCalendarConnectUrl() async {
+    final res = await _api.post('/auth/google-calendar/connect');
+    return (res.data as Map<String, dynamic>)['url'] as String;
   }
 
   Future<void> _saveSession(String token, AppUser user) async {

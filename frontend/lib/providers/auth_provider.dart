@@ -107,6 +107,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<String?> getGoogleCalendarConnectUrl() async {
+    try {
+      return await _authService.getGoogleCalendarConnectUrl();
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _parseError(Object e) {
     if (e is DioException) {
       final status = e.response?.statusCode;
