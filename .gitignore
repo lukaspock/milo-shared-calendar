@@ -20,6 +20,15 @@ frontend/pubspec.lock
 frontend/macos/Pods/
 frontend/ios/Pods/
 
+# ── Flutter generated / ephemeral (never commit) ──────────────────────────────
+frontend/ios/Flutter/Generated.xcconfig
+frontend/ios/Flutter/flutter_export_environment.sh
+frontend/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+frontend/ios/Runner.xcworkspace/
+frontend/macos/Flutter/ephemeral/
+frontend/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+frontend/macos/Runner.xcworkspace/
+
 # ── IDE ───────────────────────────────────────────────────────────────────────
 .idea/
 .vscode/

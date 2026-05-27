@@ -60,6 +60,9 @@ class AuthService {
   }
 
   Future<({String token, AppUser user})> signInWithGoogle() async {
+    // Disconnect first so Google always issues a fresh serverAuthCode.
+    // Without this, repeat sign-ins return serverAuthCode=null (consent cached).
+    try { await _googleSignIn.disconnect(); } catch (_) {}
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) throw Exception('Google sign-in cancelled');
 
