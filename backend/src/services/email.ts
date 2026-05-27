@@ -1,21 +1,33 @@
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM = process.env.FROM_EMAIL ?? "onboarding@resend.dev";
+import nodemailer from "nodemailer";
+
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? 587);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const FROM = process.env.FROM_EMAIL ?? "SharedCal <noreply@sharedcal.app>";
 const APP_URL = process.env.APP_URL ?? "https://flutterprojectvibecoding.onrender.com";
 
+function createTransporter() {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+}
+
 async function send(to: string, subject: string, html: string): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.log(`[email] no RESEND_API_KEY — skipping "${subject}" to ${to}`);
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log(`[email] no SMTP config — skipping "${subject}" to ${to}`);
     return;
   }
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from: FROM, to, subject, html }),
-  });
-  if (!res.ok) console.error("[email] send failed:", await res.text());
+  try {
+    await transporter.sendMail({ from: FROM, to, subject, html });
+  } catch (err) {
+    console.error("[email] send failed:", err);
+  }
 }
 
 function base(content: string): string {
