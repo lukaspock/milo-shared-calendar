@@ -68,6 +68,13 @@ class AuthService {
     await prefs.remove(_userKey);
   }
 
+  Future<void> deleteAccount() async {
+    await _api.delete('/users/me');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+  }
+
   // Simple CSV encoding to avoid adding json_serializable dep
   String _encodeUser(AppUser u) => '${u.id}|${u.email}|${u.name}|${u.color}';
 

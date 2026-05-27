@@ -68,6 +68,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  Future<bool> deleteAccount() async {
+    try {
+      await _authService.deleteAccount();
+      state = const AuthState(status: AuthStatus.unauthenticated);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String _parseError(Object e) {
     if (e is DioException) {
       final status = e.response?.statusCode;

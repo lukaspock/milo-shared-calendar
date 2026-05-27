@@ -163,3 +163,34 @@ export async function removeMember(ctx: RequestContext): Promise<Response> {
 
   return json({ message: "Member removed" });
 }
+
+export async function deleteCalendar(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const membership = await db`
+    SELECT role FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}
+  `;
+  if (membership.length === 0 || membership[0].role !== 'owner') {
+    return error("Only the calendar owner can delete this calendar", 403);
+  }
+
+  await db`DELETE FROM calendars WHERE id = ${id}`;
+  return json({ message: "Calendar deleted" });
+}
+
+export async function leaveCalendar(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const membership = await db`
+    SELECT role FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 404);
+  if (membership[0].role === 'owner') {
+    return error("Calendar owner cannot leave. Delete the calendar instead.", 400);
+  }
+
+  await db`DELETE FROM calendar_members WHERE calendar_id = ${id} AND user_id = ${userId}`;
+  return json({ message: "Left calendar" });
+}
