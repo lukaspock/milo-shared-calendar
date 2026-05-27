@@ -199,6 +199,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     isLoading: isLoading,
                   ),
 
+                  const SizedBox(height: 16),
+
+                  Row(children: [
+                    Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('or', style: GoogleFonts.plusJakartaSans(
+                        color: AppTheme.inkMuted, fontSize: 13, fontWeight: FontWeight.w500,
+                      )),
+                    ),
+                    Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () => ref.read(authProvider.notifier).googleSignIn(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: AppTheme.line, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                        backgroundColor: AppTheme.surface,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('G', style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18, fontWeight: FontWeight.w800,
+                            foreground: Paint()..shader = const LinearGradient(
+                              colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
+                            ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
+                          )),
+                          const SizedBox(width: 10),
+                          Text('Continue with Google', style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.ink,
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 28),
 
                   Center(

@@ -35,10 +35,15 @@ backend/
 ## API routes
 
 ### Auth
-| Method | Path               | Description              |
-|--------|--------------------|--------------------------|
-| POST   | `/auth/register`   | Create account           |
-| POST   | `/auth/login`      | Get JWT token            |
+| Method | Path                       | Description                                        |
+|--------|----------------------------|----------------------------------------------------|
+| POST   | `/auth/register`           | Create account (email+password)                    |
+| POST   | `/auth/login`              | Get JWT token (email+password)                     |
+| POST   | `/auth/google`             | Sign in / register via Google ID token             |
+| GET    | `/auth/verify/:token`      | Verify email address (browser link)                |
+| POST   | `/auth/resend-verification`| Resend verification email                          |
+| GET    | `/auth/me`                 | Get current user info                              |
+| DELETE | `/auth/me`                 | Delete account                                     |
 
 ### Calendars (all require JWT)
 | Method | Path                                | Description                      |
@@ -136,6 +141,23 @@ bun run index.ts      # or: bun --hot index.ts for hot reload
 ```
 
 Requires `DATABASE_URL` in `backend/.env`. See root `CLAUDE.md` for the Render connection strings.
+
+## Google Calendar integration (backend)
+
+Users who signed in via Google have a row in `google_calendar_tokens`. All event mutations (create/update/delete) call `syncToGoogleCalendar(userId, ...)` from `src/services/google_calendar.ts` — fire-and-forget, errors are logged but never block the response.
+
+`google_calendar_tokens` schema:
+```sql
+CREATE TABLE google_calendar_tokens (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  access_token TEXT,
+  refresh_token TEXT NOT NULL,
+  expiry TIMESTAMPTZ,
+  google_calendar_id TEXT DEFAULT 'primary'
+);
+```
+
+`POST /auth/google` body: `{ idToken: string, serverAuthCode: string }`. The ID token identifies the user; the server auth code is exchanged for refresh+access tokens.
 
 ## Known gotchas
 

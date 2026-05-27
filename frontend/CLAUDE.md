@@ -13,6 +13,7 @@ Flutter app targeting iOS, Android, and macOS. State management via Riverpod, na
 | `shared_preferences`  | Persist JWT token + user data across restarts     |
 | `google_fonts`        | Plus Jakarta Sans used throughout                 |
 | `intl`                | Date formatting                                   |
+| `google_sign_in`      | Native Google OAuth2 — Sign in with Google + Calendar scope |
 
 ## Project layout
 
@@ -147,6 +148,21 @@ flutter run -d macos                       # macOS desktop target
 flutter analyze --no-pub                   # static analysis
 ipconfig getifaddr en0                     # get local IP for physical device testing
 ```
+
+## Google Sign-In (frontend)
+
+`google_sign_in` is configured with two scopes: `email` and `https://www.googleapis.com/auth/calendar`. On sign-in the package returns both an `idToken` (to identify the user to our backend) and a `serverAuthCode` (to exchange for a refresh token on the backend).
+
+```dart
+final googleUser = await GoogleSignIn(
+  scopes: ['email', 'https://www.googleapis.com/auth/calendar'],
+  serverClientId: '<GOOGLE_CLIENT_ID>',
+).signIn();
+final auth = await googleUser!.authentication;
+// Send auth.idToken + googleUser.serverAuthCode to POST /auth/google
+```
+
+After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to email/password login. The `AppUser` model has a `hasGoogleCalendar: bool` field (true if the user signed in via Google) which controls whether Calendar-related UI is shown.
 
 ## Known gotchas
 

@@ -63,6 +63,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> googleSignIn() async {
+    state = state.copyWith(status: AuthStatus.loading, error: null);
+    try {
+      final result = await _authService.signInWithGoogle();
+      state = AuthState(status: AuthStatus.authenticated, user: result.user);
+    } catch (e) {
+      state = AuthState(
+        status: AuthStatus.unauthenticated,
+        error: e.toString().contains('cancelled') ? null : _parseError(e),
+      );
+    }
+  }
+
   Future<void> logout() async {
     await _authService.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
