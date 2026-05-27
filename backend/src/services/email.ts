@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { google } from "googleapis";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -6,28 +6,24 @@ const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 const FROM = process.env.FROM_EMAIL ?? "lukas1.pock@gmail.com";
 const APP_URL = process.env.APP_URL ?? "https://flutterprojectvibecoding.onrender.com";
 
-function createTransporter() {
+function getGmailClient() {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) return null;
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: FROM,
-      clientId: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-      refreshToken: GOOGLE_REFRESH_TOKEN,
-    },
-  });
+  const auth = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+  auth.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+  return google.gmail({ version: "v1", auth });
 }
 
 async function send(to: string, subject: string, html: string): Promise<void> {
-  const transporter = createTransporter();
-  if (!transporter) {
+  const gmail = getGmailClient();
+  if (!gmail) {
     console.log(`[email] no Google OAuth2 config — skipping "${subject}" to ${to}`);
     return;
   }
+  const raw = Buffer.from(
+    `From: SharedCal <${FROM}>\r\nTo: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`
+  ).toString("base64url");
   try {
-    await transporter.sendMail({ from: FROM, to, subject, html });
+    await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
     console.log(`[email] sent "${subject}" to ${to}`);
   } catch (err) {
     console.error("[email] send failed:", err);
