@@ -44,9 +44,11 @@ backend/
 | POST   | `/auth/login`                 | —    | Get JWT token, returns `email_verified`          |
 | POST   | `/auth/google`                | —    | Sign in / register via Google ID token           |
 | GET    | `/auth/verify/:token`         | —    | Verify email via link — returns HTML page        |
-| POST   | `/auth/resend-verification`   | JWT  | Regenerate + resend verification email           |
-| GET    | `/auth/me`                    | JWT  | Return current user (fresh from DB)              |
-| DELETE | `/users/me`                   | JWT  | Delete own account                               |
+| POST   | `/auth/resend-verification`        | JWT  | Regenerate + resend verification email           |
+| GET    | `/auth/me`                         | JWT  | Return current user (fresh from DB)              |
+| DELETE | `/users/me`                        | JWT  | Delete own account                               |
+| POST   | `/auth/google-calendar/connect`    | JWT  | Generate Google OAuth URL for Calendar access    |
+| GET    | `/auth/google-calendar/callback`   | —    | OAuth callback — stores tokens, returns HTML page|
 
 ### Calendars (all require JWT)
 | Method | Path                                | Description                      |
@@ -164,9 +166,14 @@ Requires `DATABASE_URL` in `backend/.env`. See root `CLAUDE.md` for the Render c
 
 ## Google Calendar integration (backend)
 
-Users who signed in via Google have a row in `google_calendar_tokens`. All event mutations (create/update/delete) call sync functions from `src/services/google_calendar.ts` — fire-and-forget, errors are logged but never block the response.
+Any user can connect Google Calendar via the web OAuth flow. All event mutations (create/update/delete) call sync functions from `src/services/google_calendar.ts` — fire-and-forget, errors are logged but never block the response.
 
-`POST /auth/google` body: `{ idToken: string, serverAuthCode?: string }`. The ID token identifies the user; the server auth code is exchanged for refresh+access tokens stored in `google_calendar_tokens`.
+**Web OAuth flow (`src/services/google_calendar.ts`):**
+- `generateCalendarConnectUrl(userId)` — creates a UUID state, stores it in `pendingCalendarConnects` (in-memory, 15 min TTL), returns an OAuth URL with `access_type=offline&prompt=consent`. Requires `APP_URL` env var for the redirect URI.
+- `handleCalendarCallback(code, state)` — validates state from the in-memory store, exchanges code for tokens, upserts into `google_calendar_tokens`.
+- A `setInterval` cleans up expired pending states every 60 s.
+
+`POST /auth/google` body: `{ idToken: string }`. The ID token identifies/creates the user only; Calendar tokens are stored separately via the web OAuth flow.
 
 ## Known gotchas
 

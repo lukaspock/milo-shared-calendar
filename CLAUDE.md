@@ -59,18 +59,19 @@ Phone and Mac must be on the same network for local dev. Check macOS Firewall if
 
 Backend config is in `backend/.env` for local dev and overridden by `docker-compose.yml` for containers.
 
-| Variable         | Local value                                          | docker-compose value                             |
-|------------------|------------------------------------------------------|--------------------------------------------------|
-| `DATABASE_URL`   | Render external postgres URL                         | `postgres://postgres:postgres@db:5432/sharedcal` |
-| `JWT_SECRET`     | `change_me_in_production`                            | `change_me_in_production`                        |
-| `PORT`           | `3000`                                               | `3000`                                           |
-| `RESEND_API_KEY` | your Resend API key                                  | `your_resend_api_key_here` (placeholder)         |
-| `APP_URL`        | `http://localhost:3000`                              | `http://localhost:3000`                          |
-| `FROM_EMAIL`     | omit — defaults to `onboarding@resend.dev`           | omit                                             |
+| Variable                | Local value                                          | docker-compose value                             |
+|-------------------------|------------------------------------------------------|--------------------------------------------------|
+| `DATABASE_URL`          | Render external postgres URL                         | `postgres://postgres:postgres@db:5432/sharedcal` |
+| `JWT_SECRET`            | `change_me_in_production`                            | `change_me_in_production`                        |
+| `PORT`                  | `3000`                                               | `3000`                                           |
+| `APP_URL`               | `http://localhost:3000`                              | `http://localhost:3000`                          |
+| `GOOGLE_CLIENT_ID`      | Web OAuth client ID from Google Cloud Console        | same                                             |
+| `GOOGLE_CLIENT_SECRET`  | Web OAuth client secret                              | same                                             |
+| `GOOGLE_REFRESH_TOKEN`  | Refresh token for the Gmail sending account          | same                                             |
+| `GOOGLE_IOS_CLIENT_ID`  | iOS OAuth client ID (for verifying iOS ID tokens)    | same                                             |
+| `FROM_EMAIL`            | omit — defaults to `lukaspock.dev@gmail.com`         | omit                                             |
 
 Keep `JWT_SECRET` identical between `.env` and docker-compose — a mismatch causes silent 401s.
-
-**Resend email:** Without a verified domain, `FROM_EMAIL` must be omitted or set to `onboarding@resend.dev`. Setting it to a Gmail or unverified domain causes a 403 from Resend. The `RESEND_API_KEY` in `docker-compose.yml` is a placeholder — set the real key only in `backend/.env` (never commit it).
 
 ## Resetting the database
 
@@ -109,28 +110,37 @@ The production Render DB was migrated manually via psql — those tables already
 - **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
 - **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
 - **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`.
-- **Google Calendar sync** _(Google-signed-in users only)_: Events are mirrored to the user's personal Google Calendar automatically.
+- **Google Calendar sync**: Events are mirrored to the user's personal Google Calendar automatically. Available to all users via a web OAuth connect flow.
 
 ## Google Sign-In & Calendar integration
 
-Users can authenticate via email+password or via Google Sign-In:
+Users can authenticate via email+password or via Google Sign-In. Either way, they can connect Google Calendar:
 
 | Auth method | Google Calendar sync |
 |-------------|---------------------|
-| Email + password | ❌ Not available |
-| Sign in with Google | ✅ Automatic |
+| Email + password | ✅ Via "Connect Google Calendar" banner in app |
+| Sign in with Google | ✅ Automatic on first sign-in |
 
-**Flow:**
+**Google Sign-In flow:**
 1. User taps "Sign in with Google" in the Flutter app
-2. `google_sign_in` package shows the native Google consent screen (requests Calendar scope)
-3. Flutter sends the Google ID token + server auth code to `POST /auth/google`
-4. Backend verifies the ID token, creates or finds the user, stores refresh token in `google_calendar_tokens`
+2. `google_sign_in` package shows the native Google consent screen
+3. Flutter sends the Google ID token to `POST /auth/google`
+4. Backend verifies the ID token, creates or finds the user
 5. Returns a SharedCal JWT — app behaves identically from here
-6. Events created/updated/deleted call Google Calendar API in the background (fire-and-forget)
+
+**Web OAuth connect flow (all users):**
+1. User taps "Connect Google Calendar" banner in the app
+2. App calls `POST /auth/google-calendar/connect` → gets an OAuth URL with `access_type=offline&prompt=consent`
+3. App opens the URL in the device browser via `url_launcher`
+4. User grants Calendar access — Google redirects to `GET /auth/google-calendar/callback`
+5. Backend validates state, exchanges code for tokens, stores in `google_calendar_tokens`
+6. App returns to foreground → `WidgetsBindingObserver` triggers `refreshUser()` → banner auto-dismisses
+7. All future events created/updated/deleted are mirrored to Google Calendar (fire-and-forget)
 
 **Google Cloud Project:** `SharedCal` — same project used for Gmail email sending.
 Enabled APIs: Gmail API, Google Calendar API v3.
 OAuth client: Web application type (Client ID `583283682704-...`).
+Callback URL must be registered: `https://flutterprojectvibecoding.onrender.com/auth/google-calendar/callback`.
 
 ## Known gotchas
 
@@ -139,5 +149,5 @@ OAuth client: Web application type (Client ID `583283682704-...`).
 - Render Free Tier cold starts take 30–60 s. Always test performance with `flutter run --release`.
 - `.claude/worktrees/` is in `.gitignore` — these are temporary Claude Code working directories.
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
-- Resend 403 "domain not verified": happens when `FROM_EMAIL` is set to a Gmail or unverified domain. Remove `FROM_EMAIL` to fall back to `onboarding@resend.dev`.
+- Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).

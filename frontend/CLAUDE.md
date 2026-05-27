@@ -13,7 +13,8 @@ Flutter app targeting iOS, Android, and macOS. State management via Riverpod, na
 | `shared_preferences`  | Persist JWT token + user data across restarts     |
 | `google_fonts`        | Plus Jakarta Sans used throughout                 |
 | `intl`                | Date formatting                                   |
-| `google_sign_in`      | Native Google OAuth2 — Sign in with Google + Calendar scope |
+| `google_sign_in`      | Native Google OAuth2 — Sign in with Google                  |
+| `url_launcher`        | Open browser for Google Calendar OAuth web flow             |
 
 ## Project layout
 
@@ -153,8 +154,14 @@ ipconfig getifaddr en0                     # get local IP for physical device te
 
 `home_screen.dart` shows a yellow banner when `user.emailVerified == false`:
 - **"Resend email"** button — calls `authProvider.notifier.resendVerification()`
-- **"I've verified"** button — triggers a manual `refreshUser()` call
 - `_VerificationPoller` (zero-size widget) auto-polls `GET /auth/me` every 5 s and updates `AuthState`. Disposed automatically when `emailVerified` becomes `true`.
+
+## Google Calendar connect UI
+
+`home_screen.dart` shows a blue "Connect Google Calendar" banner when `!user.hasGoogleCalendar`:
+- **"Connect"** button — calls `authProvider.notifier.getGoogleCalendarConnectUrl()`, then opens the URL with `url_launcher`.
+- **"Cancel"** button — dismisses the banner locally (state stays in provider).
+- `_CalendarResumeRefresher` (zero-size widget using `WidgetsBindingObserver`) calls `refreshUser()` on every `AppLifecycleState.resumed` event. When the user returns from the browser after granting access, `hasGoogleCalendar` becomes `true` and the banner disappears automatically.
 
 ## Delete / leave calendar
 
@@ -167,9 +174,11 @@ Account deletion: `person_off_outlined` button in the home screen header → cal
 
 ## Google Sign-In (frontend)
 
-`google_sign_in` is configured with two scopes: `email` and `https://www.googleapis.com/auth/calendar`. The `serverClientId` is the Web Application client ID from Google Cloud Console — this enables the `serverAuthCode` that the backend uses to obtain a refresh token for Calendar sync.
+`google_sign_in` is configured with `email` scope only. The `serverClientId` is the Web Application client ID from Google Cloud Console.
 
-After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to email/password login. `AppUser.hasGoogleCalendar` is `true` for Google-authenticated users.
+After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to email/password login. `AppUser.hasGoogleCalendar` reflects whether the user has connected Google Calendar (checked via `GET /auth/me`).
+
+Google Calendar connection happens separately via the web OAuth flow — see the "Google Calendar connect UI" section above.
 
 **iOS/macOS setup required:** Both `ios/Runner/Info.plist` and `macos/Runner/Info.plist` contain a `CFBundleURLSchemes` entry with `REPLACE_WITH_REVERSED_CLIENT_ID`. Create an iOS OAuth client in Google Cloud Console (bundle ID: `com.sharedcal.sharedCal`) and replace this placeholder with the REVERSED_CLIENT_ID before building.
 
@@ -181,3 +190,4 @@ After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to
 - Multi-day events are displayed on every spanned day by iterating from `startDate` to `endDate` in `calendar_screen.dart`. Don't replace this with a single-day key lookup.
 - `extra:` in GoRouter is not type-safe — always null-check before casting (`widget.extra is EventPoll ? widget.extra as EventPoll : null`).
 - `AppUser` is encoded as pipe-separated string in SharedPreferences — `_decodeUser` is backwards-compatible (defaults `emailVerified` to `false` if field missing).
+- All `DateTime` values sent to the backend must use `.toUtc().toIso8601String()` — local times cause events to be stored with the wrong offset. Values received from the API must use `.toLocal()` after `DateTime.parse()` so they display correctly in the user's timezone.
