@@ -2,6 +2,7 @@ import db from "../db/client";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
+import { sendPollConfirmedNotification } from "../services/email";
 
 async function assemblePoll(poll: Record<string, unknown>) {
   const options = await db`
@@ -235,6 +236,24 @@ export async function confirmPoll(ctx: RequestContext): Promise<Response> {
     poll_id: id,
     calendar_id: poll.calendar_id,
   });
+
+  // Fire-and-forget email to all calendar members
+  (async () => {
+    const members = await db`
+      SELECT u.email FROM users u
+      INNER JOIN calendar_members cm ON cm.user_id = u.id
+      WHERE cm.calendar_id = ${poll.calendar_id} AND u.email_verified = true
+    `;
+    const cal = await db`SELECT name FROM calendars WHERE id = ${poll.calendar_id}`;
+    if (members.length > 0 && cal.length > 0) {
+      await sendPollConfirmedNotification({
+        memberEmails: members.map((m: Record<string, unknown>) => m.email as string),
+        eventTitle: event.title as string,
+        calendarName: cal[0].name as string,
+        startTime: new Date(event.start_time as string),
+      });
+    }
+  })().catch(console.error);
 
   return json({ poll: full, event });
 }

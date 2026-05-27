@@ -75,11 +75,29 @@ class AuthService {
     await prefs.remove(_userKey);
   }
 
+  Future<AppUser> refreshUser() async {
+    final res = await _api.get('/auth/me');
+    final user = AppUser.fromJson(res.data as Map<String, dynamic>);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, _encodeUser(user));
+    return user;
+  }
+
+  Future<void> resendVerification() async {
+    await _api.post('/auth/resend-verification');
+  }
+
   // Simple CSV encoding to avoid adding json_serializable dep
-  String _encodeUser(AppUser u) => '${u.id}|${u.email}|${u.name}|${u.color}';
+  String _encodeUser(AppUser u) => '${u.id}|${u.email}|${u.name}|${u.color}|${u.emailVerified}';
 
   AppUser _decodeUser(String raw) {
     final parts = raw.split('|');
-    return AppUser(id: parts[0], email: parts[1], name: parts[2], color: parts[3]);
+    return AppUser(
+      id: parts[0],
+      email: parts[1],
+      name: parts[2],
+      color: parts[3],
+      emailVerified: parts.length > 4 ? parts[4] == 'true' : false,
+    );
   }
 }

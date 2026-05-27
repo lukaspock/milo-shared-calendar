@@ -20,6 +20,8 @@ services:
       DATABASE_URL: postgres://postgres:postgres@db:5432/sharedcal
       PORT: 3000
       JWT_SECRET: change_me_in_production
+      RESEND_API_KEY: your_resend_api_key_here
+      APP_URL: http://localhost:3000
     ports:
       - "3000:3000"
     depends_on:
