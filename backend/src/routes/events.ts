@@ -2,6 +2,7 @@ import db from "../db/client";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
+import { sendEventNotification } from "../services/email";
 
 export async function createEvent(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
@@ -43,7 +44,29 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     RETURNING *
   `;
 
-  return json(events[0], 201);
+  const event = events[0];
+
+  // Fire-and-forget email to all other calendar members
+  (async () => {
+    const creator = await db`SELECT name FROM users WHERE id = ${userId}`;
+    const members = await db`
+      SELECT u.email FROM users u
+      INNER JOIN calendar_members cm ON cm.user_id = u.id
+      WHERE cm.calendar_id = ${calendar_id} AND u.id != ${userId} AND u.email_verified = true
+    `;
+    const cal = await db`SELECT name FROM calendars WHERE id = ${calendar_id}`;
+    if (members.length > 0 && cal.length > 0) {
+      await sendEventNotification({
+        memberEmails: members.map((m: Record<string, unknown>) => m.email as string),
+        eventTitle: event.title as string,
+        calendarName: cal[0].name as string,
+        startTime: new Date(event.start_time as string),
+        creatorName: creator[0]?.name as string ?? "Someone",
+      });
+    }
+  })().catch(console.error);
+
+  return json(event, 201);
 }
 
 export async function updateEvent(ctx: RequestContext): Promise<Response> {

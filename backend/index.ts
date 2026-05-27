@@ -1,6 +1,7 @@
 import { Router } from "./src/router";
 import { authMiddleware } from "./src/middleware/auth.middleware";
-import { register, login, deleteUser } from "./src/routes/auth";
+import { register, login, deleteUser, verifyEmail, resendVerification, getMe } from "./src/routes/auth";
+import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
@@ -11,6 +12,9 @@ const router = new Router();
 // --- Auth ---
 router.post("/auth/register", register);
 router.post("/auth/login", login);
+router.get("/auth/verify/:token", verifyEmail);
+router.post("/auth/resend-verification", resendVerification, [authMiddleware]);
+router.get("/auth/me", getMe, [authMiddleware]);
 router.delete("/users/me", deleteUser, [authMiddleware]);
 
 // --- Calendars (protected) ---
@@ -38,6 +42,9 @@ router.post("/polls/:id/confirm", confirmPoll, [authMiddleware]);
 router.delete("/polls/:id", deletePoll, [authMiddleware]);
 
 const PORT = Number(process.env.PORT ?? 3000);
+
+// Run DB migrations (idempotent)
+await runMigrations();
 
 // Start the NOTIFY listener for real-time sync
 await startNotifyListener();
