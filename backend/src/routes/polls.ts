@@ -3,6 +3,7 @@ import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
 import { sendPollConfirmedNotification } from "../services/email";
+import { syncEventCreated } from "../services/google_calendar";
 
 async function assemblePoll(poll: Record<string, unknown>) {
   const options = await db`
@@ -237,7 +238,16 @@ export async function confirmPoll(ctx: RequestContext): Promise<Response> {
     calendar_id: poll.calendar_id,
   });
 
-  // Fire-and-forget email to all calendar members
+  // Fire-and-forget Google Calendar sync + email
+  syncEventCreated({
+    calendarId: poll.calendar_id as string,
+    eventId: event.id as string,
+    title: event.title as string,
+    description: event.description as string | null,
+    startTime: new Date(event.start_time as string),
+    endTime: new Date(event.end_time as string),
+  }).catch(console.error);
+
   (async () => {
     const members = await db`
       SELECT u.email FROM users u
