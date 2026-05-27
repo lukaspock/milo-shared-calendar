@@ -1,3 +1,4 @@
+/Users/lukaspock/.pub-cache/hosted/pub.dev/archive-4.0.9/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/args-2.7.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/async-2.13.1/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/async-2.13.1/lib/async.dart
@@ -54,6 +55,8 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/characters-1.4.1/lib/src/grapheme_clusters/breaks.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/characters-1.4.1/lib/src/grapheme_clusters/constants.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/characters-1.4.1/lib/src/grapheme_clusters/table.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/checked_yaml-2.0.4/LICENSE
+/Users/lukaspock/.pub-cache/hosted/pub.dev/cli_util-0.4.2/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/clock-1.1.2/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/clock-1.1.2/lib/clock.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/clock-1.1.2/lib/src/clock.dart
@@ -166,6 +169,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/file-7.0.1/lib/src/interface/file_system_entity.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/file-7.0.1/lib/src/interface/link.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/file-7.0.1/lib/src/io.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/flutter_launcher_icons-0.14.4/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/flutter_lints-6.0.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/lib/flutter_riverpod.dart
@@ -279,6 +283,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/http_parser-4.1.2/lib/src/media_type.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/http_parser-4.1.2/lib/src/scan.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/http_parser-4.1.2/lib/src/utils.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/image-4.8.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/intl-0.20.2/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/intl-0.20.2/lib/date_symbols.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/intl-0.20.2/lib/intl.dart
@@ -349,6 +354,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/jni_flutter-1.0.1/lib/jni_flutter.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/jni_flutter-1.0.1/lib/src/generated_plugin.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/jni_flutter-1.0.1/lib/src/jni_flutter.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/json_annotation-4.12.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/leak_tracker-11.0.2/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/leak_tracker_flutter_testing-3.0.10/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/leak_tracker_testing-3.0.2/LICENSE
@@ -506,6 +512,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/lib/src/guid.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/lib/src/path_provider_windows_real.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/lib/src/win32_wrappers.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/petitparser-7.0.2/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/platform-3.1.6/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/platform-3.1.6/lib/platform.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/platform-3.1.6/lib/src/interface/local_platform.dart
@@ -513,6 +520,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/platform-3.1.6/lib/src/testing/fake_platform.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/plugin_platform_interface-2.1.8/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/plugin_platform_interface-2.1.8/lib/plugin_platform_interface.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/posix-6.5.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/pub_semver-2.2.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/pub_semver-2.2.0/lib/pub_semver.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/pub_semver-2.2.0/lib/src/patterns.dart
@@ -989,6 +997,7 @@
 /Users/lukaspock/.pub-cache/hosted/pub.dev/win32-5.15.0/lib/win32.dart
 /Users/lukaspock/.pub-cache/hosted/pub.dev/xdg_directories-1.1.0/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/xdg_directories-1.1.0/lib/xdg_directories.dart
+/Users/lukaspock/.pub-cache/hosted/pub.dev/xml-6.6.1/LICENSE
 /Users/lukaspock/.pub-cache/hosted/pub.dev/yaml-3.1.3/LICENSE
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/app.dart
 /Users/lukaspock/Documents/Schule 4. Klasse/WMC/flutterprojectvibecoding/frontend/lib/main.dart
