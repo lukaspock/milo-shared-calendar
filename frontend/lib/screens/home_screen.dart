@@ -148,21 +148,13 @@ class HomeScreen extends ConsumerWidget {
                               ));
                             }
                           },
-                          onRefresh: () async {
-                            await ref.read(authProvider.notifier).refreshUser();
-                            if (context.mounted &&
-                                ref.read(authProvider).user?.emailVerified == true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Email verified!')),
-                              );
-                            }
-                          },
                         ),
                       ),
                     ),
 
                   // ── Google Calendar connect banner ────────────────────────
-                  if (user != null && !user.hasGoogleCalendar)
+                  if (user != null && !user.hasGoogleCalendar) ...[
+                    const SliverToBoxAdapter(child: _CalendarResumeRefresher()),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -186,10 +178,11 @@ class HomeScreen extends ConsumerWidget {
                               );
                             }
                           },
-                          onDone: () => ref.read(authProvider.notifier).refreshUser(),
+                          onCancel: () => ref.read(authProvider.notifier).refreshUser(),
                         ),
                       ),
                     ),
+                  ],
 
                   // ── Up Next card ──────────────────────────────────────────
                   SliverToBoxAdapter(
@@ -862,9 +855,8 @@ class _VerificationPollerState extends ConsumerState<_VerificationPoller> {
 // ── Email verification banner ─────────────────────────────────────────────────
 
 class _VerificationBanner extends StatelessWidget {
-  const _VerificationBanner({required this.onResend, required this.onRefresh});
+  const _VerificationBanner({required this.onResend});
   final VoidCallback onResend;
-  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -909,19 +901,6 @@ class _VerificationBanner extends StatelessWidget {
                           color: const Color(0xFFE5B130),
                           decoration: TextDecoration.underline,
                           decorationColor: const Color(0xFFE5B130),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: onRefresh,
-                      child: Text(
-                        "I've verified",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: AppTheme.inkSoft,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppTheme.inkSoft,
                         ),
                       ),
                     ),
@@ -1324,11 +1303,44 @@ class _JoinCalendarSheet extends StatelessWidget {
   }
 }
 
+// Invisible widget — listens for app resume and refreshes user to detect Calendar connection
+class _CalendarResumeRefresher extends ConsumerStatefulWidget {
+  const _CalendarResumeRefresher();
+
+  @override
+  ConsumerState<_CalendarResumeRefresher> createState() => _CalendarResumeRefresherState();
+}
+
+class _CalendarResumeRefresherState extends ConsumerState<_CalendarResumeRefresher>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(authProvider.notifier).refreshUser();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
 class _GoogleCalendarBanner extends StatelessWidget {
   final VoidCallback onConnect;
-  final VoidCallback onDone;
+  final VoidCallback onCancel;
 
-  const _GoogleCalendarBanner({required this.onConnect, required this.onDone});
+  const _GoogleCalendarBanner({required this.onConnect, required this.onCancel});
 
   @override
   Widget build(BuildContext context) {
@@ -1390,7 +1402,7 @@ class _GoogleCalendarBanner extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           GestureDetector(
-            onTap: onDone,
+            onTap: onCancel,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
@@ -1399,7 +1411,7 @@ class _GoogleCalendarBanner extends StatelessWidget {
                 border: Border.all(color: AppTheme.line, width: 1.5),
               ),
               child: Text(
-                'Done',
+                'Cancel',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.inkSoft,
                 ),
