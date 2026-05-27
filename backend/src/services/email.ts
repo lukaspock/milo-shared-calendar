@@ -1,26 +1,29 @@
 import nodemailer from "nodemailer";
 
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = Number(process.env.SMTP_PORT ?? 587);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const FROM = process.env.FROM_EMAIL ?? "SharedCal <noreply@sharedcal.app>";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+const FROM = process.env.FROM_EMAIL ?? "lukas1.pock@gmail.com";
 const APP_URL = process.env.APP_URL ?? "https://flutterprojectvibecoding.onrender.com";
 
 function createTransporter() {
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) return null;
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: FROM,
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      refreshToken: GOOGLE_REFRESH_TOKEN,
+    },
   });
 }
 
 async function send(to: string, subject: string, html: string): Promise<void> {
   const transporter = createTransporter();
   if (!transporter) {
-    console.log(`[email] no SMTP config — skipping "${subject}" to ${to}`);
+    console.log(`[email] no Google OAuth2 config — skipping "${subject}" to ${to}`);
     return;
   }
   try {
