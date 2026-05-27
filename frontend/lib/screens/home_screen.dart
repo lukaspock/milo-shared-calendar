@@ -126,6 +126,35 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
 
+                  // ── Email verification banner ─────────────────────────────
+                  if (user != null && !user.emailVerified)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                        child: _VerificationBanner(
+                          onResend: () async {
+                            final ok = await ref.read(authProvider.notifier).resendVerification();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(ok
+                                    ? 'Verification email sent!'
+                                    : 'Could not send email. Try again.'),
+                              ));
+                            }
+                          },
+                          onRefresh: () async {
+                            await ref.read(authProvider.notifier).refreshUser();
+                            if (context.mounted &&
+                                ref.read(authProvider).user?.emailVerified == true) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Email verified!')),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
                   // ── Up Next card ──────────────────────────────────────────
                   SliverToBoxAdapter(
                     child: Padding(
@@ -759,6 +788,83 @@ class _PillFAB extends StatelessWidget {
             color: fg,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Email verification banner ─────────────────────────────────────────────────
+
+class _VerificationBanner extends StatelessWidget {
+  const _VerificationBanner({required this.onResend, required this.onRefresh});
+  final VoidCallback onResend;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3CD),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5B130), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('✉️', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Verify your email',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Check your inbox and click the link to verify your address.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12, color: AppTheme.inkSoft,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: onResend,
+                      child: Text(
+                        'Resend email',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: const Color(0xFFE5B130),
+                          decoration: TextDecoration.underline,
+                          decorationColor: const Color(0xFFE5B130),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: onRefresh,
+                      child: Text(
+                        "I've verified",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: AppTheme.inkSoft,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppTheme.inkSoft,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

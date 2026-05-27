@@ -78,6 +78,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> refreshUser() async {
+    try {
+      final user = await _authService.refreshUser();
+      state = state.copyWith(user: user);
+    } catch (_) {}
+  }
+
+  Future<bool> resendVerification() async {
+    try {
+      await _authService.resendVerification();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String _parseError(Object e) {
     if (e is DioException) {
       final status = e.response?.statusCode;
