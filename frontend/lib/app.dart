@@ -3,15 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'screens/create_poll_screen.dart';
 import 'screens/poll_detail_screen.dart';
 import 'screens/onboarding/onboarding_name_email_screen.dart';
-import 'screens/onboarding/onboarding_email_screen.dart';
 import 'screens/onboarding/onboarding_password_screen.dart';
 import 'screens/onboarding/onboarding_verify_screen.dart';
 import 'screens/onboarding/onboarding_calendar_screen.dart';
@@ -23,25 +20,25 @@ final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, _s) => const SplashScreen()),
     GoRoute(path: '/welcome', builder: (_, _s) => const WelcomeScreen()),
-    GoRoute(path: '/login', builder: (_, _s) => const LoginScreen()),
-    GoRoute(path: '/register', builder: (_, _s) => const RegisterScreen()),
+    // Legacy routes redirect to welcome (auth choice is now on /welcome)
+    GoRoute(path: '/login', redirect: (_, __) => '/welcome'),
+    GoRoute(path: '/register', redirect: (_, __) => '/welcome'),
     GoRoute(
       path: '/onboarding',
       redirect: (_, __) => '/onboarding/name',
     ),
-    // Step 1 — name + auth method choice
+    // Step 1 (email path) — name + email
     GoRoute(
         path: '/onboarding/name',
         builder: (_, _s) => const OnboardingNameEmailScreen()),
-    // Keep old path as alias so existing deep-links don't break
+    // Keep old aliases so any stored deep-links don't break
     GoRoute(
         path: '/onboarding/name-email',
         redirect: (_, __) => '/onboarding/name'),
-    // Step 2 (email path) — email address
     GoRoute(
         path: '/onboarding/email',
-        builder: (_, _s) => const OnboardingEmailScreen()),
-    // Step 3 (email path) — password + registers account
+        redirect: (_, __) => '/onboarding/name'),
+    // Step 2 (email path) — password (register or login)
     GoRoute(
         path: '/onboarding/password',
         builder: (_, _s) => const OnboardingPasswordScreen()),

@@ -59,7 +59,7 @@ class AuthService {
     return (token: token, user: user);
   }
 
-  Future<({String token, AppUser user})> signInWithGoogle() async {
+  Future<({String token, AppUser user, bool isNew})> signInWithGoogle() async {
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) throw Exception('Google sign-in cancelled');
 
@@ -71,8 +71,10 @@ class AuthService {
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
     final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    // Backend returns 201 for newly created accounts, 200 for existing logins
+    final isNew = res.statusCode == 201;
     await _saveSession(token, user);
-    return (token: token, user: user);
+    return (token: token, user: user, isNew: isNew);
   }
 
   Future<String> getGoogleCalendarConnectUrl() async {

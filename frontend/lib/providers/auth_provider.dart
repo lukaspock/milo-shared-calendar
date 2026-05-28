@@ -9,14 +9,28 @@ class AuthState {
   final AuthStatus status;
   final AppUser? user;
   final String? error;
+  /// True immediately after a new account is created (Google or email).
+  /// Used to route new users through onboarding instead of straight to /home.
+  final bool isNewUser;
 
-  const AuthState({required this.status, this.user, this.error});
+  const AuthState({
+    required this.status,
+    this.user,
+    this.error,
+    this.isNewUser = false,
+  });
 
-  AuthState copyWith({AuthStatus? status, AppUser? user, String? error}) =>
+  AuthState copyWith({
+    AuthStatus? status,
+    AppUser? user,
+    String? error,
+    bool? isNewUser,
+  }) =>
       AuthState(
         status: status ?? this.status,
         user: user ?? this.user,
         error: error,
+        isNewUser: isNewUser ?? this.isNewUser,
       );
 }
 
@@ -67,12 +81,55 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, error: null);
     try {
       final result = await _authService.signInWithGoogle();
-      state = AuthState(status: AuthStatus.authenticated, user: result.user);
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: result.user,
+        isNewUser: result.isNew,
+      );
     } catch (e) {
       state = AuthState(
         status: AuthStatus.unauthenticated,
         error: e.toString().contains('cancelled') ? null : _parseError(e),
       );
+    }
+  }
+
+  /// Tries to register first; if the email is already taken (409) it falls
+  /// back to login with the same credentials.  Sets [isNewUser] accordingly.
+  Future<void> loginOrRegister(
+      String email, String password, String name) async {
+    state = state.copyWith(status: AuthStatus.loading, error: null);
+    try {
+      final result = await _authService.register(
+          email: email, password: password, name: name);
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: result.user,
+        isNewUser: true,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        // Account already exists — log in instead
+        try {
+          final result =
+              await _authService.login(email: email, password: password);
+          state = AuthState(
+            status: AuthStatus.authenticated,
+            user: result.user,
+            isNewUser: false,
+          );
+        } catch (loginErr) {
+          state = AuthState(
+            status: AuthStatus.unauthenticated,
+            error: _parseError(loginErr),
+          );
+        }
+      } else {
+        state = AuthState(
+          status: AuthStatus.unauthenticated,
+          error: _parseError(e),
+        );
+      }
     }
   }
 
