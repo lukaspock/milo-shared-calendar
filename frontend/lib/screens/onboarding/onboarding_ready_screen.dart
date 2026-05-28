@@ -44,7 +44,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'SharedCal is ready to help you plan with the people that matter.',
+                'Shared Calendar is ready to help you plan with the people that matter.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   color: AppTheme.inkSoft,

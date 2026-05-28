@@ -22,6 +22,7 @@ class OnboardingShell extends StatelessWidget {
     required this.child,
     this.isLoading = false,
     this.isSecondaryButton = false,
+    this.hideButton = false,
   });
 
   final int step;
@@ -36,6 +37,8 @@ class OnboardingShell extends StatelessWidget {
   final Widget child;
   final bool isLoading;
   final bool isSecondaryButton;
+  /// When true the bottom button is hidden entirely (the child provides its own actions).
+  final bool hideButton;
 
   @override
   Widget build(BuildContext context) {
@@ -127,23 +130,25 @@ class OnboardingShell extends StatelessWidget {
         ),
       ),
 
-      // ── Pinned bottom button ────────────────────────────────────────────
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.fromLTRB(
-          28,
-          12,
-          28,
-          MediaQuery.of(context).viewInsets.bottom +
-              MediaQuery.of(context).padding.bottom +
-              16,
-        ),
-        child: AppButton(
-          label: buttonLabel,
-          onPressed: onContinue,
-          isLoading: isLoading,
-          isSecondary: isSecondaryButton,
-        ),
-      ),
+      // ── Pinned bottom button (hidden when the child owns its actions) ──
+      bottomNavigationBar: hideButton
+          ? null
+          : Padding(
+              padding: EdgeInsets.fromLTRB(
+                28,
+                12,
+                28,
+                MediaQuery.of(context).viewInsets.bottom +
+                    MediaQuery.of(context).padding.bottom +
+                    16,
+              ),
+              child: AppButton(
+                label: buttonLabel,
+                onPressed: onContinue,
+                isLoading: isLoading,
+                isSecondary: isSecondaryButton,
+              ),
+            ),
     );
   }
 }

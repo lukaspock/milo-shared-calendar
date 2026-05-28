@@ -60,7 +60,7 @@ class _OnboardingCalendarScreenState
       illustrationHue: stickerHues[2],
       title: 'Connect Google Calendar',
       subtitle:
-          'Events you create in SharedCal will automatically sync to your Google Calendar.',
+          'Events you create in Shared Calendar will automatically sync to your Google Calendar.',
       buttonLabel: 'Skip for now',
       onContinue: () => context.go('/onboarding/ready'),
       isSecondaryButton: true,

@@ -142,7 +142,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Join SharedCal and start collaborating.',
+                    'Join Shared Calendar and start collaborating.',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       color: AppTheme.inkSoft,

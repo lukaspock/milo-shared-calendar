@@ -16,9 +16,6 @@ class WelcomeScreen extends ConsumerWidget {
       }
     });
 
-    final isLoading =
-        ref.watch(authProvider).status == AuthStatus.loading;
-
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: SafeArea(
@@ -34,22 +31,22 @@ class WelcomeScreen extends ConsumerWidget {
 
               const SizedBox(height: 44),
 
-              // ── Title + tagline ──────────────────────────────────────────
+              // ── Title ────────────────────────────────────────────────────
               Text(
-                'SharedCal',
+                'Welcome to\nYour Shared\nCalendar.',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 52,
+                  fontSize: 42,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.ink,
-                  letterSpacing: -2.5,
-                  height: 1.0,
+                  letterSpacing: -2,
+                  height: 1.1,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'Built to connect.',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.inkSoft,
                 ),
@@ -60,27 +57,15 @@ class WelcomeScreen extends ConsumerWidget {
               // ── Get Started ──────────────────────────────────────────────
               _AccentButton(
                 label: 'Get Started',
-                onPressed:
-                    isLoading ? null : () => context.go('/onboarding/name-email'),
+                onPressed: () => context.go('/onboarding/name'),
               ),
-
-              const SizedBox(height: 12),
-
-              // ── Continue with Google ─────────────────────────────────────
-              _GoogleWelcomeButton(isLoading: isLoading),
-
-              const SizedBox(height: 10),
-
-              // ── Continue with Apple ──────────────────────────────────────
-              _AppleButton(isLoading: isLoading),
 
               const SizedBox(height: 28),
 
               // ── Sign in link ─────────────────────────────────────────────
               Center(
                 child: GestureDetector(
-                  onTap:
-                      isLoading ? null : () => context.go('/login'),
+                  onTap: () => context.go('/login'),
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
@@ -123,7 +108,6 @@ class _WelcomeIllustration extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Back tile (rotated left)
           Positioned(
             left: 10,
             top: 30,
@@ -137,7 +121,6 @@ class _WelcomeIllustration extends StatelessWidget {
               ),
             ),
           ),
-          // Front tile (rotated right, slightly overlapping)
           Positioned(
             right: 10,
             top: 20,
@@ -157,7 +140,6 @@ class _WelcomeIllustration extends StatelessWidget {
   }
 }
 
-// Purple accent button used only on the welcome screen
 class _AccentButton extends StatelessWidget {
   const _AccentButton({required this.label, required this.onPressed});
   final String label;
@@ -198,133 +180,4 @@ class _AccentButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _GoogleWelcomeButton extends ConsumerWidget {
-  const _GoogleWelcomeButton({required this.isLoading});
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      height: 56,
-      child: OutlinedButton(
-        onPressed:
-            isLoading ? null : () => ref.read(authProvider.notifier).googleSignIn(),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          side: const BorderSide(color: AppTheme.line, width: 1.5),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          backgroundColor: AppTheme.surface,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'G',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                foreground: Paint()
-                  ..shader = const LinearGradient(
-                    colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
-                  ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Continue with Google',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.ink),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AppleButton extends StatelessWidget {
-  const _AppleButton({required this.isLoading});
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : () => _showAppleComingSoon(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.ink,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 56),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.apple, size: 22, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(
-              'Continue with Apple',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-void _showAppleComingSoon(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Row(
-        children: [
-          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
-          const SizedBox(width: 10),
-          Text(
-            'Apple Sign-In',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.ink,
-            ),
-          ),
-        ],
-      ),
-      content: Text(
-        'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 14,
-          color: AppTheme.inkSoft,
-          height: 1.5,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(
-            'Got it',
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.accent,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
 }

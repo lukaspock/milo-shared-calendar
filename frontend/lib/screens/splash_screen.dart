@@ -57,7 +57,7 @@ class SplashScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'SharedCal',
+              'Shared Calendar',
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.ink,
                 fontSize: 28,

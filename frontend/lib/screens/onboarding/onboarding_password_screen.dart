@@ -53,9 +53,9 @@ class _OnboardingPasswordScreenState
     });
 
     return OnboardingShell(
-      step: 2,
+      step: 3,
       totalSteps: 4,
-      onBack: () => context.go('/onboarding/name-email'),
+      onBack: () => context.go('/onboarding/email'),
       illustration: const Text('🔐', style: TextStyle(fontSize: 72)),
       illustrationHue: stickerHues[4],
       title: 'Create a password',
