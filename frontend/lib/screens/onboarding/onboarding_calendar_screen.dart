@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/device_calendar_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/app_button.dart';
 import '../onboarding/onboarding_shell.dart';
 
 class OnboardingCalendarScreen extends ConsumerStatefulWidget {
@@ -19,21 +19,20 @@ class OnboardingCalendarScreen extends ConsumerStatefulWidget {
 class _OnboardingCalendarScreenState
     extends ConsumerState<OnboardingCalendarScreen>
     with WidgetsBindingObserver {
-  bool _connecting = false;
+  bool _connectingGoogle = false;
+  bool _connectingDevice = false;
+  bool _deviceConnected = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Auto-advance if calendar is already connected on first build
-    // (e.g. Google Sign-In users who got calendar access during auth)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final user = ref.read(authProvider).user;
-      if (user?.hasGoogleCalendar == true) {
-        context.go('/onboarding/ready');
-      }
-    });
+    _loadDeviceState();
+  }
+
+  Future<void> _loadDeviceState() async {
+    final enabled = await DeviceCalendarService().isEnabled();
+    if (mounted) setState(() => _deviceConnected = enabled);
   }
 
   @override
@@ -44,6 +43,7 @@ class _OnboardingCalendarScreenState
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh user when returning from Google OAuth browser
     if (state == AppLifecycleState.resumed) {
       ref.read(authProvider.notifier).refreshUser();
     }
@@ -52,14 +52,8 @@ class _OnboardingCalendarScreenState
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-
-    ref.listen<AuthState>(authProvider, (_, state) {
-      if (state.user?.hasGoogleCalendar == true && mounted) {
-        context.go('/onboarding/ready');
-      }
-    });
-
-    final alreadyConnected = user?.hasGoogleCalendar == true;
+    final googleConnected = user?.hasGoogleCalendar == true;
+    final anyConnected = googleConnected || _deviceConnected;
 
     return OnboardingShell(
       step: 4,
@@ -67,69 +61,72 @@ class _OnboardingCalendarScreenState
       onBack: null,
       illustration: const Text('🗓️', style: TextStyle(fontSize: 72)),
       illustrationHue: stickerHues[2],
-      title: 'Connect Google Calendar',
+      title: 'Connect Your Calendars',
       subtitle:
-          'Events you create in Shared Calendar will automatically sync to your Google Calendar.',
-      buttonLabel: 'Skip for now',
+          'Sync your events automatically. Connect one or both — you can always add more later.',
+      buttonLabel: anyConnected ? 'Continue' : 'Skip for now',
       onContinue: () => context.go('/onboarding/ready'),
-      isSecondaryButton: true,
+      isSecondaryButton: !anyConnected,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (alreadyConnected)
-            _ConnectedChip()
-          else
-            AppButton(
-              label: _connecting ? 'Opening…' : 'Connect Google Calendar',
-              isLoading: _connecting,
-              onPressed: _connecting
-                  ? null
-                  : () async {
-                      setState(() => _connecting = true);
-                      final url = await ref
-                          .read(authProvider.notifier)
-                          .getGoogleCalendarConnectUrl();
-                      if (!mounted) return;
-                      setState(() => _connecting = false);
-                      if (url == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'Could not get connect URL. Is backend running?')),
-                        );
-                        return;
-                      }
-                      await launchUrl(Uri.parse(url),
-                          mode: LaunchMode.externalApplication);
-                    },
-            ),
+          // ── Google Calendar ─────────────────────────────────────────────
+          _CalendarOptionCard(
+            icon: '🌐',
+            title: 'Google Calendar',
+            subtitle: 'Sync via your Google account',
+            connected: googleConnected,
+            connecting: _connectingGoogle,
+            connectedLabel: 'Google Calendar connected',
+            connectLabel: 'Connect Google Calendar',
+            onConnect: () async {
+              setState(() => _connectingGoogle = true);
+              final url = await ref
+                  .read(authProvider.notifier)
+                  .getGoogleCalendarConnectUrl();
+              if (!mounted) return;
+              setState(() => _connectingGoogle = false);
+              if (url == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          'Could not get connect URL. Is backend running?')),
+                );
+                return;
+              }
+              await launchUrl(Uri.parse(url),
+                  mode: LaunchMode.externalApplication);
+            },
+          ),
 
           const SizedBox(height: 12),
 
-          // More services hint
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceSoft,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.line, width: 1),
-            ),
-            child: Row(
-              children: [
-                const Text('🔌', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'More calendar integrations coming soon.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: AppTheme.inkMuted,
-                      fontWeight: FontWeight.w500,
-                    ),
+          // ── Device Calendar ─────────────────────────────────────────────
+          _CalendarOptionCard(
+            icon: '📱',
+            title: 'Device Calendar',
+            subtitle: 'Sync to your iPhone / Android calendar',
+            connected: _deviceConnected,
+            connecting: _connectingDevice,
+            connectedLabel: 'Device Calendar connected',
+            connectLabel: 'Connect Device Calendar',
+            onConnect: () async {
+              setState(() => _connectingDevice = true);
+              final ok = await DeviceCalendarService().connect();
+              if (!mounted) return;
+              setState(() {
+                _connectingDevice = false;
+                _deviceConnected = ok;
+              });
+              if (!ok) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Could not connect. Please grant calendar permission in Settings.'),
                   ),
-                ),
-              ],
-            ),
+                );
+              }
+            },
           ),
         ],
       ),
@@ -137,28 +134,135 @@ class _OnboardingCalendarScreenState
   }
 }
 
-class _ConnectedChip extends StatelessWidget {
+// ── Reusable calendar option card ─────────────────────────────────────────────
+
+class _CalendarOptionCard extends StatelessWidget {
+  const _CalendarOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.connected,
+    required this.connecting,
+    required this.connectedLabel,
+    required this.connectLabel,
+    required this.onConnect,
+  });
+
+  final String icon;
+  final String title;
+  final String subtitle;
+  final bool connected;
+  final bool connecting;
+  final String connectedLabel;
+  final String connectLabel;
+  final VoidCallback onConnect;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFC9EBD9),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF1F9D60), width: 1.5),
+        color: connected
+            ? const Color(0xFFF0FBF5)
+            : AppTheme.surfaceSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: connected
+              ? const Color(0xFF1F9D60)
+              : AppTheme.line,
+          width: connected ? 1.5 : 1,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('✅', style: TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          Text(
-            'Google Calendar connected!',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F5C42),
-            ),
+          // Header row
+          Row(
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppTheme.inkMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (connected)
+                const Icon(Icons.check_circle_rounded,
+                    color: Color(0xFF1F9D60), size: 22),
+            ],
           ),
+
+          const SizedBox(height: 12),
+
+          // Connected state or connect button
+          if (connected)
+            Text(
+              connectedLabel,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1F5C42),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: connecting ? null : onConnect,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppTheme.accent.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: connecting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.accent,
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_rounded,
+                              size: 16, color: AppTheme.accent),
+                          const SizedBox(width: 6),
+                          Text(
+                            connectLabel,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
         ],
       ),
     );
