@@ -7,9 +7,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_text_field.dart';
 import '../onboarding/onboarding_shell.dart';
 
-/// Step 2 of the email path — choose a password.
-/// Tries to register; if the email already exists (409) it logs in instead.
-/// New users → /onboarding/verify, existing users → /home.
 class OnboardingPasswordScreen extends ConsumerStatefulWidget {
   const OnboardingPasswordScreen({super.key});
 
@@ -33,7 +30,7 @@ class _OnboardingPasswordScreenState
   Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
     final data = ref.read(onboardingProvider);
-    await ref.read(authProvider.notifier).loginOrRegister(
+    await ref.read(authProvider.notifier).register(
           data.email,
           _passwordCtrl.text,
           data.name,
@@ -47,8 +44,7 @@ class _OnboardingPasswordScreenState
 
     ref.listen<AuthState>(authProvider, (_, state) {
       if (state.status == AuthStatus.authenticated) {
-        // New account → verify email first; existing account → go home
-        context.go(state.isNewUser ? '/onboarding/verify' : '/home');
+        context.go('/onboarding/verify');
       } else if (state.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(state.error!)),
@@ -57,15 +53,14 @@ class _OnboardingPasswordScreenState
     });
 
     return OnboardingShell(
-      step: 2,
+      step: 3,
       totalSteps: 4,
-      onBack: () => context.go('/onboarding/name'),
+      onBack: () => context.go('/onboarding/email'),
       illustration: const Text('🔐', style: TextStyle(fontSize: 72)),
       illustrationHue: stickerHues[4],
-      title: 'Choose a password',
-      subtitle: 'At least 6 characters. Already have an account? '
-          'Just enter your existing password.',
-      buttonLabel: 'Continue',
+      title: 'Create a password',
+      subtitle: 'At least 6 characters. You can always change it later.',
+      buttonLabel: 'Create account',
       isLoading: isLoading,
       onContinue: isLoading ? null : _continue,
       child: Form(

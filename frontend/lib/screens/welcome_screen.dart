@@ -5,34 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 
-class WelcomeScreen extends ConsumerStatefulWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
-}
-
-class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
-  bool _googleLoading = false;
-
-  Future<void> _googleSignIn() async {
-    setState(() => _googleLoading = true);
-    await ref.read(authProvider.notifier).googleSignIn();
-    if (mounted) setState(() => _googleLoading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<AuthState>(authProvider, (_, state) {
-      if (!mounted) return;
       if (state.status == AuthStatus.authenticated) {
-        // New users go through onboarding; existing users go straight home
-        context.go(state.isNewUser ? '/onboarding/calendar' : '/home');
-      } else if (state.error != null) {
-        setState(() => _googleLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.error!)),
-        );
+        context.go('/home');
       }
     });
 
@@ -46,27 +26,27 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             children: [
               const Spacer(flex: 2),
 
-              // ── Illustration ──────────────────────────────────────────────
+              // ── Illustration ─────────────────────────────────────────────
               Center(child: _WelcomeIllustration()),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 44),
 
-              // ── Title ─────────────────────────────────────────────────────
+              // ── Title ────────────────────────────────────────────────────
               Text(
-                'Welcome to\nShared Calendar.',
+                'Welcome to\nYour Shared\nCalendar.',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 38,
+                  fontSize: 42,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.ink,
-                  letterSpacing: -1.5,
+                  letterSpacing: -2,
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'Built to connect.',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.inkSoft,
                 ),
@@ -74,65 +54,43 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
               const Spacer(flex: 3),
 
-              // ── Continue with Google ───────────────────────────────────────
-              _SocialButton(
-                onPressed: _googleLoading ? null : _googleSignIn,
-                isLoading: _googleLoading,
-                label: 'Continue with Google',
-                icon: _GoogleG(),
-                style: _SocialStyle.outlined,
+              // ── Get Started ──────────────────────────────────────────────
+              _AccentButton(
+                label: 'Get Started',
+                onPressed: () => context.go('/onboarding/name'),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 28),
 
-              // ── Continue with Apple ────────────────────────────────────────
-              _SocialButton(
-                onPressed: () => _showAppleComingSoon(context),
-                isLoading: false,
-                label: 'Continue with Apple',
-                icon: const Icon(Icons.apple, size: 20, color: Colors.white),
-                style: _SocialStyle.dark,
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Divider ───────────────────────────────────────────────────
-              Row(children: [
-                Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Text(
-                    'or',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: AppTheme.inkMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
-              ]),
-
-              const SizedBox(height: 20),
-
-              // ── Use email instead ─────────────────────────────────────────
+              // ── Sign in link ─────────────────────────────────────────────
               Center(
                 child: GestureDetector(
-                  onTap: () => context.go('/onboarding/name'),
-                  child: Text(
-                    'Use email instead →',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.accent,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppTheme.accent,
+                  onTap: () => context.go('/login'),
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppTheme.inkSoft,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Already have an account? '),
+                        TextSpan(
+                          text: 'Sign in',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppTheme.ink,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppTheme.ink,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
             ],
           ),
         ),
@@ -141,141 +99,38 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 }
 
-// ── Social button ─────────────────────────────────────────────────────────────
-
-enum _SocialStyle { outlined, dark }
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.onPressed,
-    required this.isLoading,
-    required this.label,
-    required this.icon,
-    required this.style,
-  });
-
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final String label;
-  final Widget icon;
-  final _SocialStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = style == _SocialStyle.dark;
-    return SizedBox(
-      height: 54,
-      child: AnimatedOpacity(
-        opacity: onPressed == null ? 0.6 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: GestureDetector(
-          onTap: onPressed,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppTheme.ink : AppTheme.surface,
-              borderRadius: BorderRadius.circular(28),
-              border: isDark
-                  ? null
-                  : Border.all(color: AppTheme.line, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? AppTheme.ink.withValues(alpha: 0.18)
-                      : AppTheme.line.withValues(alpha: 0.5),
-                  offset: const Offset(0, 3),
-                  blurRadius: 0,
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: isDark ? Colors.white : AppTheme.inkMuted,
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      icon,
-                      const SizedBox(width: 10),
-                      Text(
-                        label,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : AppTheme.ink,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Google "G" logo ───────────────────────────────────────────────────────────
-
-class _GoogleG extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(bounds),
-      child: Text(
-        'G',
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: Colors.white, // masked by ShaderMask
-        ),
-      ),
-    );
-  }
-}
-
-// ── Sticker illustration ──────────────────────────────────────────────────────
-
 class _WelcomeIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 180,
-      height: 180,
+      width: 200,
+      height: 200,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Positioned(
-            left: 8,
-            top: 28,
+            left: 10,
+            top: 30,
             child: Transform.rotate(
               angle: -0.22,
               child: StickerTile(
                 hue: stickerHues[0],
-                size: 100,
-                radius: 26,
-                child: const Text('📅', style: TextStyle(fontSize: 42)),
+                size: 110,
+                radius: 28,
+                child: const Text('📅', style: TextStyle(fontSize: 48)),
               ),
             ),
           ),
           Positioned(
-            right: 8,
-            top: 18,
+            right: 10,
+            top: 20,
             child: Transform.rotate(
               angle: 0.18,
               child: StickerTile(
                 hue: stickerHues[3],
-                size: 100,
-                radius: 26,
-                child: const Text('👥', style: TextStyle(fontSize: 42)),
+                size: 110,
+                radius: 28,
+                child: const Text('👥', style: TextStyle(fontSize: 48)),
               ),
             ),
           ),
@@ -285,48 +140,44 @@ class _WelcomeIllustration extends StatelessWidget {
   }
 }
 
-// ── Apple "coming soon" dialog ────────────────────────────────────────────────
+class _AccentButton extends StatelessWidget {
+  const _AccentButton({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback? onPressed;
 
-void _showAppleComingSoon(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Row(
-        children: [
-          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
-          const SizedBox(width: 10),
-          Text(
-            'Apple Sign-In',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.ink,
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.accent.withValues(alpha: 0.3),
+              offset: const Offset(0, 6),
+              blurRadius: 16,
             ),
-          ),
-        ],
-      ),
-      content: Text(
-        'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 14,
-          color: AppTheme.inkSoft,
-          height: 1.5,
+          ],
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.accent,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 58),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28)),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+          ),
           child: Text(
-            'Got it',
+            label,
             style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.accent,
-            ),
+                fontWeight: FontWeight.w700, fontSize: 16),
           ),
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
