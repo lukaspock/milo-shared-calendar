@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -105,20 +106,15 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           _CircleButton(
-                            icon: Icons.refresh_rounded,
-                            onTap: () => ref.read(calendarProvider.notifier).fetch(),
-                          ),
-                          const SizedBox(width: 8),
-                          _CircleButton(
-                            icon: Icons.person_off_outlined,
-                            onTap: () => _confirmDeleteAccount(context, ref),
+                            icon: Icons.settings_rounded,
+                            onTap: () => _showSettingsSheet(context),
                           ),
                           const SizedBox(width: 8),
                           _CircleButton(
                             icon: Icons.logout_rounded,
                             onTap: () async {
                               await ref.read(authProvider.notifier).logout();
-                              if (context.mounted) context.go('/login');
+                              if (context.mounted) context.go('/welcome');
                             },
                           ),
                         ],
@@ -310,39 +306,16 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: const Text(
-          'This will permanently delete your account, all your owned calendars, and all their data. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
-            child: const Text('Delete account'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _SettingsSheet(),
       ),
     );
-    if (confirmed == true) {
-      final ok = await ref.read(authProvider.notifier).deleteAccount();
-      if (context.mounted) {
-        if (ok) {
-          context.go('/login');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not delete account. Please try again.')),
-          );
-        }
-      }
-    }
   }
 
   void _showCreateSheet(BuildContext context, WidgetRef ref) {
@@ -1026,6 +999,569 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Settings bottom sheet ─────────────────────────────────────────────────────
+
+class _SettingsSheet extends ConsumerStatefulWidget {
+  const _SettingsSheet();
+
+  @override
+  ConsumerState<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends ConsumerState<_SettingsSheet>
+    with WidgetsBindingObserver {
+  bool _calendarsExpanded = false;
+  bool _connecting = false;
+  bool _resending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(authProvider.notifier).refreshUser();
+    }
+  }
+
+  Color _parseUserColor(String hex) {
+    try {
+      final h = hex.replaceFirst('#', '');
+      return Color(int.parse('FF$h', radix: 16));
+    } catch (_) {
+      return AppTheme.accent;
+    }
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(' ').where((w) => w.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = ref.watch(authProvider).user;
+    final avatarColor =
+        user != null ? _parseUserColor(user.color) : AppTheme.accent;
+    final initials = user != null ? _initials(user.name) : '?';
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom +
+        24;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPad),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Grabber ──────────────────────────────────────────────────────
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Header ───────────────────────────────────────────────────────
+          Row(
+            children: [
+              Text(
+                'Settings',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceSoft,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.line, width: 1),
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      size: 16, color: AppTheme.inkMuted),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // ── Account tile ─────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceSoft,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.line, width: 1),
+            ),
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: avatarColor.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: avatarColor.withOpacity(0.35), width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: avatarColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? '—',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.ink,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? '—',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppTheme.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Email verification (only when not verified) ───────────────────
+          if (user?.emailVerified == false) ...[
+            _SheetSection(label: 'ACCOUNT'),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE8A020), width: 1),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.mail_outline_rounded,
+                      color: Color(0xFFB07000), size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Email not verified',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF7A4C00),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _resending
+                        ? null
+                        : () async {
+                            setState(() => _resending = true);
+                            await ref
+                                .read(authProvider.notifier)
+                                .resendVerification();
+                            if (!mounted) return;
+                            setState(() => _resending = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Verification email sent!')),
+                            );
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8A020),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: _resending
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(
+                              'Resend',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // ── Connected calendars ───────────────────────────────────────────
+          _SheetSection(label: 'CALENDARS'),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppTheme.line, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _calendarsExpanded = !_calendarsExpanded),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        const Text('📅', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Connected calendars',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.ink,
+                            ),
+                          ),
+                        ),
+                        // count badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: user?.hasGoogleCalendar == true
+                                ? const Color(0xFFC9EBD9)
+                                : AppTheme.line,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            user?.hasGoogleCalendar == true ? '1' : '0',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: user?.hasGoogleCalendar == true
+                                  ? const Color(0xFF1F5C42)
+                                  : AppTheme.inkMuted,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          duration: const Duration(milliseconds: 200),
+                          turns: _calendarsExpanded ? 0.25 : 0,
+                          child: const Icon(Icons.chevron_right_rounded,
+                              size: 18, color: AppTheme.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_calendarsExpanded) ...[
+                  Divider(
+                      color: AppTheme.line,
+                      height: 1,
+                      indent: 14,
+                      endIndent: 14),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (user?.hasGoogleCalendar == true)
+                          Row(
+                            children: [
+                              const Text('✅',
+                                  style: TextStyle(fontSize: 15)),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Google Calendar connected',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F5C42),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          GestureDetector(
+                            onTap: _connecting
+                                ? null
+                                : () async {
+                                    setState(() => _connecting = true);
+                                    final url = await ref
+                                        .read(authProvider.notifier)
+                                        .getGoogleCalendarConnectUrl();
+                                    if (!mounted) return;
+                                    setState(() => _connecting = false);
+                                    if (url == null) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Could not get connect URL. Is the backend running?')),
+                                      );
+                                      return;
+                                    }
+                                    await launchUrl(Uri.parse(url),
+                                        mode: LaunchMode.externalApplication);
+                                  },
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 11),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accent.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: AppTheme.accent.withOpacity(0.25),
+                                    width: 1),
+                              ),
+                              alignment: Alignment.center,
+                              child: _connecting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppTheme.accent),
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.add_rounded,
+                                            size: 16, color: AppTheme.accent),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Connect Google Calendar',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.accent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Text('🔌',
+                                style: TextStyle(fontSize: 14)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'More integrations coming soon.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: AppTheme.inkMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Sign out ──────────────────────────────────────────────────────
+          _SheetActionRow(
+            icon: Icons.logout_rounded,
+            label: 'Sign out',
+            onTap: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (!mounted) return;
+              context.go('/welcome');
+            },
+          ),
+          const SizedBox(height: 8),
+
+          // ── Delete account ────────────────────────────────────────────────
+          _SheetActionRow(
+            icon: Icons.person_off_outlined,
+            label: 'Delete account',
+            isDanger: true,
+            onTap: _confirmDeleteAccount,
+          ),
+
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This will permanently delete your account, all your owned calendars, and all their data. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (confirmed != true) return;
+    final ok = await ref.read(authProvider.notifier).deleteAccount();
+    if (!mounted) return;
+    if (ok) {
+      context.go('/welcome');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Could not delete account. Please try again.')),
+      );
+    }
+  }
+}
+
+// ── Settings sheet helpers ────────────────────────────────────────────────────
+
+class _SheetSection extends StatelessWidget {
+  const _SheetSection({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.inkMuted,
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Divider(color: AppTheme.line, thickness: 1)),
+      ],
+    );
+  }
+}
+
+class _SheetActionRow extends StatelessWidget {
+  const _SheetActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDanger = false,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDanger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDanger ? AppTheme.danger : AppTheme.ink;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDanger
+              ? AppTheme.danger.withOpacity(0.06)
+              : AppTheme.surfaceSoft,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color:
+                isDanger ? AppTheme.danger.withOpacity(0.2) : AppTheme.line,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

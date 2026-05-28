@@ -25,6 +25,15 @@ class _OnboardingCalendarScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Auto-advance if calendar is already connected on first build
+    // (e.g. Google Sign-In users who got calendar access during auth)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = ref.read(authProvider).user;
+      if (user?.hasGoogleCalendar == true) {
+        context.go('/onboarding/ready');
+      }
+    });
   }
 
   @override
