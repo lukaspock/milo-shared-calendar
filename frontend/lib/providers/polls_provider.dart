@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/event.dart';
 import '../models/poll.dart';
 import '../services/api_service.dart';
+import '../services/device_calendar_service.dart';
 import '../services/websocket_service.dart';
 
 class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
@@ -85,6 +87,16 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
         state = AsyncValue.data(
             list.map((p) => p.id == pollId ? updated : p).toList());
       });
+
+      // Sync the newly created event to device calendar.
+      // Google Calendar is already handled server-side via syncEventCreated.
+      final eventJson = data['event'];
+      if (eventJson != null) {
+        final event =
+            CalendarEvent.fromJson(eventJson as Map<String, dynamic>);
+        DeviceCalendarService().syncEvent(event);
+      }
+
       return true;
     } catch (_) {
       return false;

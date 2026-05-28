@@ -41,6 +41,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         if (list.any((e) => e.id == event.id)) return;
         state = AsyncValue.data([...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime)));
       });
+      // Sync to device calendar for ANY new event arriving via WebSocket —
+      // covers poll-confirmed events and events created by other members.
+      // DeviceCalendarService is idempotent so calling it twice is safe.
+      DeviceCalendarService().syncEvent(event);
     } else if (type == 'event_updated') {
       final event = CalendarEvent.fromJson(msg['event'] as Map<String, dynamic>);
       if (event.calendarId != calendarId) return;
