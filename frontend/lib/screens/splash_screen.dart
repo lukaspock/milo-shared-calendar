@@ -14,7 +14,7 @@ class SplashScreen extends ConsumerWidget {
       if (state.status == AuthStatus.authenticated) {
         context.go('/home');
       } else if (state.status == AuthStatus.unauthenticated) {
-        context.go('/login');
+        context.go('/welcome');
       }
     });
 

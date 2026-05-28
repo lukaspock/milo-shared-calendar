@@ -169,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Footer link ───────────────────────────────────────────
                   Center(
                     child: GestureDetector(
-                      onTap: () => context.go('/register'),
+                      onTap: () => context.go('/welcome'),
                       child: RichText(
                         text: TextSpan(
                           style: GoogleFonts.plusJakartaSans(
