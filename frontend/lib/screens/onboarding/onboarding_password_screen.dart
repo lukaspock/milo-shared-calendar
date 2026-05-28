@@ -55,7 +55,7 @@ class _OnboardingPasswordScreenState
     return OnboardingShell(
       step: 3,
       totalSteps: 4,
-      onBack: () => context.go('/onboarding/email'),
+      onBack: () => context.go('/onboarding/email'), // email screen is now step 2
       illustration: const Text('🔐', style: TextStyle(fontSize: 72)),
       illustrationHue: stickerHues[4],
       title: 'Create a password',
