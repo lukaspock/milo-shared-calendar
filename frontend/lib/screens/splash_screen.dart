@@ -14,7 +14,7 @@ class SplashScreen extends ConsumerWidget {
       if (state.status == AuthStatus.authenticated) {
         context.go('/home');
       } else if (state.status == AuthStatus.unauthenticated) {
-        context.go('/login');
+        context.go('/welcome');
       }
     });
 
@@ -57,7 +57,7 @@ class SplashScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'SharedCal',
+              'Shared Calendar',
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.ink,
                 fontSize: 28,

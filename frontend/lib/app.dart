@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
@@ -9,14 +10,53 @@ import 'screens/calendar_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'screens/create_poll_screen.dart';
 import 'screens/poll_detail_screen.dart';
+import 'screens/onboarding/onboarding_name_email_screen.dart';
+import 'screens/onboarding/onboarding_email_screen.dart';
+import 'screens/onboarding/onboarding_password_screen.dart';
+import 'screens/onboarding/onboarding_verify_screen.dart';
+import 'screens/onboarding/onboarding_calendar_screen.dart';
+import 'screens/onboarding/onboarding_ready_screen.dart';
 import 'theme/app_theme.dart';
 
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (_, _s) => const SplashScreen()),
+    GoRoute(path: '/welcome', builder: (_, _s) => const WelcomeScreen()),
     GoRoute(path: '/login', builder: (_, _s) => const LoginScreen()),
     GoRoute(path: '/register', builder: (_, _s) => const RegisterScreen()),
+    GoRoute(
+      path: '/onboarding',
+      redirect: (_, __) => '/onboarding/name',
+    ),
+    // Step 1 — name + auth method choice
+    GoRoute(
+        path: '/onboarding/name',
+        builder: (_, _s) => const OnboardingNameEmailScreen()),
+    // Keep old path as alias so existing deep-links don't break
+    GoRoute(
+        path: '/onboarding/name-email',
+        redirect: (_, __) => '/onboarding/name'),
+    // Step 2 (email path) — email address
+    GoRoute(
+        path: '/onboarding/email',
+        builder: (_, _s) => const OnboardingEmailScreen()),
+    // Step 3 (email path) — password + registers account
+    GoRoute(
+        path: '/onboarding/password',
+        builder: (_, _s) => const OnboardingPasswordScreen()),
+    // Step 3b (email path) — verify inbox
+    GoRoute(
+        path: '/onboarding/verify',
+        builder: (_, _s) => const OnboardingVerifyScreen()),
+    // Step 4 (all paths) — Google Calendar connect
+    GoRoute(
+        path: '/onboarding/calendar',
+        builder: (_, _s) => const OnboardingCalendarScreen()),
+    // Final — celebration screen
+    GoRoute(
+        path: '/onboarding/ready',
+        builder: (_, _s) => const OnboardingReadyScreen()),
     GoRoute(path: '/home', builder: (_, _s) => const HomeScreen()),
     GoRoute(
       path: '/calendar/:calendarId',
@@ -56,7 +96,7 @@ class SharedCalApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'SharedCal',
+      title: 'Shared Calendar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: _router,

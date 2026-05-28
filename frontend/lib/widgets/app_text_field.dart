@@ -13,6 +13,8 @@ class AppTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.validator,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
@@ -23,6 +25,8 @@ class AppTextField extends StatefulWidget {
   final IconData? prefixIcon;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
+  final TextInputAction? textInputAction;
+  final void Function(String)? onSubmitted;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -63,6 +67,8 @@ class _AppTextFieldState extends State<AppTextField> {
               controller: widget.controller,
               obscureText: widget.obscureText,
               keyboardType: widget.keyboardType,
+              textInputAction: widget.textInputAction,
+              onFieldSubmitted: widget.onSubmitted,
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.ink,
                 fontWeight: FontWeight.w500,
