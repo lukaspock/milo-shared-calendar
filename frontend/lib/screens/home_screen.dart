@@ -8,6 +8,7 @@ import '../models/calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/device_calendar_service.dart';
 import '../theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -1017,12 +1018,20 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
     with WidgetsBindingObserver {
   bool _calendarsExpanded = false;
   bool _connecting = false;
+  bool _connectingDevice = false;
+  bool _deviceCalendarConnected = false;
   bool _resending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadDeviceCalendarState();
+  }
+
+  Future<void> _loadDeviceCalendarState() async {
+    final enabled = await DeviceCalendarService().isEnabled();
+    if (mounted) setState(() => _deviceCalendarConnected = enabled);
   }
 
   @override
@@ -1285,26 +1294,32 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                           ),
                         ),
                         // count badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: user?.hasGoogleCalendar == true
-                                ? const Color(0xFFC9EBD9)
-                                : AppTheme.line,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            user?.hasGoogleCalendar == true ? '1' : '0',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: user?.hasGoogleCalendar == true
-                                  ? const Color(0xFF1F5C42)
-                                  : AppTheme.inkMuted,
+                        Builder(builder: (_) {
+                          final count =
+                              (user?.hasGoogleCalendar == true ? 1 : 0) +
+                                  (_deviceCalendarConnected ? 1 : 0);
+                          final connected = count > 0;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: connected
+                                  ? const Color(0xFFC9EBD9)
+                                  : AppTheme.line,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                        ),
+                            child: Text(
+                              '$count',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: connected
+                                    ? const Color(0xFF1F5C42)
+                                    : AppTheme.inkMuted,
+                              ),
+                            ),
+                          );
+                        }),
                         const SizedBox(width: 8),
                         AnimatedRotation(
                           duration: const Duration(milliseconds: 200),
@@ -1403,22 +1418,129 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                     ),
                             ),
                           ),
-                        const SizedBox(height: 10),
+                        // ── Device Calendar ───────────────────────────────
+                        const SizedBox(height: 16),
+                        Divider(color: AppTheme.line, height: 1),
+                        const SizedBox(height: 12),
                         Row(
                           children: [
-                            const Text('🔌',
-                                style: TextStyle(fontSize: 14)),
-                            const SizedBox(width: 8),
+                            const Text('📱', style: TextStyle(fontSize: 13)),
+                            const SizedBox(width: 6),
                             Text(
-                              'More integrations coming soon.',
+                              'DEVICE CALENDAR',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
                                 color: AppTheme.inkMuted,
-                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.8,
                               ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        if (_deviceCalendarConnected)
+                          Row(
+                            children: [
+                              const Text('✅',
+                                  style: TextStyle(fontSize: 15)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Device calendar connected',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF1F5C42),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  await DeviceCalendarService().disconnect();
+                                  if (mounted) {
+                                    setState(
+                                        () => _deviceCalendarConnected = false);
+                                  }
+                                },
+                                child: Text(
+                                  'Disconnect',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.danger,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          GestureDetector(
+                            onTap: _connectingDevice
+                                ? null
+                                : () async {
+                                    setState(
+                                        () => _connectingDevice = true);
+                                    final ok =
+                                        await DeviceCalendarService()
+                                            .connect();
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _connectingDevice = false;
+                                      _deviceCalendarConnected = ok;
+                                    });
+                                    if (!ok) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Could not connect. Please grant calendar permission in Settings.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 11),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accent.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color:
+                                      AppTheme.accent.withOpacity(0.25),
+                                  width: 1,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: _connectingDevice
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppTheme.accent,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.add_rounded,
+                                            size: 16,
+                                            color: AppTheme.accent),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Connect Device Calendar',
+                                          style:
+                                              GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.accent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
