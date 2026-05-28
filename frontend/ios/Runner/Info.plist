@@ -66,6 +66,13 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- Calendar permissions -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>SharedCal syncs your events to your device calendar.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>SharedCal syncs your events to your device calendar.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>SharedCal adds events to your device calendar.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true />
 	<key>UILaunchStoryboardName</key>
