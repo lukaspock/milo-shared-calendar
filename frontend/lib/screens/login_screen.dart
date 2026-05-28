@@ -164,6 +164,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Google Sign-In ────────────────────────────────────────
                   _GoogleSignInButton(isLoading: isLoading),
 
+                  const SizedBox(height: 10),
+
+                  // ── Apple Sign-In ─────────────────────────────────────────
+                  _AppleSignInButton(isLoading: isLoading),
+
                   const SizedBox(height: 28),
 
                   // ── Footer link ───────────────────────────────────────────
@@ -240,6 +245,87 @@ class _GoogleSignInButton extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _AppleSignInButton extends StatelessWidget {
+  final bool isLoading;
+  const _AppleSignInButton({required this.isLoading});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : () => _showAppleComingSoon(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.ink,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.apple, size: 22, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(
+              'Continue with Apple',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showAppleComingSoon(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Row(
+        children: [
+          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
+          const SizedBox(width: 10),
+          Text(
+            'Apple Sign-In',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.ink,
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 14,
+          color: AppTheme.inkSoft,
+          height: 1.5,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(
+            'Got it',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.accent,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _HeroTiles extends StatelessWidget {

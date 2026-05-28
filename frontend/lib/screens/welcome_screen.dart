@@ -69,6 +69,11 @@ class WelcomeScreen extends ConsumerWidget {
               // ── Continue with Google ─────────────────────────────────────
               _GoogleWelcomeButton(isLoading: isLoading),
 
+              const SizedBox(height: 10),
+
+              // ── Continue with Apple ──────────────────────────────────────
+              _AppleButton(isLoading: isLoading),
+
               const SizedBox(height: 28),
 
               // ── Sign in link ─────────────────────────────────────────────
@@ -240,4 +245,86 @@ class _GoogleWelcomeButton extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _AppleButton extends StatelessWidget {
+  const _AppleButton({required this.isLoading});
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : () => _showAppleComingSoon(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.ink,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 56),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.apple, size: 22, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(
+              'Continue with Apple',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showAppleComingSoon(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Row(
+        children: [
+          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
+          const SizedBox(width: 10),
+          Text(
+            'Apple Sign-In',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.ink,
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 14,
+          color: AppTheme.inkSoft,
+          height: 1.5,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(
+            'Got it',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.accent,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
