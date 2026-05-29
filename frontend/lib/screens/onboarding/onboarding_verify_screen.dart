@@ -48,7 +48,7 @@ class _OnboardingVerifyScreenState
     final email = user?.email ?? 'your email';
 
     return OnboardingShell(
-      step: 4,
+      step: 3,
       totalSteps: 5,
       onBack: null,
       illustration: AppImages.mailbox(size: 72),

@@ -55,9 +55,9 @@ class _OnboardingPasswordScreenState
     });
 
     return OnboardingShell(
-      step: 4,
+      step: 3,
       totalSteps: 5,
-      onBack: () => context.go('/onboarding/notifications'),
+      onBack: () => context.go('/onboarding/email'),
       illustration: AppImages.lock(size: 72),
       illustrationHue: stickerHues[4],
       title: 'Create a password',

@@ -57,7 +57,7 @@ class _OnboardingCalendarScreenState
     final anyConnected = googleConnected || _deviceConnected;
 
     return OnboardingShell(
-      step: 5,
+      step: 4,
       totalSteps: 5,
       onBack: null,
       illustration: AppImages.calendar(size: 72),
@@ -66,7 +66,7 @@ class _OnboardingCalendarScreenState
       subtitle:
           'Sync your events automatically. Connect one or both — you can always add more later.',
       buttonLabel: anyConnected ? 'Continue' : 'Skip for now',
-      onContinue: () => context.go('/onboarding/ready'),
+      onContinue: () => context.go('/onboarding/notifications'),
       isSecondaryButton: !anyConnected,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

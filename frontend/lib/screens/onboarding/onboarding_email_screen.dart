@@ -43,7 +43,7 @@ class _OnboardingEmailScreenState
           _nameCtrl.text.trim(),
           _emailCtrl.text.trim(),
         );
-    context.go('/onboarding/notifications');
+    context.go('/onboarding/password');
   }
 
   @override
