@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 
 class PollDetailScreen extends ConsumerStatefulWidget {
   final String calendarId;
@@ -240,8 +241,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: const Text('📊',
-                        style: TextStyle(fontSize: 18)),
+                    child: AppImages.poll(size: 18),
                   ),
                 ],
               ),
@@ -578,8 +578,7 @@ class _OptionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: const Text('🎯',
-                      style: TextStyle(fontSize: 14)),
+                  icon: AppImages.target(size: 14),
                   label: Text(
                     'Confirm this slot',
                     style: GoogleFonts.plusJakartaSans(

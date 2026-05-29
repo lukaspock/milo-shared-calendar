@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/device_calendar_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 import '../onboarding/onboarding_shell.dart';
 
 class OnboardingCalendarScreen extends ConsumerStatefulWidget {
@@ -59,7 +60,7 @@ class _OnboardingCalendarScreenState
       step: 4,
       totalSteps: 4,
       onBack: null,
-      illustration: const Text('🗓️', style: TextStyle(fontSize: 72)),
+      illustration: AppImages.calendar(size: 72),
       illustrationHue: stickerHues[2],
       title: 'Connect Your Calendars',
       subtitle:
@@ -72,7 +73,7 @@ class _OnboardingCalendarScreenState
         children: [
           // ── Google Calendar ─────────────────────────────────────────────
           _CalendarOptionCard(
-            icon: '🌐',
+            icon: AppImages.globe(size: 20),
             title: 'Google Calendar',
             subtitle: 'Sync via your Google account',
             connected: googleConnected,
@@ -103,7 +104,7 @@ class _OnboardingCalendarScreenState
 
           // ── Device Calendar ─────────────────────────────────────────────
           _CalendarOptionCard(
-            icon: '📱',
+            icon: AppImages.phone(size: 20),
             title: 'Device Calendar',
             subtitle: 'Sync to your iPhone / Android calendar',
             connected: _deviceConnected,
@@ -148,7 +149,7 @@ class _CalendarOptionCard extends StatelessWidget {
     required this.onConnect,
   });
 
-  final String icon;
+  final Widget icon;
   final String title;
   final String subtitle;
   final bool connected;
@@ -179,7 +180,7 @@ class _CalendarOptionCard extends StatelessWidget {
           // Header row
           Row(
             children: [
-              Text(icon, style: const TextStyle(fontSize: 20)),
+              icon,
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

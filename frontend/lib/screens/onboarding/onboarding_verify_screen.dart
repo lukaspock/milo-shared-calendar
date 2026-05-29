@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 import '../onboarding/onboarding_shell.dart';
 
 class OnboardingVerifyScreen extends ConsumerStatefulWidget {
@@ -50,7 +51,7 @@ class _OnboardingVerifyScreenState
       step: 3,
       totalSteps: 4,
       onBack: null,
-      illustration: const Text('📬', style: TextStyle(fontSize: 72)),
+      illustration: AppImages.mailbox(size: 72),
       illustrationHue: stickerHues[4],
       title: 'Check your inbox',
       subtitle: 'We sent a link to $email.\nClick it to verify your account.',

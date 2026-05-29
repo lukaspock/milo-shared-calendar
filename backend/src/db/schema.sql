@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
   color TEXT DEFAULT '#6C63FF',
+  notification_type TEXT NOT NULL DEFAULT 'email',
   created_at TIMESTAMP DEFAULT now()
 );
 

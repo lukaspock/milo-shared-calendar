@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 import '../../widgets/app_text_field.dart';
 import 'onboarding_shell.dart';
 
@@ -51,7 +52,7 @@ class _OnboardingEmailScreenState
       step: 2,
       totalSteps: 4,
       onBack: () => context.go('/onboarding/name'),
-      illustration: const Text('✉️', style: TextStyle(fontSize: 72)),
+      illustration: AppImages.envelope(size: 72),
       illustrationHue: stickerHues[2],
       title: 'Create your account',
       subtitle: "Enter your name and email to get started.",

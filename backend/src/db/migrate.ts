@@ -8,6 +8,12 @@ export async function runMigrations(): Promise<void> {
       ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP
   `;
 
+  // How a user wants to be notified about new events: 'email' or 'push' (on-device)
+  await db`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS notification_type TEXT NOT NULL DEFAULT 'email'
+  `;
+
   // Google Sign-In: nullable password (Google users have no password), unique Google ID
   await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT`;
   await db`

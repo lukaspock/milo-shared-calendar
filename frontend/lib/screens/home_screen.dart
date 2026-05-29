@@ -5,11 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/calendar.dart';
+import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/device_calendar_service.dart';
+import '../services/local_notification_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
+import '../widgets/notification_type_selector.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -384,7 +388,7 @@ class _UpNextCard extends StatelessWidget {
                 ],
               ),
               alignment: Alignment.center,
-              child: const Text('📅', style: TextStyle(fontSize: 22)),
+              child: AppImages.calendar(size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -777,7 +781,7 @@ class _EmptyState extends StatelessWidget {
               hue: stickerHues[0],
               size: 80,
               radius: 22,
-              child: const Text('📅', style: TextStyle(fontSize: 34)),
+              child: AppImages.calendar(size: 34),
             ),
             const SizedBox(height: 24),
             Text('No calendars yet',
@@ -870,7 +874,7 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
               hue: stickerHues[_selectedHue],
               size: 96,
               radius: 28,
-              child: const Text('📅', style: TextStyle(fontSize: 38)),
+              child: AppImages.calendar(size: 38),
             ),
           ),
           const SizedBox(height: 20),
@@ -1261,6 +1265,31 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
             const SizedBox(height: 20),
           ],
 
+          // ── Notifications ─────────────────────────────────────────────────
+          _SheetSection(label: 'NOTIFICATIONS'),
+          const SizedBox(height: 6),
+          Text(
+            'How should we let you know when someone adds an event?',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+          NotificationTypeSelector(
+            value: user?.notificationType ?? NotificationType.email,
+            onChanged: (type) async {
+              if (type == NotificationType.push) {
+                await LocalNotificationService().requestPermission();
+              }
+              await ref
+                  .read(authProvider.notifier)
+                  .updateNotificationType(type);
+            },
+          ),
+          const SizedBox(height: 20),
+
           // ── Connected calendars ───────────────────────────────────────────
           _SheetSection(label: 'CALENDARS'),
           const SizedBox(height: 10),
@@ -1281,7 +1310,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
-                        const Text('📅', style: TextStyle(fontSize: 16)),
+                        AppImages.calendar(size: 16),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -1345,8 +1374,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         if (user?.hasGoogleCalendar == true)
                           Row(
                             children: [
-                              const Text('✅',
-                                  style: TextStyle(fontSize: 15)),
+                              AppImages.check(size: 15),
                               const SizedBox(width: 10),
                               Text(
                                 'Google Calendar connected',
@@ -1424,7 +1452,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            const Text('📱', style: TextStyle(fontSize: 13)),
+                            AppImages.phone(size: 13),
                             const SizedBox(width: 6),
                             Text(
                               'DEVICE CALENDAR',
@@ -1441,8 +1469,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         if (_deviceCalendarConnected)
                           Row(
                             children: [
-                              const Text('✅',
-                                  style: TextStyle(fontSize: 15)),
+                              AppImages.check(size: 15),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(

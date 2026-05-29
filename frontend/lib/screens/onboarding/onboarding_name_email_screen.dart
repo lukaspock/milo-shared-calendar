@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 import 'onboarding_shell.dart';
 
 /// Step 1 — auth method choice. No personal info collected here.
@@ -42,7 +43,7 @@ class _OnboardingNameEmailScreenState
       step: 1,
       totalSteps: 4,
       onBack: () => context.go('/welcome'),
-      illustration: const Text('👋', style: TextStyle(fontSize: 72)),
+      illustration: AppImages.wave(size: 72),
       illustrationHue: stickerHues[1],
       title: "Let's get started",
       subtitle: 'Choose how you\'d like to continue.',

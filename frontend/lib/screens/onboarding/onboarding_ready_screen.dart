@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 
 class OnboardingReadyScreen extends ConsumerWidget {
   const OnboardingReadyScreen({super.key});
@@ -111,7 +112,7 @@ class _ReadyIllustration extends StatelessWidget {
             hue: stickerHues[4],
             size: 120,
             radius: 30,
-            child: const Text('🎉', style: TextStyle(fontSize: 52)),
+            child: AppImages.party(size: 52),
           ),
         ),
         Positioned(
@@ -123,7 +124,7 @@ class _ReadyIllustration extends StatelessWidget {
               hue: stickerHues[1],
               size: 70,
               radius: 18,
-              child: const Text('✨', style: TextStyle(fontSize: 28)),
+              child: AppImages.sparkles(size: 28),
             ),
           ),
         ),
@@ -136,7 +137,7 @@ class _ReadyIllustration extends StatelessWidget {
               hue: stickerHues[3],
               size: 60,
               radius: 16,
-              child: const Text('📅', style: TextStyle(fontSize: 24)),
+              child: AppImages.calendar(size: 24),
             ),
           ),
         ),

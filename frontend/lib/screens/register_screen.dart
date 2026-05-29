@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
 
@@ -95,7 +96,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                               hue: stickerHues[4],
                               size: 72,
                               radius: 18,
-                              child: const Text('✨', style: TextStyle(fontSize: 30)),
+                              child: AppImages.sparkles(size: 30),
                             ),
                           ),
                         ),
@@ -108,7 +109,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                               hue: stickerHues[2],
                               size: 72,
                               radius: 18,
-                              child: const Text('🎉', style: TextStyle(fontSize: 30)),
+                              child: AppImages.party(size: 30),
                             ),
                           ),
                         ),
@@ -121,7 +122,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                               hue: stickerHues[5],
                               size: 72,
                               radius: 18,
-                              child: const Text('🌱', style: TextStyle(fontSize: 30)),
+                              child: AppImages.sprout(size: 30),
                             ),
                           ),
                         ),

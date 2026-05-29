@@ -48,6 +48,7 @@ dependencies:
   url_launcher: ^6.3.0
   device_calendar: ^4.0.0
   timezone: ^0.9.4
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
@@ -76,6 +77,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Swappable dummy icon images. Drop a PNG named like `dummy_calendar.png`
+  # into assets/images/ to replace the matching emoji placeholder app-wide.
+  # See lib/widgets/app_image.dart (AppImages) for the full list of names.
+  assets:
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

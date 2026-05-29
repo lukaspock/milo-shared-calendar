@@ -7,7 +7,7 @@ import { google } from "googleapis";
 import { generateCalendarConnectUrl, handleCalendarCallback } from "../services/google_calendar";
 
 export async function register(ctx: RequestContext): Promise<Response> {
-  let body: { email?: string; password?: string; name?: string };
+  let body: { email?: string; password?: string; name?: string; notification_type?: string };
   try {
     body = await ctx.req.json();
   } catch {
@@ -21,6 +21,7 @@ export async function register(ctx: RequestContext): Promise<Response> {
   if (password.length < 6) {
     return error("Password must be at least 6 characters");
   }
+  const notificationType = body.notification_type === "push" ? "push" : "email";
 
   const existing = await db`SELECT id FROM users WHERE email = ${email}`;
   if (existing.length > 0) {
@@ -38,9 +39,9 @@ export async function register(ctx: RequestContext): Promise<Response> {
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const users = await db`
-    INSERT INTO users (email, password_hash, name, color, verification_token, verification_expires_at)
-    VALUES (${email}, ${passwordHash}, ${name}, ${color}, ${verificationToken}, ${expiresAt})
-    RETURNING id, email, name, color, email_verified, created_at
+    INSERT INTO users (email, password_hash, name, color, notification_type, verification_token, verification_expires_at)
+    VALUES (${email}, ${passwordHash}, ${name}, ${color}, ${notificationType}, ${verificationToken}, ${expiresAt})
+    RETURNING id, email, name, color, notification_type, email_verified, created_at
   `;
   const user = users[0];
 
@@ -51,7 +52,10 @@ export async function register(ctx: RequestContext): Promise<Response> {
 
   return json({
     token,
-    user: { id: user.id, email: user.email, name: user.name, color: user.color, email_verified: false },
+    user: {
+      id: user.id, email: user.email, name: user.name, color: user.color,
+      notification_type: user.notification_type, email_verified: false,
+    },
   }, 201);
 }
 
@@ -85,6 +89,7 @@ export async function login(ctx: RequestContext): Promise<Response> {
     token,
     user: {
       id: user.id, email: user.email, name: user.name, color: user.color,
+      notification_type: user.notification_type ?? "email",
       email_verified: user.email_verified ?? false,
     },
   });
@@ -148,16 +153,32 @@ export async function resendVerification(ctx: RequestContext): Promise<Response>
 export async function getMe(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const users = await db`
-    SELECT id, email, name, color, email_verified FROM users WHERE id = ${userId}
+    SELECT id, email, name, color, notification_type, email_verified FROM users WHERE id = ${userId}
   `;
   if (users.length === 0) return error("User not found", 404);
   const user = users[0];
   const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${userId}`;
   return json({
     id: user.id, email: user.email, name: user.name,
-    color: user.color, email_verified: user.email_verified ?? false,
+    color: user.color, notification_type: user.notification_type ?? "email",
+    email_verified: user.email_verified ?? false,
     has_google_calendar: gcal.length > 0,
   });
+}
+
+export async function updateNotificationType(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  let body: { notification_type?: string };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+  if (body.notification_type !== "push" && body.notification_type !== "email") {
+    return error("notification_type must be 'push' or 'email'");
+  }
+  await db`UPDATE users SET notification_type = ${body.notification_type} WHERE id = ${userId}`;
+  return json({ notification_type: body.notification_type });
 }
 
 export async function googleAuth(ctx: RequestContext): Promise<Response> {
@@ -225,7 +246,8 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
     token,
     user: {
       id: user.id, email: user.email, name: user.name,
-      color: user.color, email_verified: true, has_google_calendar: gcal.length > 0,
+      color: user.color, notification_type: user.notification_type ?? "email",
+      email_verified: true, has_google_calendar: gcal.length > 0,
     },
   }, isNew ? 201 : 200);
 }
