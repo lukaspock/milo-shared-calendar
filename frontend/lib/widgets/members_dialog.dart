@@ -5,6 +5,7 @@ import '../models/calendar.dart';
 import '../models/member.dart';
 import '../providers/calendar_provider.dart';
 import '../theme/app_theme.dart';
+import 'app_image.dart';
 
 // MembersSheet replaces MembersDialog — shown via showModalBottomSheet
 class MembersSheet extends ConsumerStatefulWidget {
@@ -104,7 +105,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('😕', style: TextStyle(fontSize: 32)),
+                      AppImages.sad(size: 32),
                       const SizedBox(height: 12),
                       Text(
                         'Could not load members',

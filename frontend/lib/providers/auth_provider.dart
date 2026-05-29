@@ -49,11 +49,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> register(String email, String password, String name) async {
+  Future<void> register(
+    String email,
+    String password,
+    String name, {
+    NotificationType notificationType = NotificationType.email,
+  }) async {
     state = state.copyWith(status: AuthStatus.loading, error: null);
     try {
       final result = await _authService.register(
-          email: email, password: password, name: name);
+          email: email,
+          password: password,
+          name: name,
+          notificationType: notificationType);
       state = AuthState(status: AuthStatus.authenticated, user: result.user);
     } catch (e) {
       state = AuthState(
@@ -96,6 +104,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _authService.refreshUser();
       state = state.copyWith(user: user);
     } catch (_) {}
+  }
+
+  /// Updates how the user is notified about new events ('email' vs on-device push).
+  /// Optimistically updates local state, then persists to the backend.
+  Future<bool> updateNotificationType(NotificationType type) async {
+    final previous = state.user;
+    if (previous != null) {
+      state = state.copyWith(user: previous.copyWith(notificationType: type));
+    }
+    try {
+      final user = await _authService.updateNotificationType(type);
+      state = state.copyWith(user: user);
+      return true;
+    } catch (_) {
+      if (previous != null) state = state.copyWith(user: previous);
+      return false;
+    }
   }
 
   Future<bool> resendVerification() async {

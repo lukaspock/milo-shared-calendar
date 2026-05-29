@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -117,7 +118,7 @@ class _WelcomeIllustration extends StatelessWidget {
                 hue: stickerHues[0],
                 size: 110,
                 radius: 28,
-                child: const Text('📅', style: TextStyle(fontSize: 48)),
+                child: AppImages.calendar(size: 48),
               ),
             ),
           ),
@@ -130,7 +131,7 @@ class _WelcomeIllustration extends StatelessWidget {
                 hue: stickerHues[3],
                 size: 110,
                 radius: 28,
-                child: const Text('👥', style: TextStyle(fontSize: 48)),
+                child: AppImages.people(size: 48),
               ),
             ),
           ),

@@ -9,6 +9,7 @@ import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
 import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 import '../widgets/members_dialog.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -480,7 +481,7 @@ class _CreateChoiceSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _ChoiceTile(
-            emoji: '📅',
+            icon: AppImages.calendar(size: 28),
             title: 'Regular event',
             subtitle: 'Fixed date and time slot',
             onTap: () {
@@ -489,7 +490,7 @@ class _CreateChoiceSheet extends StatelessWidget {
             },
           ),
           _ChoiceTile(
-            emoji: '📊',
+            icon: AppImages.poll(size: 28),
             title: 'Poll',
             subtitle: 'Let the group vote on a time',
             onTap: () {
@@ -506,12 +507,12 @@ class _CreateChoiceSheet extends StatelessWidget {
 
 class _ChoiceTile extends StatelessWidget {
   const _ChoiceTile({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
-  final String emoji;
+  final Widget icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -530,7 +531,7 @@ class _ChoiceTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 28)),
+              icon,
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -629,8 +630,8 @@ class _PollCardState extends State<_PollCard> {
                   ),
                 ],
               ),
-              child: const Center(
-                child: Text('📊', style: TextStyle(fontSize: 20)),
+              child: Center(
+                child: AppImages.poll(size: 20),
               ),
             ),
             const SizedBox(width: 12),

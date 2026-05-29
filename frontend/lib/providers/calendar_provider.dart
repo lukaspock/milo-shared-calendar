@@ -49,6 +49,11 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
           .map((e) => CalendarModel.fromJson(e as Map<String, dynamic>))
           .toList();
       state = AsyncValue.data(list);
+      // Subscribe to every calendar over the WebSocket so on-device
+      // notifications fire app-wide (not only while a calendar screen is open).
+      for (final c in list) {
+        _ws.subscribeToCalendar(c.id);
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

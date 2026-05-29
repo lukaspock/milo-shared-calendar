@@ -53,7 +53,8 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     const members = await db`
       SELECT u.email FROM users u
       INNER JOIN calendar_members cm ON cm.user_id = u.id
-      WHERE cm.calendar_id = ${calendar_id} AND u.id != ${userId} AND u.email_verified = true
+      WHERE cm.calendar_id = ${calendar_id} AND u.id != ${userId}
+        AND u.email_verified = true AND u.notification_type = 'email'
     `;
     const cal = await db`SELECT name FROM calendars WHERE id = ${calendar_id}`;
     if (members.length > 0 && cal.length > 0) {

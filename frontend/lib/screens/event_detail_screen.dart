@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String calendarId;
@@ -344,7 +345,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         child: Column(
                           children: [
                             _FieldRow(
-                              icon: '📅',
+                              icon: AppImages.calendar(size: 16),
                               label: 'When',
                               value: _fmtFull(_startTime),
                               onTap: () => _pickDateTime(isStart: true),
@@ -352,7 +353,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             ),
                             _Divider(),
                             _FieldRow(
-                              icon: '🏁',
+                              icon: AppImages.flag(size: 16),
                               label: 'Ends',
                               value: _fmtFull(_endTime),
                               onTap: () => _pickDateTime(isStart: false),
@@ -400,7 +401,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             contentPadding: const EdgeInsets.symmetric(vertical: 12),
                             prefixIcon: Padding(
                               padding: const EdgeInsets.only(right: 12, top: 14),
-                              child: Text('📝', style: TextStyle(fontSize: 16)),
+                              child: AppImages.note(size: 16),
                             ),
                             prefixIconConstraints: const BoxConstraints(
                               minWidth: 0, minHeight: 0,
@@ -472,7 +473,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   borderRadius: BorderRadius.circular(28),
                                 ),
                               ),
-                              icon: const Text('🔔', style: TextStyle(fontSize: 16)),
+                              icon: AppImages.bell(size: 16),
                               label: Text(
                                 'Notify members',
                                 style: GoogleFonts.plusJakartaSans(
@@ -507,7 +508,7 @@ class _FieldRow extends StatelessWidget {
     this.isLast = false,
   });
 
-  final String icon;
+  final Widget icon;
   final String label;
   final String value;
   final VoidCallback onTap;
@@ -528,7 +529,7 @@ class _FieldRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 16)),
+            icon,
             const SizedBox(width: 12),
             Text(
               label,

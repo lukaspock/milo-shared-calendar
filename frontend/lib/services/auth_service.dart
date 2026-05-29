@@ -27,15 +27,22 @@ class AuthService {
   static const _tokenKey = 'jwt_token';
   static const _userKey = 'current_user';
 
+  /// In-memory cache of the current user, kept in sync with SharedPreferences.
+  /// Lets synchronous callers (e.g. the WebSocket notification listener) read
+  /// the current notification preference without awaiting storage.
+  AppUser? cachedUser;
+
   Future<({String token, AppUser user})> register({
     required String email,
     required String password,
     required String name,
+    NotificationType notificationType = NotificationType.email,
   }) async {
     final res = await _api.post('/auth/register', data: {
       'email': email,
       'password': password,
       'name': name,
+      'notification_type': notificationType.apiValue,
     });
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
@@ -80,7 +87,16 @@ class AuthService {
     return (res.data as Map<String, dynamic>)['url'] as String;
   }
 
+  /// Persists the user's preferred notification delivery method on the backend
+  /// and returns the refreshed user.
+  Future<AppUser> updateNotificationType(NotificationType type) async {
+    await _api.put('/auth/notification-type',
+        data: {'notification_type': type.apiValue});
+    return refreshUser();
+  }
+
   Future<void> _saveSession(String token, AppUser user) async {
+    cachedUser = user;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_userKey, _encodeUser(user));
@@ -90,7 +106,9 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_userKey);
     if (raw == null) return null;
-    return _decodeUser(raw);
+    final user = _decodeUser(raw);
+    cachedUser = user;
+    return user;
   }
 
   Future<String?> getStoredToken() async {
@@ -99,6 +117,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    cachedUser = null;
     try { await _googleSignIn.signOut(); } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
@@ -107,6 +126,7 @@ class AuthService {
 
   Future<void> deleteAccount() async {
     await _api.delete('/users/me');
+    cachedUser = null;
     try { await _googleSignIn.signOut(); } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
@@ -116,6 +136,7 @@ class AuthService {
   Future<AppUser> refreshUser() async {
     final res = await _api.get('/auth/me');
     final user = AppUser.fromJson(res.data as Map<String, dynamic>);
+    cachedUser = user;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, _encodeUser(user));
     return user;
@@ -127,7 +148,7 @@ class AuthService {
 
   // Pipe-separated encoding — fields must not contain '|'
   String _encodeUser(AppUser u) =>
-      '${u.id}|${u.email}|${u.name}|${u.color}|${u.emailVerified}|${u.hasGoogleCalendar}';
+      '${u.id}|${u.email}|${u.name}|${u.color}|${u.emailVerified}|${u.hasGoogleCalendar}|${u.notificationType.apiValue}';
 
   AppUser _decodeUser(String raw) {
     final p = raw.split('|');
@@ -138,6 +159,8 @@ class AuthService {
       color: p[3],
       emailVerified: p.length > 4 ? p[4] == 'true' : false,
       hasGoogleCalendar: p.length > 5 ? p[5] == 'true' : false,
+      notificationType:
+          p.length > 6 ? NotificationType.fromApi(p[6]) : NotificationType.email,
     );
   }
 }

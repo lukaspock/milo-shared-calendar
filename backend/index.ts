@@ -1,6 +1,6 @@
 import { Router } from "./src/router";
 import { authMiddleware } from "./src/middleware/auth.middleware";
-import { register, login, deleteUser, verifyEmail, resendVerification, getMe, googleAuth, connectGoogleCalendar, googleCalendarCallback } from "./src/routes/auth";
+import { register, login, deleteUser, verifyEmail, resendVerification, getMe, updateNotificationType, googleAuth, connectGoogleCalendar, googleCalendarCallback } from "./src/routes/auth";
 import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
@@ -16,6 +16,7 @@ router.post("/auth/google", googleAuth);
 router.get("/auth/verify/:token", verifyEmail);
 router.post("/auth/resend-verification", resendVerification, [authMiddleware]);
 router.get("/auth/me", getMe, [authMiddleware]);
+router.put("/auth/notification-type", updateNotificationType, [authMiddleware]);
 router.post("/auth/google-calendar/connect", connectGoogleCalendar, [authMiddleware]);
 router.get("/auth/google-calendar/callback", googleCalendarCallback);
 router.delete("/users/me", deleteUser, [authMiddleware]);

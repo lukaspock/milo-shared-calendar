@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
 
@@ -453,7 +454,7 @@ class _HeroTiles extends StatelessWidget {
                 hue: stickerHues[0],
                 size: 68,
                 radius: 18,
-                child: const Text('📅', style: TextStyle(fontSize: 28)),
+                child: AppImages.calendar(size: 28),
               ),
             ),
           ),
@@ -466,7 +467,7 @@ class _HeroTiles extends StatelessWidget {
                 hue: stickerHues[1],
                 size: 68,
                 radius: 18,
-                child: const Text('👥', style: TextStyle(fontSize: 28)),
+                child: AppImages.people(size: 28),
               ),
             ),
           ),
@@ -479,7 +480,7 @@ class _HeroTiles extends StatelessWidget {
                 hue: stickerHues[3],
                 size: 68,
                 radius: 18,
-                child: const Text('⭐', style: TextStyle(fontSize: 28)),
+                child: AppImages.star(size: 28),
               ),
             ),
           ),

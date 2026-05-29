@@ -6,6 +6,7 @@ import '../models/poll.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image.dart';
 
 class _Slot {
   DateTime start;
@@ -185,8 +186,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: const Text('📊',
-                        style: TextStyle(fontSize: 18)),
+                    child: AppImages.poll(size: 18),
                   ),
                 ],
               ),
@@ -273,8 +273,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                             prefixIcon: Padding(
                               padding: const EdgeInsets.only(
                                   right: 12, top: 14),
-                              child: const Text('📝',
-                                  style: TextStyle(fontSize: 16)),
+                              child: AppImages.note(size: 16),
                             ),
                             prefixIconConstraints: const BoxConstraints(
                                 minWidth: 0, minHeight: 0),
@@ -477,7 +476,7 @@ class _SlotCard extends StatelessWidget {
               color: AppTheme.line),
           // Start
           _TimeRow(
-            icon: '📅',
+            icon: AppImages.calendar(size: 16),
             label: 'From',
             value: fmtFull(slot.start),
             onTap: onPickStart,
@@ -488,7 +487,7 @@ class _SlotCard extends StatelessWidget {
               color: AppTheme.line),
           // End
           _TimeRow(
-            icon: '🏁',
+            icon: AppImages.flag(size: 16),
             label: 'To',
             value: fmtFull(slot.end),
             onTap: onPickEnd,
@@ -509,7 +508,7 @@ class _TimeRow extends StatelessWidget {
     this.isLast = false,
   });
 
-  final String icon;
+  final Widget icon;
   final String label;
   final String value;
   final VoidCallback onTap;
@@ -530,7 +529,7 @@ class _TimeRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 16)),
+            icon,
             const SizedBox(width: 12),
             Text(
               label,
