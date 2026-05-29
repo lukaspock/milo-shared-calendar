@@ -57,8 +57,8 @@ class _OnboardingCalendarScreenState
     final anyConnected = googleConnected || _deviceConnected;
 
     return OnboardingShell(
-      step: 4,
-      totalSteps: 4,
+      step: 5,
+      totalSteps: 5,
       onBack: null,
       illustration: AppImages.calendar(size: 72),
       illustrationHue: stickerHues[2],

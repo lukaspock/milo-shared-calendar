@@ -41,7 +41,7 @@ class _OnboardingNameEmailScreenState
 
     return OnboardingShell(
       step: 1,
-      totalSteps: 4,
+      totalSteps: 5,
       onBack: () => context.go('/welcome'),
       illustration: AppImages.wave(size: 72),
       illustrationHue: stickerHues[1],

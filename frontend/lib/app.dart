@@ -12,6 +12,7 @@ import 'screens/create_poll_screen.dart';
 import 'screens/poll_detail_screen.dart';
 import 'screens/onboarding/onboarding_name_email_screen.dart';
 import 'screens/onboarding/onboarding_email_screen.dart';
+import 'screens/onboarding/onboarding_notifications_screen.dart';
 import 'screens/onboarding/onboarding_password_screen.dart';
 import 'screens/onboarding/onboarding_verify_screen.dart';
 import 'screens/onboarding/onboarding_calendar_screen.dart';
@@ -41,7 +42,11 @@ final _router = GoRouter(
     GoRoute(
         path: '/onboarding/email',
         builder: (_, _s) => const OnboardingEmailScreen()),
-    // Step 3 (email path) — password + registers account
+    // Step 3 (email path) — notification type choice
+    GoRoute(
+        path: '/onboarding/notifications',
+        builder: (_, _s) => const OnboardingNotificationsScreen()),
+    // Step 4 (email path) — password + registers account
     GoRoute(
         path: '/onboarding/password',
         builder: (_, _s) => const OnboardingPasswordScreen()),

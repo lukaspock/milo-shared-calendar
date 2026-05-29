@@ -43,14 +43,14 @@ class _OnboardingEmailScreenState
           _nameCtrl.text.trim(),
           _emailCtrl.text.trim(),
         );
-    context.go('/onboarding/password');
+    context.go('/onboarding/notifications');
   }
 
   @override
   Widget build(BuildContext context) {
     return OnboardingShell(
       step: 2,
-      totalSteps: 4,
+      totalSteps: 5,
       onBack: () => context.go('/onboarding/name'),
       illustration: AppImages.envelope(size: 72),
       illustrationHue: stickerHues[2],
