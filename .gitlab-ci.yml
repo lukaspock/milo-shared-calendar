@@ -3,23 +3,18 @@
 # Pipeline overview:
 #   lint   → type-check backend (Bun/TS) + format-check & analyze Flutter frontend
 #   test   → run backend & Flutter tests
-#   build  → Android APK + Flutter Web (free Linux runners) and macOS .app (macOS runner)
-#   deploy → trigger a Render.com deploy on `main` via deploy hook
+#   deploy → publish Flutter web to GitLab Pages + trigger Render backend deploy
 #
 # Required CI/CD variable (Settings → CI/CD → Variables):
 #   RENDER_DEPLOY_HOOK   The Render service "Deploy Hook" URL. Mark it Masked.
 #                        Render dashboard → your service → Settings → Deploy Hook.
 #
-# Notes:
-#   - GitLab.com free shared runners are Linux-only, so the APK and Web jobs run there.
-#   - The macOS .app job needs a macOS runner. On GitLab SaaS that's the paid macOS
-#     runners (tag below); a self-hosted Mac runner works too. It's `manual` and
-#     `allow_failure`, so it never blocks the rest of the pipeline.
+# GitLab Pages URL (available after first successful main pipeline):
+#   https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/
 
 stages:
   - lint
   - test
-  - build
   - deploy
 
 # Avoid duplicate pipelines: run for merge requests, and for branch pushes that
@@ -100,56 +95,20 @@ frontend:test:
     - flutter test
 
 # ---------------------------------------------------------------------------
-# Build artifacts
+# Deploy — GitLab Pages + Render backend (main only)
 # ---------------------------------------------------------------------------
 
-build:apk:
+pages:
   extends: .flutter
-  stage: build
-  script:
-    - flutter build apk --release
-  artifacts:
-    name: "sharedcal-apk-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - frontend/build/app/outputs/flutter-apk/app-release.apk
-    expire_in: 2 weeks
-
-build:web:
-  extends: .flutter
-  stage: build
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - flutter build web --release
+    - mv build/web $CI_PROJECT_DIR/public
   artifacts:
-    name: "sharedcal-web-$CI_COMMIT_SHORT_SHA"
     paths:
-      - frontend/build/web/
-    expire_in: 2 weeks
-
-build:macos:
-  extends: .flutter
-  stage: build
-  # Requires a macOS runner. On GitLab SaaS, keep/adjust the saas-macos tag (paid).
-  # For a self-hosted Mac runner, replace the tag with that runner's tag.
-  tags:
-    - saas-macos-medium-m1
-  image: macos-14-xcode-15
-  when: manual
-  allow_failure: true
-  script:
-    - flutter config --enable-macos-desktop
-    - flutter build macos --release
-    # Zip the .app bundle so it downloads as a single artifact.
-    - cd build/macos/Build/Products/Release
-    - zip -r -y sharedcal-macos.zip *.app
-  artifacts:
-    name: "sharedcal-macos-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - frontend/build/macos/Build/Products/Release/sharedcal-macos.zip
-    expire_in: 2 weeks
-
-# ---------------------------------------------------------------------------
-# Deploy — trigger Render on main
-# ---------------------------------------------------------------------------
+      - public
 
 deploy:render:
   stage: deploy
