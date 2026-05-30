@@ -4,6 +4,7 @@ export '../models/event.dart' show RecurrenceRule;
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
 import '../services/device_calendar_service.dart';
+import '../services/local_notification_service.dart';
 import '../services/websocket_service.dart';
 
 class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
@@ -102,8 +103,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           _cache.saveEvents(calendarId, updated);
         }
       });
-      // Fire-and-forget: sync to device calendar if enabled
+      // Fire-and-forget: sync to device calendar + schedule reminder
       DeviceCalendarService().syncEvent(event);
+      LocalNotificationService().scheduleEventReminder(event);
       return event;
     } catch (_) {
       return null;
@@ -138,8 +140,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         state = AsyncValue.data(updated);
         _cache.saveEvents(calendarId, updated);
       });
-      // Fire-and-forget: sync update to device calendar if enabled
+      // Fire-and-forget: sync update to device calendar + reschedule reminder
       DeviceCalendarService().syncEvent(event);
+      LocalNotificationService().cancelEventReminder(id);
+      LocalNotificationService().scheduleEventReminder(event);
       return true;
     } catch (_) {
       return false;
@@ -154,8 +158,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         state = AsyncValue.data(updated);
         _cache.saveEvents(calendarId, updated);
       });
-      // Fire-and-forget: remove from device calendar if enabled
+      // Fire-and-forget: remove from device calendar + cancel reminder
       DeviceCalendarService().deleteDeviceEvent(id);
+      LocalNotificationService().cancelEventReminder(id);
       return true;
     } catch (_) {
       return false;

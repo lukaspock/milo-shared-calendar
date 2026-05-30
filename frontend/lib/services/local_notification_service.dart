@@ -1,5 +1,8 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
+import '../models/event.dart';
 import '../models/user.dart';
 import 'auth_service.dart';
 import 'websocket_service.dart';
@@ -51,6 +54,8 @@ class LocalNotificationService {
       iOS: darwinInit,
       macOS: darwinInit,
     );
+
+    tz.initializeTimeZones();
 
     try {
       await _plugin.initialize(settings);
@@ -116,8 +121,68 @@ class LocalNotificationService {
     }
   }
 
+  /// Schedules a local notification 30 min before [event] starts.
+  /// No-op if the event is in the past or less than 31 min away.
+  Future<void> scheduleEventReminder(CalendarEvent event) async {
+    await init();
+    final user = AuthService().cachedUser;
+    if (user == null || user.notificationType != NotificationType.push) return;
+
+    final reminderTime = event.startTime.subtract(const Duration(minutes: 30));
+    if (!reminderTime.isAfter(DateTime.now())) return;
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'event_reminders',
+        'Event reminders',
+        channelDescription: 'Reminds you 30 minutes before an event starts.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+    );
+
+    // Use a stable int ID derived from the event UUID so we can cancel it later
+    final id = event.id.hashCode.abs() % 100000;
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        'Starting in 30 minutes',
+        event.title,
+        tz.TZDateTime.from(reminderTime, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } catch (_) {
+      // Scheduled notifications may not be supported on all platforms/configs.
+    }
+  }
+
+  /// Cancels a previously scheduled reminder for the given event ID.
+  Future<void> cancelEventReminder(String eventId) async {
+    final id = eventId.hashCode.abs() % 100000;
+    try {
+      await _plugin.cancel(id);
+    } catch (_) {}
+  }
+
   void _onWsMessage(Map<String, dynamic> msg) {
-    if (msg['type'] != 'event_created') return;
+    final type = msg['type'] as String?;
+
+    // Backend-sent reminder (30 min before) → show immediately for push users
+    if (type == 'event_reminder') {
+      final user = AuthService().cachedUser;
+      if (user == null || user.notificationType != NotificationType.push) return;
+      final title = (msg['event_title'] as String?)?.trim();
+      if (title != null && title.isNotEmpty) {
+        show('Starting in 30 minutes', title);
+      }
+      return;
+    }
+
+    if (type != 'event_created') return;
 
     final user = AuthService().cachedUser;
     // Only users who opted into on-device notifications get a popup.
