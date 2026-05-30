@@ -132,6 +132,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> forgotPassword(String email) async {
+    await _authService.forgotPassword(email);
+  }
+
   Future<String?> getGoogleCalendarConnectUrl() async {
     try {
       return await _authService.getGoogleCalendarConnectUrl();

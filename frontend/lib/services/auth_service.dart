@@ -146,6 +146,10 @@ class AuthService {
     await _api.post('/auth/resend-verification');
   }
 
+  Future<void> forgotPassword(String email) async {
+    await _api.post('/auth/forgot-password', data: {'email': email});
+  }
+
   // Pipe-separated encoding — fields must not contain '|'
   String _encodeUser(AppUser u) =>
       '${u.id}|${u.email}|${u.name}|${u.color}|${u.emailVerified}|${u.hasGoogleCalendar}|${u.notificationType.apiValue}';

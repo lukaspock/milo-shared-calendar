@@ -66,6 +66,26 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   await send(email, "Verify your SharedCal email address", html);
 }
 
+export async function sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
+  const link = `${APP_URL}/auth/reset-password/${token}`;
+  const html = base(`
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 8px;">Reset your password 🔑</h2>
+    <p style="color:#6B6357;font-size:15px;line-height:1.6;margin:0 0 4px;">
+      Hi ${name}, we received a request to reset your SharedCal password.
+      Tap the button below to choose a new one.
+    </p>
+    ${btn(link, "Reset password")}
+    <p style="color:#A39A8C;font-size:13px;margin:0;">
+      Or copy this link:<br>
+      <a href="${link}" style="color:#1F1B16;word-break:break-all;">${link}</a>
+    </p>
+    <p style="color:#A39A8C;font-size:12px;margin:20px 0 0;">
+      This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email.
+    </p>
+  `);
+  await send(email, "Reset your SharedCal password", html);
+}
+
 export async function sendEventNotification(params: {
   memberEmails: string[];
   eventTitle: string;

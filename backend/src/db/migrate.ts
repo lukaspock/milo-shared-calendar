@@ -55,5 +55,12 @@ export async function runMigrations(): Promise<void> {
       ADD COLUMN IF NOT EXISTS recurrence_end  DATE
   `;
 
+  // Password reset: single-use token + 1-hour expiry, cleared after use
+  await db`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS reset_token TEXT,
+      ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP
+  `;
+
   console.log("[db] migrations applied");
 }

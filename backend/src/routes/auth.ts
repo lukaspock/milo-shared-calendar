@@ -2,7 +2,7 @@ import db from "../db/client";
 import { signToken } from "../middleware/auth.middleware";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
-import { sendVerificationEmail } from "../services/email";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
 import { google } from "googleapis";
 import { generateCalendarConnectUrl, handleCalendarCallback } from "../services/google_calendar";
 
@@ -252,6 +252,126 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
   }, isNew ? 201 : 200);
 }
 
+export async function forgotPassword(ctx: RequestContext): Promise<Response> {
+  let body: { email?: string };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { email } = body;
+  if (!email) return error("email is required");
+
+  // Always return 200 — don't reveal whether the email exists
+  const users = await db`SELECT id, name, password_hash FROM users WHERE email = ${email}`;
+  if (users.length === 0) return json({ message: "If that email exists, a reset link has been sent." });
+
+  const user = users[0];
+  // Google-only accounts have no password — can't reset what doesn't exist
+  if (!user.password_hash) return json({ message: "If that email exists, a reset link has been sent." });
+
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await db`UPDATE users SET reset_token = ${token}, reset_expires_at = ${expiresAt} WHERE id = ${user.id}`;
+
+  sendPasswordResetEmail(email, user.name, token).catch(console.error);
+
+  return json({ message: "If that email exists, a reset link has been sent." });
+}
+
+export async function showResetPasswordForm(ctx: RequestContext): Promise<Response> {
+  const { token } = ctx.params;
+  const users = await db`
+    SELECT id, reset_expires_at FROM users
+    WHERE reset_token = ${token} AND reset_expires_at IS NOT NULL
+  `;
+
+  if (users.length === 0) {
+    return new Response(resetErrorPage("This reset link is invalid or has already been used."), {
+      status: 400, headers: { "Content-Type": "text/html" },
+    });
+  }
+
+  if (new Date(users[0].reset_expires_at) < new Date()) {
+    return new Response(resetErrorPage("This reset link has expired. Please request a new one in the app."), {
+      status: 400, headers: { "Content-Type": "text/html" },
+    });
+  }
+
+  return new Response(resetFormPage(token), {
+    status: 200, headers: { "Content-Type": "text/html" },
+  });
+}
+
+export async function submitResetPassword(ctx: RequestContext): Promise<Response> {
+  const { token } = ctx.params;
+
+  // Handle both JSON (from app) and form-encoded (from browser form)
+  let newPassword: string | undefined;
+  const contentType = ctx.req.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    const text = await ctx.req.text();
+    const params = new URLSearchParams(text);
+    newPassword = params.get("password") ?? undefined;
+  } else {
+    try {
+      const body = await ctx.req.json() as { password?: string };
+      newPassword = body.password;
+    } catch {
+      return error("Invalid request body");
+    }
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      return new Response(resetErrorPage("Password must be at least 6 characters."), {
+        status: 400, headers: { "Content-Type": "text/html" },
+      });
+    }
+    return error("Password must be at least 6 characters");
+  }
+
+  const users = await db`
+    SELECT id, reset_expires_at FROM users
+    WHERE reset_token = ${token} AND reset_expires_at IS NOT NULL
+  `;
+
+  if (users.length === 0) {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      return new Response(resetErrorPage("This reset link is invalid or has already been used."), {
+        status: 400, headers: { "Content-Type": "text/html" },
+      });
+    }
+    return error("Invalid or expired reset token", 400);
+  }
+
+  if (new Date(users[0].reset_expires_at) < new Date()) {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      return new Response(resetErrorPage("This reset link has expired. Please request a new one in the app."), {
+        status: 400, headers: { "Content-Type": "text/html" },
+      });
+    }
+    return error("Reset token has expired", 400);
+  }
+
+  const passwordHash = await Bun.password.hash(newPassword);
+  await db`
+    UPDATE users
+    SET password_hash = ${passwordHash}, reset_token = NULL, reset_expires_at = NULL
+    WHERE id = ${users[0].id}
+  `;
+
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    return new Response(resetSuccessPage(), {
+      status: 200, headers: { "Content-Type": "text/html" },
+    });
+  }
+  return json({ message: "Password updated successfully" });
+}
+
 export async function deleteUser(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   await db`DELETE FROM users WHERE id = ${userId}`;
@@ -328,6 +448,55 @@ function errorPage(message: string): string {
     "Verification failed",
     "#E85535",
     `<h1 style="color:#1F1B16;font-size:24px;font-weight:800;margin:0 0 8px;">Verification failed</h1>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">${message}</p>
+     <span style="font-size:64px;">😕</span>`,
+  );
+}
+
+function resetFormPage(token: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reset password</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FFF8F0;font-family:'Helvetica Neue',Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+input{width:100%;padding:14px 16px;border:1.5px solid #EFE4D2;border-radius:14px;font-size:15px;outline:none;background:#FBF1E4;margin:8px 0 20px;font-family:inherit}
+input:focus{border-color:#1F1B16}
+button{width:100%;padding:14px;background:#1F1B16;color:#fff;border:none;border-radius:28px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+button:hover{opacity:0.85}
+label{font-size:14px;font-weight:600;color:#1F1B16}
+</style>
+</head><body>
+<div style="background:#fff;border-radius:24px;border:2px solid #EFE4D2;padding:40px;max-width:420px;width:100%;box-shadow:0 4px 0 #EFE4D2;">
+  <div style="background:#1F1B16;width:48px;height:48px;border-radius:14px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;text-align:center;">
+    <span style="color:white;font-size:20px;line-height:48px;">🔑</span>
+  </div>
+  <h1 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 6px;text-align:center;">Choose a new password</h1>
+  <p style="color:#6B6357;font-size:14px;margin:0 0 24px;text-align:center;">Must be at least 6 characters.</p>
+  <form method="POST" action="/auth/reset-password/${token}">
+    <label for="pw">New password</label>
+    <input id="pw" name="password" type="password" minlength="6" required autofocus placeholder="••••••••">
+    <button type="submit">Set new password →</button>
+  </form>
+  <p style="color:#A39A8C;font-size:12px;margin:20px 0 0;text-align:center;">SharedCal</p>
+</div>
+</body></html>`;
+}
+
+function resetSuccessPage(): string {
+  return page(
+    "Password reset ✅",
+    "#2ECC71",
+    `<h1 style="color:#1F1B16;font-size:26px;font-weight:800;margin:0 0 8px;">Password updated!</h1>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">Your new password is set. You can close this tab and sign in to the app.</p>
+     <span style="font-size:64px;">🎉</span>`,
+  );
+}
+
+function resetErrorPage(message: string): string {
+  return page(
+    "Reset failed",
+    "#E85535",
+    `<h1 style="color:#1F1B16;font-size:24px;font-weight:800;margin:0 0 8px;">Reset failed</h1>
      <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">${message}</p>
      <span style="font-size:64px;">😕</span>`,
   );

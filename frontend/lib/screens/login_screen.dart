@@ -309,7 +309,40 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
                   v != null && v.length >= 6 ? null : 'Min 6 characters',
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+
+            // ── Forgot password ───────────────────────────────────────────
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => ProviderScope(
+                      parent: ProviderScope.containerOf(context),
+                      child: _ForgotPasswordSheet(
+                        prefillEmail: _emailCtrl.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Forgot password?',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.inkSoft,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppTheme.inkMuted,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
 
             // ── Sign in button ────────────────────────────────────────────
             AppButton(
@@ -319,6 +352,127 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Forgot-password bottom sheet ──────────────────────────────────────────────
+
+class _ForgotPasswordSheet extends ConsumerStatefulWidget {
+  const _ForgotPasswordSheet({this.prefillEmail = ''});
+  final String prefillEmail;
+
+  @override
+  ConsumerState<_ForgotPasswordSheet> createState() =>
+      _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
+  final _emailCtrl = TextEditingController();
+  bool _loading = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.prefillEmail;
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final email = _emailCtrl.text.trim();
+    if (!email.contains('@')) {
+      setState(() => _error = 'Enter a valid email');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await ref.read(authProvider.notifier).forgotPassword(email);
+      if (mounted) setState(() { _sent = true; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; _error = 'Something went wrong. Try again.'; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 20, 24,
+        MediaQuery.of(context).viewInsets.bottom + 28,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _sent ? 'Check your email' : 'Forgot password?',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 20, fontWeight: FontWeight.w700,
+              color: AppTheme.ink, letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _sent
+                ? 'If an account exists for that address, we\'ve sent a reset link. It expires in 1 hour.'
+                : 'Enter your email and we\'ll send you a link to reset your password.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14, color: AppTheme.inkSoft, height: 1.5,
+            ),
+          ),
+          if (!_sent) ...[
+            const SizedBox(height: 20),
+            AppTextField(
+              controller: _emailCtrl,
+              label: 'Email',
+              hint: 'you@example.com',
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: Icons.email_outlined,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _loading ? null : _submit(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!,
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13, color: AppTheme.danger)),
+            ],
+            const SizedBox(height: 20),
+            AppButton(
+              label: 'Send reset link →',
+              onPressed: _loading ? null : _submit,
+              isLoading: _loading,
+            ),
+          ] else ...[
+            const SizedBox(height: 24),
+            AppButton(
+              label: 'Back to sign in',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ],
       ),
     );
   }
