@@ -27,6 +27,16 @@ class CalendarModel {
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'owner_id': ownerId,
+    'invite_code': inviteCode,
+    'role': role,
+    'member_count': memberCount,
+    'created_at': createdAt.toIso8601String(),
+  };
+
   bool get isOwner => role == 'owner';
 
   CalendarModel copyWithMemberCount(int count) => CalendarModel(

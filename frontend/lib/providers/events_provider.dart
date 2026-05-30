@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 export '../models/event.dart' show RecurrenceRule;
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 import '../services/device_calendar_service.dart';
 import '../services/websocket_service.dart';
 
@@ -14,17 +15,26 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   final String calendarId;
   final _api = ApiService();
   final _ws = WebSocketService();
+  final _cache = CacheService();
 
   Future<void> fetch() async {
-    state = const AsyncValue.loading();
+    // Load from cache first — instant paint, no spinner on Render cold starts
+    final cached = await _cache.loadEvents(calendarId);
+    if (cached != null) {
+      state = AsyncValue.data(cached);
+    } else {
+      state = const AsyncValue.loading();
+    }
+
     try {
       final res = await _api.get('/calendars/$calendarId/events');
       final list = (res.data as List)
           .map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>))
           .toList();
       state = AsyncValue.data(list);
+      _cache.saveEvents(calendarId, list);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (cached == null) state = AsyncValue.error(e, st);
     }
   }
 
@@ -87,7 +97,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
         if (!list.any((e) => e.id == event.id)) {
-          state = AsyncValue.data([...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime)));
+          final updated = [...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime));
+          state = AsyncValue.data(updated);
+          _cache.saveEvents(calendarId, updated);
         }
       });
       // Fire-and-forget: sync to device calendar if enabled
@@ -122,7 +134,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
-        state = AsyncValue.data(list.map((e) => e.id == id ? event : e).toList());
+        final updated = list.map((e) => e.id == id ? event : e).toList();
+        state = AsyncValue.data(updated);
+        _cache.saveEvents(calendarId, updated);
       });
       // Fire-and-forget: sync update to device calendar if enabled
       DeviceCalendarService().syncEvent(event);
@@ -136,7 +150,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     try {
       await _api.delete('/events/$id');
       state.whenData((list) {
-        state = AsyncValue.data(list.where((e) => e.id != id).toList());
+        final updated = list.where((e) => e.id != id).toList();
+        state = AsyncValue.data(updated);
+        _cache.saveEvents(calendarId, updated);
       });
       // Fire-and-forget: remove from device calendar if enabled
       DeviceCalendarService().deleteDeviceEvent(id);

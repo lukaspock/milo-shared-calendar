@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/calendar.dart';
 import '../models/member.dart';
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 import '../services/websocket_service.dart';
 import 'auth_provider.dart';
 
@@ -14,6 +15,7 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
   final Ref ref;
   final _api = ApiService();
   final _ws = WebSocketService();
+  final _cache = CacheService();
 
   void _onWsMessage(Map<String, dynamic> msg) {
     if (msg['type'] == 'member_joined') {
@@ -42,20 +44,32 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       return;
     }
 
-    state = const AsyncValue.loading();
+    // Load from cache first — shows data instantly, even on Render cold starts
+    final cached = await _cache.loadCalendars();
+    if (cached != null && cached.isNotEmpty) {
+      state = AsyncValue.data(cached);
+      for (final c in cached) {
+        _ws.subscribeToCalendar(c.id);
+      }
+    } else {
+      state = const AsyncValue.loading();
+    }
+
     try {
       final res = await _api.get('/calendars');
       final list = (res.data as List)
           .map((e) => CalendarModel.fromJson(e as Map<String, dynamic>))
           .toList();
       state = AsyncValue.data(list);
-      // Subscribe to every calendar over the WebSocket so on-device
-      // notifications fire app-wide (not only while a calendar screen is open).
+      _cache.saveCalendars(list);
       for (final c in list) {
         _ws.subscribeToCalendar(c.id);
       }
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // Keep showing cached data if available; only surface error if nothing cached
+      if (cached == null || cached.isEmpty) {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 
@@ -107,7 +121,10 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     try {
       await _api.delete('/calendars/$calendarId');
       state.whenData((list) {
-        state = AsyncValue.data(list.where((c) => c.id != calendarId).toList());
+        final updated = list.where((c) => c.id != calendarId).toList();
+        state = AsyncValue.data(updated);
+        _cache.saveCalendars(updated);
+        _cache.clearEvents(calendarId);
       });
       return true;
     } catch (_) {
@@ -119,7 +136,10 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     try {
       await _api.post('/calendars/$calendarId/leave');
       state.whenData((list) {
-        state = AsyncValue.data(list.where((c) => c.id != calendarId).toList());
+        final updated = list.where((c) => c.id != calendarId).toList();
+        state = AsyncValue.data(updated);
+        _cache.saveCalendars(updated);
+        _cache.clearEvents(calendarId);
       });
       return true;
     } catch (_) {

@@ -77,6 +77,21 @@ class CalendarEvent {
     return Color(int.parse('FF$h', radix: 16));
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'calendar_id': calendarId,
+    'created_by': createdBy,
+    'title': title,
+    if (description != null) 'description': description,
+    'start_time': startTime.toUtc().toIso8601String(),
+    'end_time': endTime.toUtc().toIso8601String(),
+    'color': '#${color.value.toRadixString(16).substring(2).toUpperCase()}',
+    if (creatorName != null) 'creator_name': creatorName,
+    if (creatorColor != null) 'creator_color': creatorColor,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
+
   CalendarEvent copyWith({
     String? title,
     String? description,
