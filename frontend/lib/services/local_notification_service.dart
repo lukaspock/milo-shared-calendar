@@ -154,6 +154,8 @@ class LocalNotificationService {
         tz.TZDateTime.from(reminderTime, tz.local),
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (_) {
       // Scheduled notifications may not be supported on all platforms/configs.
