@@ -14,6 +14,8 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     start_time?: string;
     end_time?: string;
     color?: string;
+    recurrence_rule?: string;
+    recurrence_end?: string;
   };
   try {
     body = await ctx.req.json();
@@ -21,9 +23,13 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     return error("Invalid JSON body");
   }
 
-  const { calendar_id, title, start_time, end_time, description, color } = body;
+  const { calendar_id, title, start_time, end_time, description, color, recurrence_rule, recurrence_end } = body;
   if (!calendar_id || !title || !start_time || !end_time) {
     return error("calendar_id, title, start_time and end_time are required");
+  }
+  const validRules = [undefined, null, "daily", "weekly", "monthly"];
+  if (recurrence_rule !== undefined && !validRules.includes(recurrence_rule)) {
+    return error("recurrence_rule must be 'daily', 'weekly', or 'monthly'");
   }
 
   // Verify membership
@@ -40,8 +46,9 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
   }
 
   const events = await db`
-    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color)
-    VALUES (${calendar_id}, ${userId}, ${title}, ${description ?? null}, ${start_time}, ${end_time}, ${eventColor})
+    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color, recurrence_rule, recurrence_end)
+    VALUES (${calendar_id}, ${userId}, ${title}, ${description ?? null}, ${start_time}, ${end_time}, ${eventColor},
+            ${recurrence_rule ?? null}, ${recurrence_end ?? null})
     RETURNING *
   `;
 
@@ -88,6 +95,8 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     start_time?: string;
     end_time?: string;
     color?: string;
+    recurrence_rule?: string | null;
+    recurrence_end?: string | null;
   };
   try {
     body = await ctx.req.json();
@@ -111,7 +120,9 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
       description = ${body.description ?? event.description},
       start_time = ${body.start_time ?? event.start_time},
       end_time = ${body.end_time ?? event.end_time},
-      color = ${body.color ?? event.color}
+      color = ${body.color ?? event.color},
+      recurrence_rule = ${'recurrence_rule' in body ? (body.recurrence_rule ?? null) : event.recurrence_rule},
+      recurrence_end  = ${'recurrence_end'  in body ? (body.recurrence_end  ?? null) : event.recurrence_end}
     WHERE id = ${id}
     RETURNING *
   `;

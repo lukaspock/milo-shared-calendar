@@ -31,6 +31,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   DateTime _startTime = DateTime.now().add(const Duration(hours: 1));
   DateTime _endTime = DateTime.now().add(const Duration(hours: 2));
   bool _isLoading = false;
+  RecurrenceRule _recurrenceRule = RecurrenceRule.none;
+  DateTime? _recurrenceEnd;
 
   bool get _isNew => widget.eventId == 'new';
   CalendarEvent? get _existingEvent =>
@@ -44,6 +46,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _descCtrl.text = _existingEvent!.description ?? '';
       _startTime = _existingEvent!.startTime;
       _endTime = _existingEvent!.endTime;
+      _recurrenceRule = _existingEvent!.recurrenceRule;
+      _recurrenceEnd = _existingEvent!.recurrenceEnd;
     } else if (widget.extra is DateTime) {
       final d = widget.extra as DateTime;
       _startTime = DateTime(d.year, d.month, d.day, 9, 0);
@@ -128,6 +132,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
+        recurrenceRule: _recurrenceRule,
+        recurrenceEnd: _recurrenceEnd,
       );
       ok = ev != null;
     } else {
@@ -137,6 +143,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
+        recurrenceRule: _recurrenceRule,
+        clearRecurrence: _recurrenceRule == RecurrenceRule.none,
+        recurrenceEnd: _recurrenceEnd,
       );
     }
 
@@ -202,6 +211,68 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _pickRecurrence() async {
+    final chosen = await showModalBottomSheet<RecurrenceRule>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: AppTheme.line, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 16),
+            Text('Repeat', style: GoogleFonts.plusJakartaSans(
+              fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.ink)),
+            const SizedBox(height: 12),
+            for (final rule in RecurrenceRule.values)
+              ListTile(
+                title: Text(rule.label, style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15, fontWeight: FontWeight.w500,
+                  color: _recurrenceRule == rule ? AppTheme.accent : AppTheme.ink)),
+                trailing: _recurrenceRule == rule
+                    ? const Icon(Icons.check_rounded, color: AppTheme.accent)
+                    : null,
+                onTap: () => Navigator.pop(context, rule),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null && mounted) {
+      setState(() {
+        _recurrenceRule = chosen;
+        if (chosen == RecurrenceRule.none) _recurrenceEnd = null;
+      });
+    }
+  }
+
+  Future<void> _pickRecurrenceEnd() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _recurrenceEnd ?? _startTime.add(const Duration(days: 30)),
+      firstDate: _startTime.add(const Duration(days: 1)),
+      lastDate: DateTime(2030),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppTheme.ink, onPrimary: Colors.white,
+            surface: AppTheme.surface, onSurface: AppTheme.ink,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (date != null && mounted) setState(() => _recurrenceEnd = date);
   }
 
   String _fmtFull(DateTime dt) {
@@ -357,8 +428,31 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               label: 'Ends',
                               value: _fmtFull(_endTime),
                               onTap: () => _pickDateTime(isStart: false),
-                              isLast: true,
                             ),
+                            _Divider(),
+                            _FieldRow(
+                              icon: const Icon(Icons.repeat_rounded,
+                                  size: 16, color: AppTheme.inkSoft),
+                              label: 'Repeat',
+                              value: _recurrenceRule.label,
+                              onTap: _pickRecurrence,
+                              isLast: _recurrenceRule == RecurrenceRule.none,
+                            ),
+                            if (_recurrenceRule != RecurrenceRule.none) ...[
+                              _Divider(),
+                              _FieldRow(
+                                icon: const Icon(Icons.event_outlined,
+                                    size: 16, color: AppTheme.inkSoft),
+                                label: 'Repeat until',
+                                value: _recurrenceEnd != null
+                                    ? '${_recurrenceEnd!.year}-'
+                                      '${_recurrenceEnd!.month.toString().padLeft(2, '0')}-'
+                                      '${_recurrenceEnd!.day.toString().padLeft(2, '0')}'
+                                    : 'No end date',
+                                onTap: _pickRecurrenceEnd,
+                                isLast: true,
+                              ),
+                            ],
                           ],
                         ),
                       ),
