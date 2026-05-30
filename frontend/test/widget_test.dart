@@ -94,7 +94,7 @@ void main() {
       final json = Map<String, dynamic>.from(baseJson)..remove('color');
       final event = CalendarEvent.fromJson(json);
       // #6C63FF → 0xFF6C63FF
-      expect(event.color.value, 0xFF6C63FF);
+      expect(event.color.toARGB32(), 0xFF6C63FF);
     });
   });
 

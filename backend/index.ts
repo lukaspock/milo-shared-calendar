@@ -63,7 +63,7 @@ const server = Bun.serve({
 
     // WebSocket upgrade
     if (url.pathname === "/ws") {
-      const upgraded = server.upgrade(req, { data: { calendarIds: [] } });
+      const upgraded = server.upgrade(req, { data: { calendarIds: [] as string[] } });
       if (upgraded) return undefined;
       return new Response("WebSocket upgrade failed", { status: 500 });
     }

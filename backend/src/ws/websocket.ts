@@ -1,3 +1,4 @@
+import type { ServerWebSocket } from "bun";
 import db from "../db/client";
 import { verifyToken } from "../middleware/auth.middleware";
 import type { JwtPayload } from "../types";
