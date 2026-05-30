@@ -10,8 +10,13 @@ interface Route {
   middlewares: ((ctx: RequestContext) => Promise<RequestContext | Response>)[];
 }
 
+// Lock to a specific origin in production by setting ALLOWED_ORIGIN env var.
+// Defaults to "*" for local dev — the Flutter app doesn't send an Origin header
+// from native builds, so this only matters for browser/web clients.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? "*";
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
