@@ -1,5 +1,21 @@
 import 'package:flutter/material.dart';
 
+enum RecurrenceRule { none, daily, weekly, monthly;
+  String get label => switch (this) {
+    RecurrenceRule.none    => 'Does not repeat',
+    RecurrenceRule.daily   => 'Daily',
+    RecurrenceRule.weekly  => 'Weekly',
+    RecurrenceRule.monthly => 'Monthly',
+  };
+  String? get apiValue => this == RecurrenceRule.none ? null : name;
+  static RecurrenceRule fromApi(String? v) => switch (v) {
+    'daily'   => RecurrenceRule.daily,
+    'weekly'  => RecurrenceRule.weekly,
+    'monthly' => RecurrenceRule.monthly,
+    _         => RecurrenceRule.none,
+  };
+}
+
 class CalendarEvent {
   final String id;
   final String calendarId;
@@ -13,6 +29,8 @@ class CalendarEvent {
   final String? creatorColor;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final RecurrenceRule recurrenceRule;
+  final DateTime? recurrenceEnd;
 
   const CalendarEvent({
     required this.id,
@@ -27,10 +45,15 @@ class CalendarEvent {
     this.creatorColor,
     required this.createdAt,
     required this.updatedAt,
+    this.recurrenceRule = RecurrenceRule.none,
+    this.recurrenceEnd,
   });
+
+  bool get isRecurring => recurrenceRule != RecurrenceRule.none;
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     final colorHex = json['color'] as String? ?? '#6C63FF';
+    final recEndRaw = json['recurrence_end'] as String?;
     return CalendarEvent(
       id: json['id'] as String,
       calendarId: json['calendar_id'] as String,
@@ -44,6 +67,8 @@ class CalendarEvent {
       creatorColor: json['creator_color'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      recurrenceRule: RecurrenceRule.fromApi(json['recurrence_rule'] as String?),
+      recurrenceEnd: recEndRaw != null ? DateTime.parse(recEndRaw) : null,
     );
   }
 
@@ -58,6 +83,8 @@ class CalendarEvent {
     DateTime? startTime,
     DateTime? endTime,
     Color? color,
+    RecurrenceRule? recurrenceRule,
+    DateTime? recurrenceEnd,
   }) {
     return CalendarEvent(
       id: id,
@@ -72,6 +99,8 @@ class CalendarEvent {
       creatorColor: creatorColor,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      recurrenceEnd: recurrenceEnd ?? this.recurrenceEnd,
     );
   }
 }

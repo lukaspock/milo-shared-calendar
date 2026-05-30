@@ -48,5 +48,12 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // Recurring events: simple rule ('daily'|'weekly'|'monthly') + optional end date
+  await db`
+    ALTER TABLE events
+      ADD COLUMN IF NOT EXISTS recurrence_rule TEXT,
+      ADD COLUMN IF NOT EXISTS recurrence_end  DATE
+  `;
+
   console.log("[db] migrations applied");
 }

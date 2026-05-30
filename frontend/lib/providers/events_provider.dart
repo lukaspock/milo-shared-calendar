@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
+export '../models/event.dart' show RecurrenceRule;
 import '../services/api_service.dart';
 import '../services/device_calendar_service.dart';
 import '../services/websocket_service.dart';
@@ -67,6 +68,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     required DateTime startTime,
     required DateTime endTime,
     String? color,
+    RecurrenceRule recurrenceRule = RecurrenceRule.none,
+    DateTime? recurrenceEnd,
   }) async {
     try {
       final res = await _api.post('/events', data: {
@@ -76,6 +79,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         'start_time': startTime.toUtc().toIso8601String(),
         'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
+        if (recurrenceRule != RecurrenceRule.none)
+          'recurrence_rule': recurrenceRule.apiValue,
+        if (recurrenceEnd != null)
+          'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
@@ -97,6 +104,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     DateTime? startTime,
     DateTime? endTime,
     String? color,
+    RecurrenceRule? recurrenceRule,
+    DateTime? recurrenceEnd,
+    bool clearRecurrence = false,
   }) async {
     try {
       final res = await _api.put('/events/$id', data: {
@@ -105,6 +115,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
         if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
+        if (recurrenceRule != null) 'recurrence_rule': recurrenceRule.apiValue,
+        if (clearRecurrence) 'recurrence_rule': null,
+        if (recurrenceEnd != null)
+          'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
