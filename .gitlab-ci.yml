@@ -1,0 +1,167 @@
+# SharedCal — GitLab CI/CD pipeline
+#
+# Pipeline overview:
+#   lint   → type-check backend (Bun/TS) + format-check & analyze Flutter frontend
+#   test   → run backend & Flutter tests
+#   build  → Android APK + Flutter Web (free Linux runners) and macOS .app (macOS runner)
+#   deploy → trigger a Render.com deploy on `main` via deploy hook
+#
+# Required CI/CD variable (Settings → CI/CD → Variables):
+#   RENDER_DEPLOY_HOOK   The Render service "Deploy Hook" URL. Mark it Masked.
+#                        Render dashboard → your service → Settings → Deploy Hook.
+#
+# Notes:
+#   - GitLab.com free shared runners are Linux-only, so the APK and Web jobs run there.
+#   - The macOS .app job needs a macOS runner. On GitLab SaaS that's the paid macOS
+#     runners (tag below); a self-hosted Mac runner works too. It's `manual` and
+#     `allow_failure`, so it never blocks the rest of the pipeline.
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+# Avoid duplicate pipelines: run for merge requests, and for branch pushes that
+# don't already have an open MR (prevents the "detached + branch" double pipeline).
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+# ---------------------------------------------------------------------------
+# Reusable templates
+# ---------------------------------------------------------------------------
+
+.bun:
+  image: oven/bun:1
+  cache:
+    key:
+      files:
+        - backend/bun.lock
+    paths:
+      - backend/node_modules/
+  before_script:
+    - cd backend
+    - bun install --frozen-lockfile
+
+.flutter:
+  image: ghcr.io/cirruslabs/flutter:stable
+  variables:
+    PUB_CACHE: "$CI_PROJECT_DIR/frontend/.pub-cache"
+  cache:
+    key:
+      files:
+        - frontend/pubspec.lock
+    paths:
+      - frontend/.pub-cache/
+  before_script:
+    - cd frontend
+    - flutter --version
+    - flutter pub get
+
+# ---------------------------------------------------------------------------
+# Lint / static analysis
+# ---------------------------------------------------------------------------
+
+backend:typecheck:
+  extends: .bun
+  stage: lint
+  script:
+    - bunx tsc --noEmit
+
+frontend:analyze:
+  extends: .flutter
+  stage: lint
+  script:
+    # Non-blocking format check — warns but won't fail the pipeline. To enforce
+    # it, drop the `|| ...` and the code must be `dart format`-clean first.
+    - dart format --output=none --set-exit-if-changed . || echo "⚠️  Some files are not formatted — run 'dart format .' and commit."
+    - flutter analyze
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+backend:test:
+  extends: .bun
+  stage: test
+  script:
+    # `bun test` exits 0 when there are no test files yet, so this is safe today
+    # and starts enforcing automatically once you add *.test.ts files.
+    - bun test
+
+frontend:test:
+  extends: .flutter
+  stage: test
+  script:
+    - flutter test
+
+# ---------------------------------------------------------------------------
+# Build artifacts
+# ---------------------------------------------------------------------------
+
+build:apk:
+  extends: .flutter
+  stage: build
+  script:
+    - flutter build apk --release
+  artifacts:
+    name: "sharedcal-apk-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - frontend/build/app/outputs/flutter-apk/app-release.apk
+    expire_in: 2 weeks
+
+build:web:
+  extends: .flutter
+  stage: build
+  script:
+    - flutter build web --release
+  artifacts:
+    name: "sharedcal-web-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - frontend/build/web/
+    expire_in: 2 weeks
+
+build:macos:
+  extends: .flutter
+  stage: build
+  # Requires a macOS runner. On GitLab SaaS, keep/adjust the saas-macos tag (paid).
+  # For a self-hosted Mac runner, replace the tag with that runner's tag.
+  tags:
+    - saas-macos-medium-m1
+  image: macos-14-xcode-15
+  when: manual
+  allow_failure: true
+  script:
+    - flutter config --enable-macos-desktop
+    - flutter build macos --release
+    # Zip the .app bundle so it downloads as a single artifact.
+    - cd build/macos/Build/Products/Release
+    - zip -r -y sharedcal-macos.zip *.app
+  artifacts:
+    name: "sharedcal-macos-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - frontend/build/macos/Build/Products/Release/sharedcal-macos.zip
+    expire_in: 2 weeks
+
+# ---------------------------------------------------------------------------
+# Deploy — trigger Render on main
+# ---------------------------------------------------------------------------
+
+deploy:render:
+  stage: deploy
+  image: curlimages/curl:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - |
+      if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+        echo "RENDER_DEPLOY_HOOK is not set — add it under Settings → CI/CD → Variables." >&2
+        exit 1
+      fi
+    - echo "Triggering Render deploy…"
+    - curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
+    - echo "Render deploy triggered."
