@@ -6,6 +6,7 @@ import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMem
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
+import { startReminderScheduler } from "./src/services/reminder.service";
 
 const router = new Router();
 
@@ -52,6 +53,9 @@ await runMigrations();
 
 // Start the NOTIFY listener for real-time sync
 await startNotifyListener();
+
+// Start the event reminder scheduler (checks every 60 s, sends 30 min before events)
+startReminderScheduler();
 
 const server = Bun.serve({
   port: PORT,

@@ -66,6 +66,37 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   await send(email, "Verify your SharedCal email address", html);
 }
 
+export async function sendReminderEmail(params: {
+  memberEmails: string[];
+  eventTitle: string;
+  calendarName: string;
+  startTime: Date;
+}): Promise<void> {
+  const { memberEmails, eventTitle, calendarName, startTime } = params;
+  if (memberEmails.length === 0) return;
+
+  const dateStr = startTime.toLocaleDateString("de-AT", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+  const timeStr = startTime.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
+
+  const html = base(`
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">⏰ Event in 30 minutes</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
+      <tr><td style="padding:20px;">
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">📅 ${dateStr}</p>
+        <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">⏰ ${timeStr}</p>
+        <p style="margin:8px 0 0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+      </td></tr>
+    </table>
+  `);
+
+  for (const email of memberEmails) {
+    await send(email, `Reminder: ${eventTitle} starts in 30 min`, html);
+  }
+}
+
 export async function sendEventNotification(params: {
   memberEmails: string[];
   eventTitle: string;
