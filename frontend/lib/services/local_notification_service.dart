@@ -48,6 +48,10 @@ class LocalNotificationService {
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      // Show notifications even when the app is in the foreground.
+      defaultPresentAlert: true,
+      defaultPresentSound: true,
+      defaultPresentBadge: true,
     );
     const settings = InitializationSettings(
       android: androidInit,

@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
     <!-- On-device (local) notifications — required on Android 13+ (API 33). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Exact alarms for 30-min event reminders — required on Android 12+ (API 31). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
         android:label="Shared Calendar"
         android:name="${applicationName}"
