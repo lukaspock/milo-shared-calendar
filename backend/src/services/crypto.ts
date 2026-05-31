@@ -1,12 +1,12 @@
 // AES-256-GCM encrypt/decrypt for sensitive values stored in the DB.
 // Requires ENCRYPTION_KEY env var — exactly 32 ASCII characters.
 
-function getKey(): Uint8Array {
+function getKey(): ArrayBuffer {
   const raw = process.env.ENCRYPTION_KEY;
   if (!raw || raw.length !== 32) {
     throw new Error("ENCRYPTION_KEY must be set to exactly 32 characters.");
   }
-  return new TextEncoder().encode(raw);
+  return new TextEncoder().encode(raw).buffer as ArrayBuffer;
 }
 
 /**

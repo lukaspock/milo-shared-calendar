@@ -2,7 +2,7 @@ import { describe, test, expect, mock, beforeEach } from "bun:test";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockDb = mock(() => Promise.resolve([]));
+const mockDb = mock((): Promise<Record<string, unknown>[]> => Promise.resolve([]));
 mock.module("../db/client", () => ({ default: mockDb }));
 
 const mockBroadcast = mock(() => {});
@@ -43,7 +43,7 @@ describe("checkAndSendReminders", () => {
       .mockResolvedValueOnce([]);
     await checkAndSendReminders(mockSendReminderEmail);
     expect(mockBroadcast).toHaveBeenCalledTimes(1);
-    const [calId, msg] = mockBroadcast.mock.calls[0] as [string, Record<string, unknown>];
+    const [calId, msg] = mockBroadcast.mock.calls[0] as unknown as [string, Record<string, unknown>];
     expect(calId).toBe("cal-uuid-1");
     expect(msg.type).toBe("event_reminder");
     expect(msg.event_title).toBe("Team Standup");

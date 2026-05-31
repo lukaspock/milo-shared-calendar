@@ -2,7 +2,7 @@ import { describe, test, expect, mock, beforeEach } from "bun:test";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockDb = mock(() => Promise.resolve([]));
+const mockDb = mock((): Promise<Record<string, unknown>[]> => Promise.resolve([]));
 mock.module("../db/client", () => ({ default: mockDb }));
 mock.module("../ws/websocket", () => ({ broadcastToCalendar: mock(() => {}) }));
 mock.module("../services/email", () => ({
@@ -27,6 +27,7 @@ function makeCtx(userId: string, body: unknown, params: Record<string, string> =
       body: JSON.stringify(body),
     }),
     params,
+    query: {},
     user: { sub: userId, email: "user@test.com", name: "Test User" },
   };
 }
