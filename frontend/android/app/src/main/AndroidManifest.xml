@@ -7,7 +7,7 @@
     <!-- Exact alarms for 30-min event reminders — required on Android 12+ (API 31). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
-        android:label="Shared Calendar"
+        android:label="Milo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
     >

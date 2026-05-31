@@ -98,7 +98,7 @@ class HomeScreen extends ConsumerWidget {
                                 Text(
                                   user != null
                                       ? 'Hey, ${user.name.split(' ').first} 👋'
-                                      : 'Your calendars',
+                                      : 'Milo',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
