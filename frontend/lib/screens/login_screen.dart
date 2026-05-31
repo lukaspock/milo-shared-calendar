@@ -316,7 +316,6 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
               alignment: Alignment.centerRight,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.of(context).pop();
                   showModalBottomSheet<void>(
                     context: context,
                     isScrollControlled: true,
