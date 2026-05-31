@@ -43,7 +43,7 @@ class WelcomeScreen extends ConsumerWidget {
 
               // ── Title ────────────────────────────────────────────────────
               Text(
-                'Welcome to\nMilo.',
+                'Welcome to\nMilo',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 46,
                   fontWeight: FontWeight.w800,
