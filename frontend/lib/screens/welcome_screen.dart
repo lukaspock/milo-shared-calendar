@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 
 // Pastel orange — warmer than the default bg, used only on this screen.
 const _kWelcomeBg = Color(0xFFFFEDD8);
+const _kButtonOrange = Color(0xFFFFB347);
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -42,7 +43,7 @@ class WelcomeScreen extends ConsumerWidget {
 
               // ── Title ────────────────────────────────────────────────────
               Text(
-                'Welcome to\nMilo.',
+                'Welcome to\nMilo',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 46,
                   fontWeight: FontWeight.w800,
@@ -122,7 +123,7 @@ class _AccentButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.accent.withValues(alpha: 0.3),
+              color: _kButtonOrange.withValues(alpha: 0.4),
               offset: const Offset(0, 6),
               blurRadius: 16,
             ),
@@ -131,8 +132,8 @@ class _AccentButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accent,
-            foregroundColor: Colors.white,
+            backgroundColor: _kButtonOrange,
+            foregroundColor: AppTheme.ink,
             minimumSize: const Size(double.infinity, 58),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28)),
