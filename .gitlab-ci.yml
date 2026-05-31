@@ -35,7 +35,7 @@ workflow:
   variables:
     # Throwaway secrets used only by unit tests — not real production values.
     JWT_SECRET: "ci-test-jwt-secret-not-used-in-prod"
-    ENCRYPTION_KEY: "ci-test-encryption-key-32-chars!!"
+    ENCRYPTION_KEY: "ci-test-encryption-key-32-chars!"
   cache:
     key:
       files:
