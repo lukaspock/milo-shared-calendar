@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import db from "../db/client";
+import { encrypt, decrypt } from "./crypto";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -51,12 +52,14 @@ export async function handleCalendarCallback(code: string, state: string): Promi
     const { tokens } = await auth.getToken(code);
     if (!tokens.access_token || !tokens.refresh_token) return false;
     const expiry = tokens.expiry_date ? new Date(tokens.expiry_date) : new Date(Date.now() + 3_600_000);
+    const encAccess = await encrypt(tokens.access_token);
+    const encRefresh = await encrypt(tokens.refresh_token);
     await db`
       INSERT INTO google_calendar_tokens (user_id, access_token, refresh_token, expiry)
-      VALUES (${pending.userId}, ${tokens.access_token}, ${tokens.refresh_token}, ${expiry})
+      VALUES (${pending.userId}, ${encAccess}, ${encRefresh}, ${expiry})
       ON CONFLICT (user_id) DO UPDATE SET
-        access_token = ${tokens.access_token},
-        refresh_token = ${tokens.refresh_token},
+        access_token = ${encAccess},
+        refresh_token = ${encRefresh},
         expiry = ${expiry}
     `;
     return true;
@@ -69,7 +72,9 @@ export async function handleCalendarCallback(code: string, state: string): Promi
 async function getTokens(userId: string): Promise<{ access_token: string; refresh_token: string } | null> {
   const rows = await db`SELECT access_token, refresh_token FROM google_calendar_tokens WHERE user_id = ${userId}`;
   if (rows.length === 0) return null;
-  return { access_token: rows[0].access_token as string, refresh_token: rows[0].refresh_token as string };
+  const access_token = await decrypt(rows[0].access_token as string);
+  const refresh_token = await decrypt(rows[0].refresh_token as string);
+  return { access_token, refresh_token };
 }
 
 async function createGoogleEvent(params: {
@@ -140,7 +145,9 @@ export async function syncEventUpdated(params: {
   `;
   for (const row of rows as Record<string, unknown>[]) {
     try {
-      const cal = google.calendar({ version: "v3", auth: makeAuth(row.access_token as string, row.refresh_token as string) });
+      const access = await decrypt(row.access_token as string);
+      const refresh = await decrypt(row.refresh_token as string);
+      const cal = google.calendar({ version: "v3", auth: makeAuth(access, refresh) });
       await cal.events.update({
         calendarId: "primary",
         eventId: row.google_event_id as string,
@@ -166,7 +173,9 @@ export async function syncEventDeleted(eventId: string): Promise<void> {
   `;
   for (const row of rows as Record<string, unknown>[]) {
     try {
-      const cal = google.calendar({ version: "v3", auth: makeAuth(row.access_token as string, row.refresh_token as string) });
+      const access = await decrypt(row.access_token as string);
+      const refresh = await decrypt(row.refresh_token as string);
+      const cal = google.calendar({ version: "v3", auth: makeAuth(access, refresh) });
       await cal.events.delete({
         calendarId: "primary",
         eventId: row.google_event_id as string,

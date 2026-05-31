@@ -1,0 +1,4 @@
+[test]
+# Provide minimal env vars so unit tests run without a real .env file.
+# These values are test-only — never used in production.
+envFile = ".env.test"

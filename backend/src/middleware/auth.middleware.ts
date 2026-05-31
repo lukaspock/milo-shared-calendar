@@ -2,9 +2,10 @@ import { SignJWT, jwtVerify } from "jose";
 import type { JwtPayload, RequestContext } from "../types";
 import { error } from "../router";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "fallback_secret_please_change"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set. Refusing to start.");
+}
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function signToken(payload: JwtPayload): Promise<string> {
   return new SignJWT({ ...payload })
