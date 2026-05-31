@@ -83,6 +83,7 @@ flutter:
   # See lib/widgets/app_image.dart (AppImages) for the full list of names.
   assets:
     - assets/images/
+    - assets/icons/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
