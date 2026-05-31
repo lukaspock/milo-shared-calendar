@@ -6,7 +6,14 @@ import { sendReminderEmail } from "./email";
 // Resets on server restart (acceptable — worst case is a duplicate reminder).
 const remindedEventIds = new Set<string>();
 
-async function checkAndSendReminders(): Promise<void> {
+/** Clears the in-memory dedup set. Only call from tests. */
+export function _resetRemindedEvents(): void { remindedEventIds.clear(); }
+
+type ReminderEmailFn = typeof sendReminderEmail;
+
+export async function checkAndSendReminders(
+  emailFn: ReminderEmailFn = sendReminderEmail
+): Promise<void> {
   // Find events starting 25–35 minutes from now (10 min window for timer drift)
   const events = await db`
     SELECT
@@ -47,7 +54,7 @@ async function checkAndSendReminders(): Promise<void> {
     `;
 
     if (members.length > 0) {
-      sendReminderEmail({
+      emailFn({
         memberEmails: members.map((m: Record<string, unknown>) => m.email as string),
         eventTitle: event.title as string,
         calendarName: event.calendar_name as string,
