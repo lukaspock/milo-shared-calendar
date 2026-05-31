@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_image.dart';
+
+// Pastel orange — warmer than the default bg, used only on this screen.
+const _kWelcomeBg = Color(0xFFFFEDD8);
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -18,7 +20,7 @@ class WelcomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: _kWelcomeBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -27,25 +29,31 @@ class WelcomeScreen extends ConsumerWidget {
             children: [
               const Spacer(flex: 2),
 
-              // ── Illustration ─────────────────────────────────────────────
-              Center(child: _WelcomeIllustration()),
+              // ── Milo logo ─────────────────────────────────────────────────
+              Center(
+                child: Image.asset(
+                  'assets/icons/app_icon.png',
+                  width: 200,
+                  height: 200,
+                ),
+              ),
 
-              const SizedBox(height: 44),
+              const SizedBox(height: 36),
 
               // ── Title ────────────────────────────────────────────────────
               Text(
-                'Welcome to\nYour Shared\nCalendar.',
+                'Welcome to\nMilo.',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 42,
+                  fontSize: 46,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.ink,
                   letterSpacing: -2,
-                  height: 1.1,
+                  height: 1.05,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Built to connect.',
+                'Stay in sync.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -95,47 +103,6 @@ class WelcomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _WelcomeIllustration extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 200,
-      height: 200,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            left: 10,
-            top: 30,
-            child: Transform.rotate(
-              angle: -0.22,
-              child: StickerTile(
-                hue: stickerHues[0],
-                size: 110,
-                radius: 28,
-                child: AppImages.calendar(size: 48),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 10,
-            top: 20,
-            child: Transform.rotate(
-              angle: 0.18,
-              child: StickerTile(
-                hue: stickerHues[3],
-                size: 110,
-                radius: 28,
-                child: AppImages.people(size: 48),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

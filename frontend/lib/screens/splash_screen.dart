@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_image.dart';
 
 class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
@@ -25,40 +24,10 @@ class SplashScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Three overlapping sticker tiles as logo
-            SizedBox(
-              width: 96,
-              height: 96,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.rotate(
-                    angle: -0.16,
-                    child: StickerTile(
-                      hue: stickerHues[0],
-                      size: 64,
-                      radius: 16,
-                      child: AppImages.calendar(size: 28),
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(10, 0),
-                    child: Transform.rotate(
-                      angle: 0.18,
-                      child: StickerTile(
-                        hue: stickerHues[1],
-                        size: 64,
-                        radius: 16,
-                        child: AppImages.people(size: 28),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+            Image.asset('assets/icons/app_icon.png', width: 96, height: 96),
+            const SizedBox(height: 20),
             Text(
-              'Shared Calendar',
+              'Milo',
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.ink,
                 fontSize: 28,
@@ -68,7 +37,7 @@ class SplashScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Shared calendars, real-time.',
+              'Stay in sync.',
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.inkSoft,
                 fontSize: 15,

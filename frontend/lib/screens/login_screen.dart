@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_image.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
 
@@ -588,57 +587,13 @@ void _showAppleComingSoon(BuildContext context) {
   );
 }
 
-// ── Hero sticker tiles ────────────────────────────────────────────────────────
-
 class _HeroTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 0,
-            top: 8,
-            child: Transform.rotate(
-              angle: -0.157,
-              child: StickerTile(
-                hue: stickerHues[0],
-                size: 68,
-                radius: 18,
-                child: AppImages.calendar(size: 28),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 52,
-            top: 4,
-            child: Transform.rotate(
-              angle: 0.07,
-              child: StickerTile(
-                hue: stickerHues[1],
-                size: 68,
-                radius: 18,
-                child: AppImages.people(size: 28),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 104,
-            top: 0,
-            child: Transform.rotate(
-              angle: 0.192,
-              child: StickerTile(
-                hue: stickerHues[3],
-                size: 68,
-                radius: 18,
-                child: AppImages.star(size: 28),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Image.asset(
+      'assets/icons/app_icon.png',
+      width: 100,
+      height: 100,
     );
   }
 }
