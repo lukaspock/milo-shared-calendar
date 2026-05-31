@@ -190,29 +190,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (ok) context.go('/calendar/${widget.calendarId}');
   }
 
-  Future<void> _notifyMembers() async {
-    if (_existingEvent == null) return;
-    setState(() => _isLoading = true);
-    try {
-      await ref
-          .read(eventsProvider(widget.calendarId).notifier)
-          .notifyMembers(widget.calendarId, _existingEvent!.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Members notified!')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to notify members.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   Future<void> _pickRecurrence() async {
     final chosen = await showModalBottomSheet<RecurrenceRule>(
       context: context,
@@ -329,21 +306,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (!_isNew)
-                    GestureDetector(
-                      onTap: _isLoading ? null : _delete,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppTheme.line, width: 1.5),
-                        ),
-                        child: Icon(Icons.delete_outline_rounded,
-                            size: 18, color: AppTheme.danger),
-                      ),
-                    ),
                   const SizedBox(width: 8),
                   StickerTile(
                     hue: calHue,
@@ -540,40 +502,37 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         ),
                       ),
 
-                      // Notify members button (existing events only)
+                      // Delete button (existing events only)
                       if (!_isNew) ...[
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
-                          height: 56,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: AppTheme.surface,
                               borderRadius: BorderRadius.circular(28),
-                              border: Border.all(color: AppTheme.line, width: 1.5),
-                              boxShadow: [
+                              boxShadow: const [
                                 BoxShadow(
-                                  color: AppTheme.line.withOpacity(0.5),
-                                  offset: const Offset(0, 4),
+                                  color: Color(0x33E85535),
+                                  offset: Offset(0, 4),
                                   blurRadius: 0,
                                 ),
                               ],
                             ),
-                            child: TextButton.icon(
-                              onPressed: _isLoading ? null : _notifyMembers,
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.ink,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _delete,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.danger,
+                                foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(28),
                                 ),
                               ),
-                              icon: AppImages.bell(size: 16),
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18),
                               label: Text(
-                                'Notify members',
+                                'Delete event',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
-                                  color: AppTheme.ink,
                                 ),
                               ),
                             ),
