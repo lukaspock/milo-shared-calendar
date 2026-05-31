@@ -167,10 +167,6 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     }
   }
 
-  Future<void> notifyMembers(String calendarId, String eventId) async {
-    await _api.post('/events/$eventId/notify');
-  }
-
   @override
   void dispose() {
     _ws.removeListener(_onWsMessage);

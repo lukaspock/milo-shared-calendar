@@ -1267,15 +1267,6 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
 
           // ── Notifications ─────────────────────────────────────────────────
           _SheetSection(label: 'NOTIFICATIONS'),
-          const SizedBox(height: 6),
-          Text(
-            'How should we let you know when someone adds an event?',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.inkMuted,
-            ),
-          ),
           const SizedBox(height: 12),
           NotificationTypeSelector(
             value: user?.notificationType ?? NotificationType.email,
