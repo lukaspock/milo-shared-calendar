@@ -152,7 +152,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final status = e.response?.statusCode;
       if (status == 400) return 'Invalid input. Check your details.';
       if (status == 401) return 'Invalid email or password.';
-      if (status == 409) return 'Email already registered.';
+      if (status == 409) {
+        final msg = e.response?.data is Map
+            ? (e.response!.data as Map)['error'] as String?
+            : null;
+        return msg ?? 'Email already registered.';
+      }
       if (status == 404) return 'Server resource not found.';
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.connectionError) {

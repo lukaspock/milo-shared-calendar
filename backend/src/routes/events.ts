@@ -180,9 +180,13 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
   const event = events[0];
 
   const membership = await db`
-    SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
+    SELECT role FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
   `;
   if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  const isCreator = event.created_by === userId;
+  const isOwner = membership[0].role === "owner";
+  if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can edit this event", 403);
 
   if (body.edit_all) {
     // Update this event and all future instances in the series

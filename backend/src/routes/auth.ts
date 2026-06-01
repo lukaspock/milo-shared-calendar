@@ -224,7 +224,9 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
   if (existing.length > 0) {
     user = existing[0];
     if (!user.google_id) {
-      await db`UPDATE users SET google_id = ${googleUser.sub}, email_verified = true WHERE id = ${user.id}`;
+      // An account with this email already exists with a password — refuse silent
+      // merge to prevent account takeover via a Google account with the same email.
+      return error("An account with this email already exists. Please sign in with your password.", 409);
     }
   } else {
     isNew = true;
@@ -423,12 +425,16 @@ function calendarSuccessPage(): string {
   );
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function calendarErrorPage(message: string): string {
   return page(
     "Connection failed",
     "#E85535",
     `<h1 style="color:#1F1B16;font-size:24px;font-weight:800;margin:0 0 8px;">Connection failed</h1>
-     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">${message}</p>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">${escapeHtml(message)}</p>
      <span style="font-size:64px;">😕</span>`,
   );
 }
