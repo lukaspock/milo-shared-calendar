@@ -41,10 +41,10 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const dark = AppColors(
-    bg:          Color(0xFF121010),
-    surface:     Color(0xFF1E1A17),
-    surfaceSoft: Color(0xFF252119),
-    line:        Color(0xFF302B24),
+    bg:          Color(0xFF1E1916),
+    surface:     Color(0xFF28231F),
+    surfaceSoft: Color(0xFF322C27),
+    line:        Color(0xFF413B32),
     ink:         Color(0xFFF5EDE3),
     inkSoft:     Color(0xFFA89A8C),
     inkMuted:    Color(0xFF6B5F53),
@@ -360,22 +360,23 @@ class AppTheme {
 
 class CalHue {
   final String name;
-  final Color bg;   // pastel background
-  final Color ink;  // dark text on bg
-  final Color dot;  // mid-tone dot / avatar
-  final Color deep; // saturated shadow / accent
-  const CalHue(this.name, this.bg, this.ink, this.dot, this.deep);
+  final Color bg;      // pastel background (light mode)
+  final Color darkBg;  // muted dark background (dark mode) — different orange tones
+  final Color ink;     // dark text on bg (light mode)
+  final Color dot;     // mid-tone dot / avatar
+  final Color deep;    // saturated shadow / accent
+  const CalHue(this.name, this.bg, this.darkBg, this.ink, this.dot, this.deep);
 }
 
 const List<CalHue> stickerHues = [
-  CalHue('peach',  Color(0xFFFFD9C2), Color(0xFF7A3A1E), Color(0xFFFF8B5C), Color(0xFFFF6B3D)),
-  CalHue('mint',   Color(0xFFC9EBD9), Color(0xFF1F5C42), Color(0xFF46B97F), Color(0xFF1F9D60)),
-  CalHue('sky',    Color(0xFFCCE3FF), Color(0xFF1B3F7A), Color(0xFF4F8DEB), Color(0xFF2E6EE0)),
-  CalHue('lilac',  Color(0xFFE2D6FF), Color(0xFF3F2A85), Color(0xFF9479F0), Color(0xFF7C5CFF)),
-  CalHue('butter', Color(0xFFFFEDB0), Color(0xFF7A5A14), Color(0xFFE5B130), Color(0xFFC8951A)),
-  CalHue('rose',   Color(0xFFFFD1DE), Color(0xFF7A2840), Color(0xFFEC6F92), Color(0xFFD9486F)),
-  CalHue('sage',   Color(0xFFDBE7C7), Color(0xFF3F5524), Color(0xFF86A55B), Color(0xFF658543)),
-  CalHue('coral',  Color(0xFFFFCFC2), Color(0xFF7A2A1A), Color(0xFFF37961), Color(0xFFE85535)),
+  CalHue('peach',  Color(0xFFFFD9C2), Color(0xFF3D2010), Color(0xFF7A3A1E), Color(0xFFFF8B5C), Color(0xFFFF6B3D)),
+  CalHue('mint',   Color(0xFFC9EBD9), Color(0xFF2A1C0E), Color(0xFF1F5C42), Color(0xFF46B97F), Color(0xFF1F9D60)),
+  CalHue('sky',    Color(0xFFCCE3FF), Color(0xFF321A0A), Color(0xFF1B3F7A), Color(0xFF4F8DEB), Color(0xFF2E6EE0)),
+  CalHue('lilac',  Color(0xFFE2D6FF), Color(0xFF3A1E10), Color(0xFF3F2A85), Color(0xFF9479F0), Color(0xFF7C5CFF)),
+  CalHue('butter', Color(0xFFFFEDB0), Color(0xFF3C2C06), Color(0xFF7A5A14), Color(0xFFE5B130), Color(0xFFC8951A)),
+  CalHue('rose',   Color(0xFFFFD1DE), Color(0xFF3A1812), Color(0xFF7A2840), Color(0xFFEC6F92), Color(0xFFD9486F)),
+  CalHue('sage',   Color(0xFFDBE7C7), Color(0xFF2E2010), Color(0xFF3F5524), Color(0xFF86A55B), Color(0xFF658543)),
+  CalHue('coral',  Color(0xFFFFCFC2), Color(0xFF3E1A08), Color(0xFF7A2A1A), Color(0xFFF37961), Color(0xFFE85535)),
 ];
 
 // In-memory hue overrides set when a calendar is created/joined.
@@ -427,15 +428,16 @@ class StickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: hue.bg,
+        color: isDark ? hue.darkBg : hue.bg,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: hue.deep.withOpacity(0.13),
+            color: hue.deep.withOpacity(isDark ? 0.0 : 0.13),
             offset: const Offset(0, 4),
             blurRadius: 0,
           ),

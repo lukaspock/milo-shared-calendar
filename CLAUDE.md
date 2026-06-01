@@ -103,7 +103,7 @@ The production Render DB was migrated manually via psql — those tables already
 
 ## Features
 
-- **Auth:** Register / login with JWT (email+password) OR Sign in with Google. Token stored in SharedPreferences.
+- **Auth:** Register / login with JWT (email+password). Google Sign-In is implemented in code but currently non-functional (iOS native OAuth client ID not configured — see Known issues). Token stored in SharedPreferences.
 - **Email verification:** Verification email sent on register via Gmail API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
 - **Calendars:** Create, join via invite code, view members, kick members (owner only). Owner can delete calendar (cascades all data), members can leave.
 - **Account deletion:** Users can delete their own account from the home screen.
@@ -114,14 +114,16 @@ The production Render DB was migrated manually via psql — those tables already
 
 ## Google Sign-In & Calendar integration
 
-Users can authenticate via email+password or via Google Sign-In. Either way, they can connect Google Calendar:
+> **⚠️ Google Sign In / Sign Up is currently non-functional.** The `google_sign_in` package is integrated and the backend endpoint (`POST /auth/google`) is implemented, but the iOS native OAuth client has not been set up. `ios/Runner/Info.plist` still contains the placeholder `REPLACE_WITH_REVERSED_CLIENT_ID`. To fix: create an iOS OAuth client in Google Cloud Console (bundle ID `com.sharedcal.sharedCal`) and replace the placeholder with the reversed client ID. Google Calendar sync (web OAuth flow) is unaffected and works fine.
+
+Users can authenticate via email+password. Once working, Google Sign-In will also be available. Either way, users can connect Google Calendar:
 
 | Auth method | Google Calendar sync |
 |-------------|---------------------|
 | Email + password | ✅ Via "Connect Google Calendar" banner in app |
-| Sign in with Google | ✅ Automatic on first sign-in |
+| Sign in with Google | ⚠️ Not yet functional (see above) |
 
-**Google Sign-In flow:**
+**Google Sign-In flow (once configured):**
 1. User taps "Sign in with Google" in the Flutter app
 2. `google_sign_in` package shows the native Google consent screen
 3. Flutter sends the Google ID token to `POST /auth/google`
@@ -141,6 +143,10 @@ Users can authenticate via email+password or via Google Sign-In. Either way, the
 Enabled APIs: Gmail API, Google Calendar API v3.
 OAuth client: Web application type (Client ID `583283682704-...`).
 Callback URL must be registered: `https://api.milocalendar.tech/auth/google-calendar/callback`.
+
+## Known issues
+
+- **Google Sign In / Sign Up does not work.** The iOS OAuth client ID in `ios/Runner/Info.plist` is still the placeholder `REPLACE_WITH_REVERSED_CLIENT_ID`. Create a native iOS OAuth client in Google Cloud Console and replace it before Google authentication will function. Google Calendar sync is unaffected.
 
 ## Known gotchas
 

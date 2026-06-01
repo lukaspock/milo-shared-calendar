@@ -349,17 +349,22 @@ class _UpNextCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hue = calendars.isNotEmpty ? hueFor(calendars.first) : stickerHues[0];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? hue.darkBg : hue.bg;
+    final textColor = isDark ? context.appColors.ink : hue.ink;
+    final subColor = isDark ? context.appColors.inkSoft : hue.dot;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: hue.bg,
+          color: bgColor,
           borderRadius: BorderRadius.circular(20),
+          border: isDark ? Border.all(color: context.appColors.line, width: 1.5) : null,
           boxShadow: [
             BoxShadow(
-              color: hue.deep.withOpacity(0.13),
+              color: hue.deep.withOpacity(isDark ? 0.0 : 0.13),
               offset: const Offset(0, 4),
               blurRadius: 0,
             ),
@@ -375,7 +380,7 @@ class _UpNextCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: hue.deep.withOpacity(0.08),
+                    color: hue.deep.withOpacity(isDark ? 0.0 : 0.08),
                     offset: const Offset(0, 3),
                     blurRadius: 0,
                   ),
@@ -394,7 +399,7 @@ class _UpNextCard extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: hue.ink,
+                      color: textColor,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -404,7 +409,7 @@ class _UpNextCard extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: hue.ink,
+                      color: textColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -416,7 +421,7 @@ class _UpNextCard extends StatelessWidget {
                         : '${calendars.first.memberCount} members · ${calendars.first.inviteCode}',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
-                      color: hue.dot,
+                      color: subColor,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -425,7 +430,7 @@ class _UpNextCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: hue.ink, size: 20),
+            Icon(Icons.chevron_right_rounded, color: textColor, size: 20),
           ],
         ),
       ),
@@ -561,21 +566,24 @@ class _CalendarCardState extends State<_CalendarCard> {
                       ),
                       const SizedBox(width: 8),
                       // Role chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: hue.bg,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          widget.calendar.isOwner ? 'Owner' : 'Member',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: hue.ink,
+                      Builder(builder: (context) {
+                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isDark ? hue.darkBg : hue.bg,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                      ),
+                          child: Text(
+                            widget.calendar.isOwner ? 'Owner' : 'Member',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? context.appColors.inkSoft : hue.ink,
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                   const SizedBox(height: 6),
