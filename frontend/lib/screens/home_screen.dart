@@ -1083,22 +1083,29 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
         color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPad),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Grabber ──────────────────────────────────────────────────────
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.line,
-                borderRadius: BorderRadius.circular(2),
+      // Cap height so the sheet never tries to grow off-screen (e.g. on macOS
+      // when the calendars section is expanded). SingleChildScrollView handles
+      // the rest so nothing is clipped.
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPad),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Grabber ────────────────────────────────────────────────────
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.appColors.line,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 20),
 
           // ── Header ───────────────────────────────────────────────────────
@@ -1604,7 +1611,8 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
           const SizedBox(height: 4),
         ],
       ),
-    );
+      ), // SingleChildScrollView
+    ); // Container
   }
 
   Future<void> _confirmDeleteAccount() async {
