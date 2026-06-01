@@ -85,8 +85,8 @@ export async function joinCalendar(ctx: RequestContext): Promise<Response> {
     VALUES (${userId}, ${calendar.id}, 'member')
   `;
 
-  const count = await db`SELECT COUNT(*) AS member_count FROM calendar_members WHERE calendar_id = ${calendar.id}`;
-  const memberCount = Number(count[0].member_count);
+  const count = await db`SELECT COUNT(*)::integer AS member_count FROM calendar_members WHERE calendar_id = ${calendar.id}`;
+  const memberCount = count[0].member_count as number;
 
   // Notify existing members that someone joined
   broadcastToCalendar(calendar.id, {
