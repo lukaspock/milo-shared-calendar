@@ -68,7 +68,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -137,7 +137,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.ink,
+                      color: context.appColors.ink,
                       letterSpacing: -1,
                     ),
                   ),
@@ -146,7 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     'Join Shared Calendar and start collaborating.',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
-                      color: AppTheme.inkSoft,
+                      color: context.appColors.inkSoft,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -183,7 +183,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                         _obscure
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: AppTheme.inkMuted,
+                        color: context.appColors.inkMuted,
                         size: 18,
                       ),
                       onPressed: () => setState(() => _obscure = !_obscure),
@@ -203,14 +203,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   const SizedBox(height: 16),
 
                   Row(children: [
-                    Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+                    Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text('or', style: GoogleFonts.plusJakartaSans(
-                        color: AppTheme.inkMuted, fontSize: 13, fontWeight: FontWeight.w500,
+                        color: context.appColors.inkMuted, fontSize: 13, fontWeight: FontWeight.w500,
                       )),
                     ),
-                    Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+                    Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
                   ]),
 
                   const SizedBox(height: 16),
@@ -223,9 +223,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           : () => ref.read(authProvider.notifier).googleSignIn(),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: AppTheme.line, width: 1.5),
+                        side: BorderSide(color: context.appColors.line, width: 1.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                        backgroundColor: AppTheme.surface,
+                        backgroundColor: context.appColors.surface,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +238,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           )),
                           const SizedBox(width: 10),
                           Text('Continue with Google', style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.ink,
+                            fontSize: 15, fontWeight: FontWeight.w600, color: context.appColors.ink,
                           )),
                         ],
                       ),
@@ -253,7 +253,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       child: RichText(
                         text: TextSpan(
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppTheme.inkSoft,
+                            color: context.appColors.inkSoft,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),

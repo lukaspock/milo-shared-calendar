@@ -104,6 +104,8 @@ class SharedCalApp extends ConsumerWidget {
       title: 'Shared Calendar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       routerConfig: _router,
     );
   }

@@ -70,10 +70,10 @@ class _Option extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.accent.withValues(alpha: 0.10)
-              : AppTheme.surfaceSoft,
+              : context.appColors.surfaceSoft,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? AppTheme.accent : AppTheme.line,
+            color: selected ? AppTheme.accent : context.appColors.line,
             width: selected ? 2 : 1.5,
           ),
         ),
@@ -84,7 +84,7 @@ class _Option extends StatelessWidget {
               children: [
                 Icon(icon,
                     size: 20,
-                    color: selected ? AppTheme.accent : AppTheme.inkMuted),
+                    color: selected ? AppTheme.accent : context.appColors.inkMuted),
                 const Spacer(),
                 if (selected)
                   const Icon(Icons.check_circle_rounded,
@@ -97,7 +97,7 @@ class _Option extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.ink,
+                color: context.appColors.ink,
               ),
             ),
             const SizedBox(height: 2),
@@ -106,7 +106,7 @@ class _Option extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.inkMuted,
+                color: context.appColors.inkMuted,
                 height: 1.3,
               ),
             ),

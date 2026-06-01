@@ -24,12 +24,12 @@ class AppButton extends StatelessWidget {
         height: 56,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: AppTheme.surface,
+            color: context.appColors.surface,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppTheme.line, width: 1.5),
+            border: Border.all(color: context.appColors.line, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.line.withOpacity(0.6),
+                color: context.appColors.line.withOpacity(0.6),
                 offset: const Offset(0, 4),
                 blurRadius: 0,
               ),
@@ -39,7 +39,7 @@ class AppButton extends StatelessWidget {
             onPressed: onPressed,
             style: TextButton.styleFrom(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-              foregroundColor: AppTheme.ink,
+              foregroundColor: context.appColors.ink,
             ),
             child: _label(),
           ),
@@ -54,7 +54,7 @@ class AppButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: const Color(0x551F1B16),
+              color: context.appColors.ink.withOpacity(0.33),
               offset: const Offset(0, 4),
               blurRadius: 0,
             ),
@@ -63,8 +63,8 @@ class AppButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.ink,
-            foregroundColor: Colors.white,
+            backgroundColor: context.appColors.ink,
+            foregroundColor: context.appColors.bg,
             minimumSize: const Size(0, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             elevation: 0,

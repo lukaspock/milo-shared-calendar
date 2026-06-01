@@ -71,11 +71,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.ink,
+          colorScheme: ColorScheme.light(
+            primary: context.appColors.ink,
             onPrimary: Colors.white,
-            surface: AppTheme.surface,
-            onSurface: AppTheme.ink,
+            surface: context.appColors.surface,
+            onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -88,11 +88,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       initialTime: TimeOfDay.fromDateTime(initial),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.ink,
+          colorScheme: ColorScheme.light(
+            primary: context.appColors.ink,
             onPrimary: Colors.white,
-            surface: AppTheme.surface,
-            onSurface: AppTheme.ink,
+            surface: context.appColors.surface,
+            onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -195,8 +195,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
+        decoration: BoxDecoration(
+          color: context.appColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -205,17 +205,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           children: [
             Container(
               width: 36, height: 4,
-              decoration: BoxDecoration(color: AppTheme.line, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: context.appColors.line, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 16),
             Text('Repeat', style: GoogleFonts.plusJakartaSans(
-              fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.ink)),
+              fontSize: 17, fontWeight: FontWeight.w700, color: context.appColors.ink)),
             const SizedBox(height: 12),
             for (final rule in RecurrenceRule.values)
               ListTile(
                 title: Text(rule.label, style: GoogleFonts.plusJakartaSans(
                   fontSize: 15, fontWeight: FontWeight.w500,
-                  color: _recurrenceRule == rule ? AppTheme.accent : AppTheme.ink)),
+                  color: _recurrenceRule == rule ? AppTheme.accent : context.appColors.ink)),
                 trailing: _recurrenceRule == rule
                     ? const Icon(Icons.check_rounded, color: AppTheme.accent)
                     : null,
@@ -241,9 +241,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.ink, onPrimary: Colors.white,
-            surface: AppTheme.surface, onSurface: AppTheme.ink,
+          colorScheme: ColorScheme.light(
+            primary: context.appColors.ink, onPrimary: Colors.white,
+            surface: context.appColors.surface, onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -268,7 +268,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final calHue = calendar != null ? hueFor(calendar) : stickerHues[0];
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -283,12 +283,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppTheme.surface,
+                        color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.line, width: 1.5),
+                        border: Border.all(color: context.appColors.line, width: 1.5),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: AppTheme.ink),
+                      child: Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 16, color: context.appColors.ink),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -300,7 +300,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -311,8 +311,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: const Icon(Icons.calendar_today_rounded,
-                        size: 18, color: Colors.black54),
+                    child: Icon(Icons.calendar_today_rounded,
+                        size: 18, color: context.appColors.inkMuted),
                   ),
                 ],
               ),
@@ -336,7 +336,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 30,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.ink,
+                          color: context.appColors.ink,
                           letterSpacing: -0.8,
                         ),
                         decoration: InputDecoration(
@@ -349,7 +349,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           hintStyle: GoogleFonts.plusJakartaSans(
                             fontSize: 30,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.inkMuted,
+                            color: context.appColors.inkMuted,
                             letterSpacing: -0.8,
                           ),
                           contentPadding: EdgeInsets.zero,
@@ -364,12 +364,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       // Field card
                       Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.surface,
+                          color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: AppTheme.line, width: 1.5),
+                          border: Border.all(color: context.appColors.line, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.line.withOpacity(0.5),
+                              color: context.appColors.line.withOpacity(0.5),
                               offset: const Offset(0, 4),
                               blurRadius: 0,
                             ),
@@ -393,8 +393,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             ),
                             _Divider(),
                             _FieldRow(
-                              icon: const Icon(Icons.repeat_rounded,
-                                  size: 16, color: AppTheme.inkSoft),
+                              icon: Icon(Icons.repeat_rounded,
+                                  size: 16, color: context.appColors.inkSoft),
                               label: 'Repeat',
                               value: _recurrenceRule.label,
                               onTap: _pickRecurrence,
@@ -403,8 +403,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             if (_recurrenceRule != RecurrenceRule.none) ...[
                               _Divider(),
                               _FieldRow(
-                                icon: const Icon(Icons.event_outlined,
-                                    size: 16, color: AppTheme.inkSoft),
+                                icon: Icon(Icons.event_outlined,
+                                    size: 16, color: context.appColors.inkSoft),
                                 label: 'Repeat until',
                                 value: _recurrenceEnd != null
                                     ? '${_recurrenceEnd!.year}-'
@@ -424,12 +424,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       // Notes card
                       Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.surface,
+                          color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppTheme.line, width: 1.5),
+                          border: Border.all(color: context.appColors.line, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.line.withOpacity(0.5),
+                              color: context.appColors.line.withOpacity(0.5),
                               offset: const Offset(0, 4),
                               blurRadius: 0,
                             ),
@@ -440,14 +440,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           controller: _descCtrl,
                           maxLines: 4,
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppTheme.ink,
+                            color: context.appColors.ink,
                             fontWeight: FontWeight.w400,
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Add notes…',
                             hintStyle: GoogleFonts.plusJakartaSans(
-                              color: AppTheme.inkMuted,
+                              color: context.appColors.inkMuted,
                               fontWeight: FontWeight.w400,
                             ),
                             border: InputBorder.none,
@@ -472,9 +472,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(28),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Color(0x551F1B16),
+                              color: context.appColors.ink.withOpacity(0.33),
                               offset: Offset(0, 4),
                               blurRadius: 0,
                             ),
@@ -589,7 +589,7 @@ class _FieldRow extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.inkSoft,
+                color: context.appColors.inkSoft,
               ),
             ),
             const Spacer(),
@@ -598,12 +598,12 @@ class _FieldRow extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.ink,
+                color: context.appColors.ink,
               ),
             ),
             const SizedBox(width: 4),
             Icon(Icons.chevron_right_rounded,
-                size: 16, color: AppTheme.inkMuted),
+                size: 16, color: context.appColors.inkMuted),
           ],
         ),
       ),
@@ -617,7 +617,7 @@ class _Divider extends StatelessWidget {
     return Container(
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: AppTheme.line,
+      color: context.appColors.line,
     );
   }
 }

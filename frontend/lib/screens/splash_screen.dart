@@ -19,7 +19,7 @@ class SplashScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -29,7 +29,7 @@ class SplashScreen extends ConsumerWidget {
             Text(
               'Milo',
               style: GoogleFonts.plusJakartaSans(
-                color: AppTheme.ink,
+                color: context.appColors.ink,
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.8,
@@ -39,18 +39,18 @@ class SplashScreen extends ConsumerWidget {
             Text(
               'Stay in sync.',
               style: GoogleFonts.plusJakartaSans(
-                color: AppTheme.inkSoft,
+                color: context.appColors.inkSoft,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 48),
-            const SizedBox(
+            SizedBox(
               width: 22,
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppTheme.ink,
+                color: context.appColors.ink,
               ),
             ),
           ],

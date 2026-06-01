@@ -142,7 +142,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 
     if (poll == null) {
       return Scaffold(
-        backgroundColor: AppTheme.bg,
+        backgroundColor: context.appColors.bg,
         body: SafeArea(
           child: Column(
             children: [
@@ -157,21 +157,21 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppTheme.surface,
+                          color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: AppTheme.line, width: 1.5),
+                              color: context.appColors.line, width: 1.5),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 16, color: AppTheme.ink),
+                        child: Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 16, color: context.appColors.ink),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Expanded(
+              Expanded(
                 child: Center(
-                  child: CircularProgressIndicator(color: AppTheme.ink),
+                  child: CircularProgressIndicator(color: context.appColors.ink),
                 ),
               ),
             ],
@@ -183,7 +183,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     final isCreator = poll.createdBy == currentUserId;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -199,13 +199,13 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppTheme.surface,
+                        color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
                         border:
-                            Border.all(color: AppTheme.line, width: 1.5),
+                            Border.all(color: context.appColors.line, width: 1.5),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: AppTheme.ink),
+                      child: Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 16, color: context.appColors.ink),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -215,7 +215,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                       ),
                     ),
                   ),
@@ -226,10 +226,10 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppTheme.surface,
+                          color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: AppTheme.line, width: 1.5),
+                              color: context.appColors.line, width: 1.5),
                         ),
                         child: Icon(Icons.delete_outline_rounded,
                             size: 18, color: AppTheme.danger),
@@ -261,7 +261,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                         letterSpacing: -0.6,
                       ),
                     ),
@@ -297,7 +297,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                           'by ${poll.creatorName ?? 'Unknown'}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: AppTheme.inkMuted,
+                            color: context.appColors.inkMuted,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -306,7 +306,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                           '· ${poll.totalVoters} vote${poll.totalVoters == 1 ? '' : 's'}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: AppTheme.inkMuted,
+                            color: context.appColors.inkMuted,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -320,7 +320,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                         poll.description!,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
-                          color: AppTheme.inkSoft,
+                          color: context.appColors.inkSoft,
                         ),
                       ),
                     ],
@@ -333,7 +333,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.inkMuted,
+                        color: context.appColors.inkMuted,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -404,17 +404,17 @@ class _OptionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isConfirmed
             ? const Color(0xFFF0FFF4)
-            : AppTheme.surface,
+            : context.appColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isConfirmed
               ? const Color(0xFF28A745)
-              : AppTheme.line,
+              : context.appColors.line,
           width: isConfirmed ? 2 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.line.withOpacity(0.5),
+            color: context.appColors.line.withOpacity(0.5),
             offset: const Offset(0, 4),
             blurRadius: 0,
           ),
@@ -440,14 +440,14 @@ class _OptionCard extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.ink,
+                          color: context.appColors.ink,
                         ),
                       ),
                       Text(
                         '→ ${fmtFull(option.endTime)}',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
-                          color: AppTheme.inkSoft,
+                          color: context.appColors.inkSoft,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -496,7 +496,7 @@ class _OptionCard extends StatelessWidget {
                   '${option.votes.length} vote${option.votes.length == 1 ? '' : 's'}',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
-                    color: AppTheme.inkMuted,
+                    color: context.appColors.inkMuted,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -509,7 +509,7 @@ class _OptionCard extends StatelessWidget {
             Container(
                 height: 1,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: AppTheme.line),
+                color: context.appColors.line),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: Row(
@@ -563,7 +563,7 @@ class _OptionCard extends StatelessWidget {
             Container(
                 height: 1,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: AppTheme.line),
+                color: context.appColors.line),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: SizedBox(

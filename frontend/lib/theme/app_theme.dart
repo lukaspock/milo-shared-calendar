@@ -3,8 +3,86 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calendar.dart';
 
+// ─── Context extension ──────────────────────────────────────────────────────
+
+extension AppColorsContext on BuildContext {
+  AppColors get appColors => Theme.of(this).extension<AppColors>()!;
+}
+
+// ─── AppColors ThemeExtension ───────────────────────────────────────────────
+
+class AppColors extends ThemeExtension<AppColors> {
+  final Color bg;
+  final Color surface;
+  final Color surfaceSoft;
+  final Color line;
+  final Color ink;
+  final Color inkSoft;
+  final Color inkMuted;
+
+  const AppColors({
+    required this.bg,
+    required this.surface,
+    required this.surfaceSoft,
+    required this.line,
+    required this.ink,
+    required this.inkSoft,
+    required this.inkMuted,
+  });
+
+  static const light = AppColors(
+    bg:          Color(0xFFFFF8F0),
+    surface:     Color(0xFFFFFFFF),
+    surfaceSoft: Color(0xFFFBF1E4),
+    line:        Color(0xFFEFE4D2),
+    ink:         Color(0xFF1F1B16),
+    inkSoft:     Color(0xFF6B6357),
+    inkMuted:    Color(0xFFA39A8C),
+  );
+
+  static const dark = AppColors(
+    bg:          Color(0xFF121010),
+    surface:     Color(0xFF1E1A17),
+    surfaceSoft: Color(0xFF252119),
+    line:        Color(0xFF302B24),
+    ink:         Color(0xFFF5EDE3),
+    inkSoft:     Color(0xFFA89A8C),
+    inkMuted:    Color(0xFF6B5F53),
+  );
+
+  @override
+  AppColors copyWith({
+    Color? bg, Color? surface, Color? surfaceSoft, Color? line,
+    Color? ink, Color? inkSoft, Color? inkMuted,
+  }) => AppColors(
+    bg: bg ?? this.bg,
+    surface: surface ?? this.surface,
+    surfaceSoft: surfaceSoft ?? this.surfaceSoft,
+    line: line ?? this.line,
+    ink: ink ?? this.ink,
+    inkSoft: inkSoft ?? this.inkSoft,
+    inkMuted: inkMuted ?? this.inkMuted,
+  );
+
+  @override
+  AppColors lerp(ThemeExtension<AppColors>? other, double t) {
+    if (other is! AppColors) return this;
+    return AppColors(
+      bg:          Color.lerp(bg, other.bg, t)!,
+      surface:     Color.lerp(surface, other.surface, t)!,
+      surfaceSoft: Color.lerp(surfaceSoft, other.surfaceSoft, t)!,
+      line:        Color.lerp(line, other.line, t)!,
+      ink:         Color.lerp(ink, other.ink, t)!,
+      inkSoft:     Color.lerp(inkSoft, other.inkSoft, t)!,
+      inkMuted:    Color.lerp(inkMuted, other.inkMuted, t)!,
+    );
+  }
+}
+
+// ─── AppTheme ────────────────────────────────────────────────────────────────
+
 class AppTheme {
-  // Surfaces
+  // Light-mode static consts (kept for backwards compat & const contexts)
   static const bg          = Color(0xFFFFF8F0);
   static const surface     = Color(0xFFFFFFFF);
   static const surfaceSoft = Color(0xFFFBF1E4);
@@ -38,6 +116,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: bg,
+      extensions: const [AppColors.light],
       colorScheme: const ColorScheme.light(
         primary: ink,
         secondary: accent,
@@ -153,8 +232,128 @@ class AppTheme {
     );
   }
 
-  // Keep the old getter name so app.dart still references something valid until updated
-  static ThemeData get dark => light;
+  static ThemeData get dark {
+    const d = AppColors.dark;
+    final base = GoogleFonts.plusJakartaSansTextTheme();
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: d.bg,
+      extensions: const [AppColors.dark],
+      colorScheme: ColorScheme.dark(
+        primary: d.ink,
+        secondary: accent,
+        error: danger,
+        surface: d.surface,
+        onPrimary: d.bg,
+        onSecondary: Colors.white,
+        onSurface: d.ink,
+      ),
+      textTheme: base.copyWith(
+        displayLarge:  base.displayLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w800, letterSpacing: -0.8),
+        displayMedium: base.displayMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+        headlineLarge: base.headlineLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+        headlineMedium: base.headlineMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+        headlineSmall: base.headlineSmall?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
+        titleLarge:  base.titleLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w700),
+        titleMedium: base.titleMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
+        titleSmall:  base.titleSmall?.copyWith(color: d.inkSoft, fontWeight: FontWeight.w500),
+        bodyLarge:   base.bodyLarge?.copyWith(color: d.ink),
+        bodyMedium:  base.bodyMedium?.copyWith(color: d.inkSoft),
+        bodySmall:   base.bodySmall?.copyWith(color: d.inkMuted),
+        labelLarge:  base.labelLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
+      ),
+      cardTheme: CardThemeData(
+        color: d.surface,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: d.line, width: 1.5),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: d.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: d.line, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: d.line, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: d.ink, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: danger, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: danger, width: 1.5),
+        ),
+        labelStyle: GoogleFonts.plusJakartaSans(
+          color: d.inkMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8,
+        ),
+        hintStyle: GoogleFonts.plusJakartaSans(color: d.inkMuted),
+        prefixIconColor: d.inkMuted,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: d.ink,
+          foregroundColor: d.bg,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          minimumSize: const Size(0, 56),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+          shadowColor: Colors.transparent,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: d.ink,
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: d.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          color: d.ink, fontSize: 17, fontWeight: FontWeight.w700,
+        ),
+        iconTheme: IconThemeData(color: d.ink),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: d.ink,
+        foregroundColor: d.bg,
+        elevation: 0,
+      ),
+      dividerTheme: DividerThemeData(color: d.line, space: 1),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: d.surface,
+        contentTextStyle: GoogleFonts.plusJakartaSans(color: d.ink),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        behavior: SnackBarBehavior.floating,
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: d.ink),
+      dialogTheme: DialogThemeData(
+        backgroundColor: d.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+    );
+  }
 }
 
 // ─── Hue palette ────────────────────────────────────────────────────────────

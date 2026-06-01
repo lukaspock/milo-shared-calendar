@@ -55,11 +55,11 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.ink,
+          colorScheme: ColorScheme.light(
+            primary: context.appColors.ink,
             onPrimary: Colors.white,
-            surface: AppTheme.surface,
-            onSurface: AppTheme.ink,
+            surface: context.appColors.surface,
+            onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -72,11 +72,11 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
       initialTime: TimeOfDay.fromDateTime(initial),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.ink,
+          colorScheme: ColorScheme.light(
+            primary: context.appColors.ink,
             onPrimary: Colors.white,
-            surface: AppTheme.surface,
-            onSurface: AppTheme.ink,
+            surface: context.appColors.surface,
+            onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -145,7 +145,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
     final calHue = calendar != null ? hueFor(calendar) : stickerHues[0];
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -160,13 +160,13 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppTheme.surface,
+                        color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
                         border:
-                            Border.all(color: AppTheme.line, width: 1.5),
+                            Border.all(color: context.appColors.line, width: 1.5),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: AppTheme.ink),
+                      child: Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 16, color: context.appColors.ink),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -176,7 +176,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -209,7 +209,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 30,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.ink,
+                          color: context.appColors.ink,
                           letterSpacing: -0.8,
                         ),
                         decoration: InputDecoration(
@@ -222,7 +222,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           hintStyle: GoogleFonts.plusJakartaSans(
                             fontSize: 30,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.inkMuted,
+                            color: context.appColors.inkMuted,
                             letterSpacing: -0.8,
                           ),
                           contentPadding: EdgeInsets.zero,
@@ -239,13 +239,13 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       // Description
                       Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.surface,
+                          color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(18),
                           border:
-                              Border.all(color: AppTheme.line, width: 1.5),
+                              Border.all(color: context.appColors.line, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.line.withOpacity(0.5),
+                              color: context.appColors.line.withOpacity(0.5),
                               offset: const Offset(0, 4),
                               blurRadius: 0,
                             ),
@@ -257,13 +257,13 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           controller: _descCtrl,
                           maxLines: 2,
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppTheme.ink,
+                            color: context.appColors.ink,
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Add notes…',
                             hintStyle: GoogleFonts.plusJakartaSans(
-                                color: AppTheme.inkMuted),
+                                color: context.appColors.inkMuted),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -289,7 +289,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.inkMuted,
+                          color: context.appColors.inkMuted,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -333,10 +333,10 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 14),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceSoft,
+                              color: context.appColors.surfaceSoft,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: AppTheme.line,
+                                  color: context.appColors.line,
                                   width: 1.5,
                                   style: BorderStyle.solid),
                             ),
@@ -346,7 +346,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.inkSoft,
+                                  color: context.appColors.inkSoft,
                                 ),
                               ),
                             ),
@@ -359,9 +359,9 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(28),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Color(0x551F1B16),
+                              color: context.appColors.ink.withOpacity(0.33),
                               offset: Offset(0, 4),
                               blurRadius: 0,
                             ),
@@ -423,12 +423,12 @@ class _SlotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.line, width: 1.5),
+        border: Border.all(color: context.appColors.line, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.line.withOpacity(0.5),
+            color: context.appColors.line.withOpacity(0.5),
             offset: const Offset(0, 4),
             blurRadius: 0,
           ),
@@ -447,7 +447,7 @@ class _SlotCard extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.inkMuted,
+                    color: context.appColors.inkMuted,
                   ),
                 ),
                 const Spacer(),
@@ -458,13 +458,13 @@ class _SlotCard extends StatelessWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceSoft,
+                        color: context.appColors.surfaceSoft,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: AppTheme.line, width: 1),
+                            color: context.appColors.line, width: 1),
                       ),
-                      child: const Icon(Icons.close_rounded,
-                          size: 14, color: AppTheme.inkMuted),
+                      child: Icon(Icons.close_rounded,
+                          size: 14, color: context.appColors.inkMuted),
                     ),
                   ),
               ],
@@ -473,7 +473,7 @@ class _SlotCard extends StatelessWidget {
           Container(
               height: 1,
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              color: AppTheme.line),
+              color: context.appColors.line),
           // Start
           _TimeRow(
             icon: AppImages.calendar(size: 16),
@@ -484,7 +484,7 @@ class _SlotCard extends StatelessWidget {
           Container(
               height: 1,
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              color: AppTheme.line),
+              color: context.appColors.line),
           // End
           _TimeRow(
             icon: AppImages.flag(size: 16),
@@ -536,7 +536,7 @@ class _TimeRow extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.inkSoft,
+                color: context.appColors.inkSoft,
               ),
             ),
             const Spacer(),
@@ -545,12 +545,12 @@ class _TimeRow extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.ink,
+                color: context.appColors.ink,
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded,
-                size: 16, color: AppTheme.inkMuted),
+            Icon(Icons.chevron_right_rounded,
+                size: 16, color: context.appColors.inkMuted),
           ],
         ),
       ),

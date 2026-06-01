@@ -47,7 +47,7 @@ class _AppTextFieldState extends State<AppTextField> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: _focused ? AppTheme.ink : AppTheme.inkMuted,
+              color: _focused ? context.appColors.ink : context.appColors.inkMuted,
               letterSpacing: 0.9,
             ),
           ),
@@ -56,10 +56,10 @@ class _AppTextFieldState extends State<AppTextField> {
           onFocusChange: (f) => setState(() => _focused = f),
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: context.appColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _focused ? AppTheme.ink : AppTheme.line,
+                color: _focused ? context.appColors.ink : context.appColors.line,
                 width: 1.5,
               ),
             ),
@@ -70,7 +70,7 @@ class _AppTextFieldState extends State<AppTextField> {
               textInputAction: widget.textInputAction,
               onFieldSubmitted: widget.onSubmitted,
               style: GoogleFonts.plusJakartaSans(
-                color: AppTheme.ink,
+                color: context.appColors.ink,
                 fontWeight: FontWeight.w500,
                 fontSize: 15,
               ),
@@ -78,11 +78,11 @@ class _AppTextFieldState extends State<AppTextField> {
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.inkMuted,
+                  color: context.appColors.inkMuted,
                   fontWeight: FontWeight.w400,
                 ),
                 prefixIcon: widget.prefixIcon != null
-                    ? Icon(widget.prefixIcon, color: AppTheme.inkMuted, size: 18)
+                    ? Icon(widget.prefixIcon, color: context.appColors.inkMuted, size: 18)
                     : null,
                 suffixIcon: widget.suffixIcon,
                 border: InputBorder.none,

@@ -14,7 +14,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -38,7 +38,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 38,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -1.5,
                   height: 1.1,
                 ),
@@ -48,7 +48,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
                 'Shared Calendar is ready to help you plan with the people that matter.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
-                  color: AppTheme.inkSoft,
+                  color: context.appColors.inkSoft,
                   fontWeight: FontWeight.w500,
                   height: 1.5,
                 ),

@@ -43,7 +43,7 @@ class OnboardingShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
@@ -62,7 +62,7 @@ class OnboardingShell extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: step / totalSteps,
                         minHeight: 5,
-                        backgroundColor: AppTheme.line,
+                        backgroundColor: context.appColors.line,
                         valueColor: const AlwaysStoppedAnimation(AppTheme.accent),
                       ),
                     ),
@@ -98,7 +98,7 @@ class OnboardingShell extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                         letterSpacing: -1,
                         height: 1.15,
                       ),
@@ -110,7 +110,7 @@ class OnboardingShell extends StatelessWidget {
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
-                        color: AppTheme.inkSoft,
+                        color: context.appColors.inkSoft,
                         fontWeight: FontWeight.w500,
                         height: 1.5,
                       ),
@@ -165,14 +165,14 @@ class _BackButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: onBack != null ? AppTheme.surface : AppTheme.surfaceSoft,
+          color: onBack != null ? context.appColors.surface : context.appColors.surfaceSoft,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.line, width: 1.5),
+          border: Border.all(color: context.appColors.line, width: 1.5),
         ),
         child: Icon(
           Icons.arrow_back_rounded,
           size: 18,
-          color: onBack != null ? AppTheme.ink : AppTheme.inkMuted,
+          color: onBack != null ? context.appColors.ink : context.appColors.inkMuted,
         ),
       ),
     );
