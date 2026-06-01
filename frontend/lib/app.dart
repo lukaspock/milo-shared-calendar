@@ -101,11 +101,26 @@ final _router = GoRouter(
   ],
 );
 
-class SharedCalApp extends ConsumerWidget {
+class SharedCalApp extends ConsumerStatefulWidget {
   const SharedCalApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SharedCalApp> createState() => _SharedCalAppState();
+}
+
+class _SharedCalAppState extends ConsumerState<SharedCalApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Load the user's persisted theme choice as soon as the widget is mounted.
+    // Runs asynchronously — shows ThemeMode.system on the first frame, then
+    // switches to the saved choice once SharedPreferences resolves (no
+    // perceptible flash in practice since the OS theme is usually correct).
+    ref.read(themeProvider.notifier).load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
     return MaterialApp.router(
       title: 'Shared Calendar',
