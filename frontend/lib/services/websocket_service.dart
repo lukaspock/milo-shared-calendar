@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
-  defaultValue: 'flutterprojectvibecoding.onrender.com',
+  defaultValue: 'milo-api.onrender.com',
 );
 const _isLocal = _apiHost == '127.0.0.1' || _apiHost == 'localhost';
 const _wsUrl = _isLocal ? 'ws://$_apiHost:3000/ws' : 'wss://$_apiHost/ws';
