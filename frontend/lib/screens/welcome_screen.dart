@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -102,9 +103,46 @@ class WelcomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 20),
+
+              // ── Legal links ──────────────────────────────────────────────
+              Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 4,
+                  children: [
+                    _LegalLink(label: 'Privacy Policy', url: 'https://api.milocalendar.tech/privacy'),
+                    Text('·', style: TextStyle(color: context.appColors.inkSoft, fontSize: 12)),
+                    _LegalLink(label: 'Terms of Service', url: 'https://api.milocalendar.tech/terms'),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalLink extends StatelessWidget {
+  const _LegalLink({required this.label, required this.url});
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          color: context.appColors.inkSoft,
+          decoration: TextDecoration.underline,
+          decorationColor: context.appColors.inkSoft,
         ),
       ),
     );
