@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -103,32 +104,72 @@ class _OnboardingCalendarScreenState
           const SizedBox(height: 12),
 
           // ── Device Calendar ─────────────────────────────────────────────
-          _CalendarOptionCard(
-            icon: AppImages.phone(size: 20),
-            title: 'Device Calendar',
-            subtitle: 'Sync to your iPhone / Android calendar',
-            connected: _deviceConnected,
-            connecting: _connectingDevice,
-            connectedLabel: 'Device Calendar connected',
-            connectLabel: 'Connect Device Calendar',
-            onConnect: () async {
-              setState(() => _connectingDevice = true);
-              final ok = await DeviceCalendarService().connect();
-              if (!mounted) return;
-              setState(() {
-                _connectingDevice = false;
-                _deviceConnected = ok;
-              });
-              if (!ok) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'Could not connect. Please grant calendar permission in Settings.'),
+          if (Platform.isIOS || Platform.isAndroid)
+            _CalendarOptionCard(
+              icon: AppImages.phone(size: 20),
+              title: 'Device Calendar',
+              subtitle: 'Sync to your iPhone / Android calendar',
+              connected: _deviceConnected,
+              connecting: _connectingDevice,
+              connectedLabel: 'Device Calendar connected',
+              connectLabel: 'Connect Device Calendar',
+              onConnect: () async {
+                setState(() => _connectingDevice = true);
+                final ok = await DeviceCalendarService().connect();
+                if (!mounted) return;
+                setState(() {
+                  _connectingDevice = false;
+                  _deviceConnected = ok;
+                });
+                if (!ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Could not connect. Please grant calendar permission in Settings.'),
+                    ),
+                  );
+                }
+              },
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.appColors.line, width: 1),
+              ),
+              child: Row(
+                children: [
+                  AppImages.phone(size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Device Calendar',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Only available on iPhone and Android.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }
-            },
-          ),
+                ],
+              ),
+            ),
         ],
       ),
     );

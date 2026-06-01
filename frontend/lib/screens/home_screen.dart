@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1457,106 +1458,117 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        if (_deviceCalendarConnected)
-                          Row(
-                            children: [
-                              AppImages.check(size: 15),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Device calendar connected',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF1F5C42),
+                        if (Platform.isIOS || Platform.isAndroid)
+                          if (_deviceCalendarConnected)
+                            Row(
+                              children: [
+                                AppImages.check(size: 15),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Device calendar connected',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1F5C42),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () async {
-                                  await DeviceCalendarService().disconnect();
-                                  if (mounted) {
-                                    setState(
-                                        () => _deviceCalendarConnected = false);
-                                  }
-                                },
-                                child: Text(
-                                  'Disconnect',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.danger,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          GestureDetector(
-                            onTap: _connectingDevice
-                                ? null
-                                : () async {
-                                    setState(
-                                        () => _connectingDevice = true);
-                                    final ok =
-                                        await DeviceCalendarService()
-                                            .connect();
-                                    if (!mounted) return;
-                                    setState(() {
-                                      _connectingDevice = false;
-                                      _deviceCalendarConnected = ok;
-                                    });
-                                    if (!ok) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Could not connect. Please grant calendar permission in Settings.',
-                                          ),
-                                        ),
-                                      );
+                                GestureDetector(
+                                  onTap: () async {
+                                    await DeviceCalendarService().disconnect();
+                                    if (mounted) {
+                                      setState(
+                                          () => _deviceCalendarConnected = false);
                                     }
                                   },
-                            child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 11),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accent.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color:
-                                      AppTheme.accent.withOpacity(0.25),
-                                  width: 1,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: _connectingDevice
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppTheme.accent,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.add_rounded,
-                                            size: 16,
-                                            color: AppTheme.accent),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Connect Device Calendar',
-                                          style:
-                                              GoogleFonts.plusJakartaSans(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppTheme.accent,
-                                          ),
-                                        ),
-                                      ],
+                                  child: Text(
+                                    'Disconnect',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.danger,
                                     ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            GestureDetector(
+                              onTap: _connectingDevice
+                                  ? null
+                                  : () async {
+                                      setState(
+                                          () => _connectingDevice = true);
+                                      final ok =
+                                          await DeviceCalendarService()
+                                              .connect();
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _connectingDevice = false;
+                                        _deviceCalendarConnected = ok;
+                                      });
+                                      if (!ok) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Could not connect. Please grant calendar permission in Settings.',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 11),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accent.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color:
+                                        AppTheme.accent.withOpacity(0.25),
+                                    width: 1,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: _connectingDevice
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppTheme.accent,
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.add_rounded,
+                                              size: 16,
+                                              color: AppTheme.accent),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Connect Device Calendar',
+                                            style:
+                                                GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppTheme.accent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            )
+                        else
+                          Text(
+                            'Device Calendar sync is only available on iPhone and Android.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: context.appColors.inkMuted,
+                              height: 1.4,
                             ),
                           ),
                       ],
