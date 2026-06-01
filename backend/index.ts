@@ -6,10 +6,15 @@ import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
+import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
 import { startReminderScheduler } from "./src/services/reminder.service";
 
 const router = new Router();
+
+// --- Legal (public) ---
+router.get("/privacy", () => privacyPolicy());
+router.get("/terms", () => termsOfService());
 
 // --- Auth ---
 // Rate-limited: 10 requests/min per IP on unauthenticated credential endpoints
