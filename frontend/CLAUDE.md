@@ -180,7 +180,7 @@ After `POST /auth/google` returns a SharedCal JWT, the auth flow is identical to
 
 Google Calendar connection happens separately via the web OAuth flow — see the "Google Calendar connect UI" section above.
 
-**iOS/macOS setup required:** Both `ios/Runner/Info.plist` and `macos/Runner/Info.plist` contain a `CFBundleURLSchemes` entry with `REPLACE_WITH_REVERSED_CLIENT_ID`. Create an iOS OAuth client in Google Cloud Console (bundle ID: `com.sharedcal.sharedCal`) and replace this placeholder with the REVERSED_CLIENT_ID before building.
+**⚠️ Google Sign In / Sign Up is currently non-functional.** Both `ios/Runner/Info.plist` and `macos/Runner/Info.plist` contain a `CFBundleURLSchemes` entry still set to the placeholder `REPLACE_WITH_REVERSED_CLIENT_ID`. Create an iOS OAuth client in Google Cloud Console (bundle ID: `com.sharedcal.sharedCal`) and replace this placeholder with the actual REVERSED_CLIENT_ID before Google Sign-In will work. Google Calendar sync (web OAuth connect flow) does not require this and works fine.
 
 ## Known gotchas
 
