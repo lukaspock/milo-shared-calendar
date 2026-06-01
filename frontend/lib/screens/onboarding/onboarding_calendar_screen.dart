@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -104,7 +104,7 @@ class _OnboardingCalendarScreenState
           const SizedBox(height: 12),
 
           // ── Device Calendar ─────────────────────────────────────────────
-          if (Platform.isIOS || Platform.isAndroid)
+          if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android))
             _CalendarOptionCard(
               icon: AppImages.phone(size: 20),
               title: 'Device Calendar',

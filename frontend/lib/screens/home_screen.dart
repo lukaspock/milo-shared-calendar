@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1458,7 +1458,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        if (Platform.isIOS || Platform.isAndroid)
+                        if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android))
                           if (_deviceCalendarConnected)
                             Row(
                               children: [
