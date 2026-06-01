@@ -24,10 +24,7 @@ final _googleSignIn = GoogleSignIn(
           ? _kMacOSClientId
           : null),
   serverClientId: kIsWeb ? null : _kWebClientId,
-  scopes: [
-    'email',
-    'https://www.googleapis.com/auth/calendar',
-  ],
+  scopes: ['email'],
 );
 
 class AuthService {
