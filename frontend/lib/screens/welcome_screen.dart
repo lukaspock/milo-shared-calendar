@@ -47,7 +47,7 @@ class WelcomeScreen extends ConsumerWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 46,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -2,
                   height: 1.05,
                 ),
@@ -58,7 +58,7 @@ class WelcomeScreen extends ConsumerWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.inkSoft,
+                  color: context.appColors.inkSoft,
                 ),
               ),
 
@@ -79,7 +79,7 @@ class WelcomeScreen extends ConsumerWidget {
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
-                        color: AppTheme.inkSoft,
+                        color: context.appColors.inkSoft,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -88,10 +88,10 @@ class WelcomeScreen extends ConsumerWidget {
                         TextSpan(
                           text: 'Sign in',
                           style: GoogleFonts.plusJakartaSans(
-                            color: AppTheme.ink,
+                            color: context.appColors.ink,
                             fontWeight: FontWeight.w700,
                             decoration: TextDecoration.underline,
-                            decorationColor: AppTheme.ink,
+                            decorationColor: context.appColors.ink,
                           ),
                         ),
                       ],
@@ -133,7 +133,7 @@ class _AccentButton extends StatelessWidget {
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: _kButtonOrange,
-            foregroundColor: AppTheme.ink,
+            foregroundColor: context.appColors.ink,
             minimumSize: const Size(double.infinity, 58),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28)),

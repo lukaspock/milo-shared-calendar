@@ -59,20 +59,20 @@ class _OnboardingNameEmailScreenState
             child: OutlinedButton(
               onPressed: isLoading ? null : _googleSignIn,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.line, width: 1.5),
+                side: BorderSide(color: context.appColors.line, width: 1.5),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
-                backgroundColor: AppTheme.surface,
+                backgroundColor: context.appColors.surface,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (isLoading)
-                    const SizedBox(
+                    SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppTheme.inkMuted),
+                          strokeWidth: 2, color: context.appColors.inkMuted),
                     )
                   else ...[
                     Text(
@@ -92,7 +92,7 @@ class _OnboardingNameEmailScreenState
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                       ),
                     ),
                   ],
@@ -110,7 +110,7 @@ class _OnboardingNameEmailScreenState
               onPressed:
                   isLoading ? null : () => _showAppleComingSoon(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.ink,
+                backgroundColor: context.appColors.ink,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 54),
                 shape: RoundedRectangleBorder(
@@ -140,19 +140,19 @@ class _OnboardingNameEmailScreenState
 
           // ── Divider ─────────────────────────────────────────────────────
           Row(children: [
-            Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+            Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
                 'or',
                 style: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.inkMuted,
+                  color: context.appColors.inkMuted,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            Expanded(child: Divider(color: AppTheme.line, thickness: 1.5)),
+            Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
           ]),
 
           const SizedBox(height: 16),
@@ -183,18 +183,18 @@ void _showAppleComingSoon(BuildContext context) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Row(
         children: [
-          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
+          Icon(Icons.apple, size: 22, color: context.appColors.ink),
           const SizedBox(width: 10),
           Text(
             'Apple Sign-In',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppTheme.ink,
+              color: context.appColors.ink,
             ),
           ),
         ],
@@ -203,7 +203,7 @@ void _showAppleComingSoon(BuildContext context) {
         'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
         style: GoogleFonts.plusJakartaSans(
           fontSize: 14,
-          color: AppTheme.inkSoft,
+          color: context.appColors.inkSoft,
           height: 1.5,
         ),
       ),

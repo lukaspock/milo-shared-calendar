@@ -165,12 +165,12 @@ class _CalendarOptionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: connected
             ? const Color(0xFFF0FBF5)
-            : AppTheme.surfaceSoft,
+            : context.appColors.surfaceSoft,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: connected
               ? const Color(0xFF1F9D60)
-              : AppTheme.line,
+              : context.appColors.line,
           width: connected ? 1.5 : 1,
         ),
       ),
@@ -191,14 +191,14 @@ class _CalendarOptionCard extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.ink,
+                        color: context.appColors.ink,
                       ),
                     ),
                     Text(
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: AppTheme.inkMuted,
+                        color: context.appColors.inkMuted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

@@ -26,11 +26,11 @@ class HomeScreen extends ConsumerWidget {
     final dateLabel = DateFormat('EEEE, MMMM d').format(now);
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: calendarsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.ink),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.appColors.ink),
           ),
           error: (e, _) => Center(
             child: Column(
@@ -40,11 +40,11 @@ class HomeScreen extends ConsumerWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceSoft,
+                    color: context.appColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.line, width: 1.5),
+                    border: Border.all(color: context.appColors.line, width: 1.5),
                   ),
-                  child: const Icon(Icons.cloud_off_rounded, color: AppTheme.inkMuted, size: 28),
+                  child: Icon(Icons.cloud_off_rounded, color: context.appColors.inkMuted, size: 28),
                 ),
                 const SizedBox(height: 16),
                 Text('Could not load calendars',
@@ -70,8 +70,8 @@ class HomeScreen extends ConsumerWidget {
 
             return RefreshIndicator(
               onRefresh: () => ref.read(calendarProvider.notifier).fetch(),
-              color: AppTheme.ink,
-              backgroundColor: AppTheme.surface,
+              color: context.appColors.ink,
+              backgroundColor: context.appColors.surface,
               child: CustomScrollView(
                 slivers: [
                   // ── Header ────────────────────────────────────────────────
@@ -90,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppTheme.inkMuted,
+                                    color: context.appColors.inkMuted,
                                     letterSpacing: 0.2,
                                   ),
                                 ),
@@ -102,7 +102,7 @@ class HomeScreen extends ConsumerWidget {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
-                                    color: AppTheme.ink,
+                                    color: context.appColors.ink,
                                     letterSpacing: -0.8,
                                   ),
                                 ),
@@ -377,7 +377,7 @@ class _UpNextCard extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: context.appColors.surface,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
@@ -455,7 +455,7 @@ class _SectionHeader extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: AppTheme.inkMuted,
+            color: context.appColors.inkMuted,
             letterSpacing: 1.1,
           ),
         ),
@@ -463,21 +463,21 @@ class _SectionHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceSoft,
+            color: context.appColors.surfaceSoft,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.line, width: 1),
+            border: Border.all(color: context.appColors.line, width: 1),
           ),
           child: Text(
             count.toString(),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppTheme.inkMuted,
+              color: context.appColors.inkMuted,
             ),
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Divider(color: AppTheme.line, thickness: 1)),
+        Expanded(child: Divider(color: context.appColors.line, thickness: 1)),
       ],
     );
   }
@@ -511,12 +511,12 @@ class _CalendarCardState extends State<_CalendarCard> {
         transform: Matrix4.translationValues(0, _pressed ? 2 : 0, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: context.appColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppTheme.line, width: 1.5),
+          border: Border.all(color: context.appColors.line, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.line.withOpacity(0.6),
+              color: context.appColors.line.withOpacity(0.6),
               offset: const Offset(0, 4),
               blurRadius: 0,
             ),
@@ -529,7 +529,7 @@ class _CalendarCardState extends State<_CalendarCard> {
               hue: hue,
               size: 48,
               radius: 14,
-              child: const Icon(Icons.calendar_today_rounded, size: 20, color: Colors.black54),
+              child: Icon(Icons.calendar_today_rounded, size: 20, color: context.appColors.inkMuted),
             ),
             const SizedBox(width: 14),
 
@@ -543,7 +543,7 @@ class _CalendarCardState extends State<_CalendarCard> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.ink,
+                      color: context.appColors.ink,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -559,7 +559,7 @@ class _CalendarCardState extends State<_CalendarCard> {
                           '${widget.calendar.memberCount} member${widget.calendar.memberCount == 1 ? '' : 's'}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: AppTheme.inkMuted,
+                            color: context.appColors.inkMuted,
                             fontWeight: FontWeight.w500,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -597,7 +597,7 @@ class _CalendarCardState extends State<_CalendarCard> {
                       'code ${widget.calendar.inviteCode}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
-                        color: AppTheme.inkMuted,
+                        color: context.appColors.inkMuted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -624,7 +624,7 @@ class _CalendarCardState extends State<_CalendarCard> {
                 ),
               )
             else
-              const Icon(Icons.chevron_right_rounded, color: AppTheme.inkMuted, size: 20),
+              Icon(Icons.chevron_right_rounded, color: context.appColors.inkMuted, size: 20),
           ],
         ),
       ),
@@ -652,7 +652,7 @@ class _MemberDots extends StatelessWidget {
             decoration: BoxDecoration(
               color: hue.dot,
               shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.surface, width: 2),
+              border: Border.all(color: context.appColors.surface, width: 2),
             ),
           ),
         )),
@@ -676,18 +676,18 @@ class _CircleButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: context.appColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.line, width: 1.5),
+          border: Border.all(color: context.appColors.line, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.line.withOpacity(0.5),
+              color: context.appColors.line.withOpacity(0.5),
               offset: const Offset(0, 3),
               blurRadius: 0,
             ),
           ],
         ),
-        child: Icon(icon, size: 18, color: AppTheme.ink),
+        child: Icon(icon, size: 18, color: context.appColors.ink),
       ),
     );
   }
@@ -709,8 +709,8 @@ class _PillFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isSecondary ? AppTheme.surface : AppTheme.ink;
-    final fg = isSecondary ? AppTheme.ink : Colors.white;
+    final bg = isSecondary ? context.appColors.surface : context.appColors.ink;
+    final fg = isSecondary ? context.appColors.ink : context.appColors.bg;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -718,12 +718,12 @@ class _PillFAB extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(28),
-          border: isSecondary ? Border.all(color: AppTheme.line, width: 1.5) : null,
+          border: isSecondary ? Border.all(color: context.appColors.line, width: 1.5) : null,
           boxShadow: [
             BoxShadow(
               color: isSecondary
-                  ? AppTheme.line.withOpacity(0.5)
-                  : const Color(0x551F1B16),
+                  ? context.appColors.line.withOpacity(0.5)
+                  : context.appColors.ink.withOpacity(0.33),
               offset: const Offset(0, 4),
               blurRadius: 0,
             ),
@@ -824,8 +824,8 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -841,7 +841,7 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.line,
+                color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -855,14 +855,14 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -0.5,
                 ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: AppTheme.inkMuted),
+                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
               ),
             ],
           ),
@@ -889,25 +889,25 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                   'CALENDAR NAME',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10, fontWeight: FontWeight.w700,
-                    color: AppTheme.inkMuted, letterSpacing: 0.9,
+                    color: context.appColors.inkMuted, letterSpacing: 0.9,
                   ),
                 ),
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceSoft,
+                  color: context.appColors.surfaceSoft,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.line, width: 1.5),
+                  border: Border.all(color: context.appColors.line, width: 1.5),
                 ),
                 child: TextField(
                   controller: widget.ctrl,
                   autofocus: true,
                   style: GoogleFonts.plusJakartaSans(
-                    color: AppTheme.ink, fontWeight: FontWeight.w500,
+                    color: context.appColors.ink, fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Family, Work, Friends…',
-                    hintStyle: GoogleFonts.plusJakartaSans(color: AppTheme.inkMuted),
+                    hintStyle: GoogleFonts.plusJakartaSans(color: context.appColors.inkMuted),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
@@ -922,7 +922,7 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
             'COLOR',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10, fontWeight: FontWeight.w700,
-              color: AppTheme.inkMuted, letterSpacing: 0.9,
+              color: context.appColors.inkMuted, letterSpacing: 0.9,
             ),
           ),
           const SizedBox(height: 8),
@@ -943,7 +943,7 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                       color: stickerHues[i].bg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selected ? AppTheme.ink : Colors.transparent,
+                        color: selected ? context.appColors.ink : Colors.transparent,
                         width: 2.5,
                       ),
                     ),
@@ -965,8 +965,8 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
-                    side: const BorderSide(color: AppTheme.line, width: 1.5),
-                    foregroundColor: AppTheme.ink,
+                    side: BorderSide(color: context.appColors.line, width: 1.5),
+                    foregroundColor: context.appColors.ink,
                   ),
                   child: Text(
                     'Cancel',
@@ -1078,8 +1078,8 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
         24;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPad),
@@ -1093,7 +1093,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.line,
+                color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1108,7 +1108,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -1119,12 +1119,12 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceSoft,
+                    color: context.appColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.line, width: 1),
+                    border: Border.all(color: context.appColors.line, width: 1),
                   ),
-                  child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppTheme.inkMuted),
+                  child: Icon(Icons.close_rounded,
+                      size: 16, color: context.appColors.inkMuted),
                 ),
               ),
             ],
@@ -1135,9 +1135,9 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceSoft,
+              color: context.appColors.surfaceSoft,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.line, width: 1),
+              border: Border.all(color: context.appColors.line, width: 1),
             ),
             child: Row(
               children: [
@@ -1171,7 +1171,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.ink,
+                          color: context.appColors.ink,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1180,7 +1180,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         user?.email ?? '—',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          color: AppTheme.inkMuted,
+                          color: context.appColors.inkMuted,
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1286,9 +1286,9 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.surfaceSoft,
+              color: context.appColors.surfaceSoft,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.line, width: 1),
+              border: Border.all(color: context.appColors.line, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1309,7 +1309,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.ink,
+                              color: context.appColors.ink,
                             ),
                           ),
                         ),
@@ -1325,7 +1325,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                             decoration: BoxDecoration(
                               color: connected
                                   ? const Color(0xFFC9EBD9)
-                                  : AppTheme.line,
+                                  : context.appColors.line,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -1335,7 +1335,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                 fontWeight: FontWeight.w700,
                                 color: connected
                                     ? const Color(0xFF1F5C42)
-                                    : AppTheme.inkMuted,
+                                    : context.appColors.inkMuted,
                               ),
                             ),
                           );
@@ -1344,8 +1344,8 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                         AnimatedRotation(
                           duration: const Duration(milliseconds: 200),
                           turns: _calendarsExpanded ? 0.25 : 0,
-                          child: const Icon(Icons.chevron_right_rounded,
-                              size: 18, color: AppTheme.inkMuted),
+                          child: Icon(Icons.chevron_right_rounded,
+                              size: 18, color: context.appColors.inkMuted),
                         ),
                       ],
                     ),
@@ -1353,7 +1353,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                 ),
                 if (_calendarsExpanded) ...[
                   Divider(
-                      color: AppTheme.line,
+                      color: context.appColors.line,
                       height: 1,
                       indent: 14,
                       endIndent: 14),
@@ -1439,7 +1439,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                           ),
                         // ── Device Calendar ───────────────────────────────
                         const SizedBox(height: 16),
-                        Divider(color: AppTheme.line, height: 1),
+                        Divider(color: context.appColors.line, height: 1),
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -1450,7 +1450,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.inkMuted,
+                                color: context.appColors.inkMuted,
                                 letterSpacing: 0.8,
                               ),
                             ),
@@ -1646,12 +1646,12 @@ class _SheetSection extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: AppTheme.inkMuted,
+            color: context.appColors.inkMuted,
             letterSpacing: 1.1,
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Divider(color: AppTheme.line, thickness: 1)),
+        Expanded(child: Divider(color: context.appColors.line, thickness: 1)),
       ],
     );
   }
@@ -1671,7 +1671,7 @@ class _SheetActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDanger ? AppTheme.danger : AppTheme.ink;
+    final color = isDanger ? AppTheme.danger : context.appColors.ink;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1680,11 +1680,11 @@ class _SheetActionRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDanger
               ? AppTheme.danger.withOpacity(0.06)
-              : AppTheme.surfaceSoft,
+              : context.appColors.surfaceSoft,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color:
-                isDanger ? AppTheme.danger.withOpacity(0.2) : AppTheme.line,
+                isDanger ? AppTheme.danger.withOpacity(0.2) : context.appColors.line,
             width: 1,
           ),
         ),
@@ -1717,8 +1717,8 @@ class _JoinCalendarSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -1733,7 +1733,7 @@ class _JoinCalendarSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.line,
+                color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1745,13 +1745,13 @@ class _JoinCalendarSheet extends StatelessWidget {
                 'Join calendar',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20, fontWeight: FontWeight.w700,
-                  color: AppTheme.ink, letterSpacing: -0.5,
+                  color: context.appColors.ink, letterSpacing: -0.5,
                 ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: AppTheme.inkMuted),
+                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
               ),
             ],
           ),
@@ -1765,28 +1765,28 @@ class _JoinCalendarSheet extends StatelessWidget {
                   'INVITE CODE',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10, fontWeight: FontWeight.w700,
-                    color: AppTheme.inkMuted, letterSpacing: 0.9,
+                    color: context.appColors.inkMuted, letterSpacing: 0.9,
                   ),
                 ),
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceSoft,
+                  color: context.appColors.surfaceSoft,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.line, width: 1.5),
+                  border: Border.all(color: context.appColors.line, width: 1.5),
                 ),
                 child: TextField(
                   controller: ctrl,
                   autofocus: true,
                   textCapitalization: TextCapitalization.characters,
                   style: GoogleFonts.plusJakartaSans(
-                    color: AppTheme.ink, fontWeight: FontWeight.w600,
+                    color: context.appColors.ink, fontWeight: FontWeight.w600,
                     letterSpacing: 1.5,
                   ),
                   decoration: InputDecoration(
                     hintText: 'AB3X7Y2Z',
                     hintStyle: GoogleFonts.plusJakartaSans(
-                      color: AppTheme.inkMuted, letterSpacing: 0,
+                      color: context.appColors.inkMuted, letterSpacing: 0,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

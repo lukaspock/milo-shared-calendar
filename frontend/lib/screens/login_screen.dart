@@ -23,7 +23,7 @@ class LoginScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: context.appColors.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -41,12 +41,12 @@ class LoginScreen extends ConsumerWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppTheme.surface,
+                      color: context.appColors.surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.line, width: 1.5),
+                      border: Border.all(color: context.appColors.line, width: 1.5),
                     ),
-                    child: const Icon(Icons.arrow_back_rounded,
-                        size: 18, color: AppTheme.ink),
+                    child: Icon(Icons.arrow_back_rounded,
+                        size: 18, color: context.appColors.ink),
                   ),
                 ),
               ),
@@ -64,7 +64,7 @@ class LoginScreen extends ConsumerWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -1,
                 ),
               ),
@@ -73,7 +73,7 @@ class LoginScreen extends ConsumerWidget {
                 'Sign in to your shared calendars.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
-                  color: AppTheme.inkSoft,
+                  color: context.appColors.inkSoft,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -125,9 +125,9 @@ class LoginScreen extends ConsumerWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.inkSoft,
+                      color: context.appColors.inkSoft,
                       decoration: TextDecoration.underline,
-                      decorationColor: AppTheme.inkMuted,
+                      decorationColor: context.appColors.inkMuted,
                     ),
                   ),
                 ),
@@ -142,7 +142,7 @@ class LoginScreen extends ConsumerWidget {
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
-                        color: AppTheme.inkSoft,
+                        color: context.appColors.inkSoft,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -229,8 +229,8 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
     });
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -251,7 +251,7 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.line,
+                  color: context.appColors.line,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -264,7 +264,7 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.ink,
+                color: context.appColors.ink,
                 letterSpacing: -0.5,
               ),
             ),
@@ -299,7 +299,7 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
                   _obscure
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: AppTheme.inkMuted,
+                  color: context.appColors.inkMuted,
                   size: 18,
                 ),
                 onPressed: () => setState(() => _obscure = !_obscure),
@@ -332,9 +332,9 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.inkSoft,
+                    color: context.appColors.inkSoft,
                     decoration: TextDecoration.underline,
-                    decorationColor: AppTheme.inkMuted,
+                    decorationColor: context.appColors.inkMuted,
                   ),
                 ),
               ),
@@ -402,8 +402,8 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -418,7 +418,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             child: Container(
               width: 36, height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.line,
+                color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -428,7 +428,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             _sent ? 'Check your email' : 'Forgot password?',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 20, fontWeight: FontWeight.w700,
-              color: AppTheme.ink, letterSpacing: -0.5,
+              color: context.appColors.ink, letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
@@ -437,7 +437,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                 ? 'If an account exists for that address, we\'ve sent a reset link. It expires in 1 hour.'
                 : 'Enter your email and we\'ll send you a link to reset your password.',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 14, color: AppTheme.inkSoft, height: 1.5,
+              fontSize: 14, color: context.appColors.inkSoft, height: 1.5,
             ),
           ),
           if (!_sent) ...[
@@ -501,7 +501,7 @@ class _SocialButton extends StatelessWidget {
           ? ElevatedButton(
               onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.ink,
+                backgroundColor: context.appColors.ink,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
@@ -509,22 +509,22 @@ class _SocialButton extends StatelessWidget {
                 elevation: 0,
                 shadowColor: Colors.transparent,
               ),
-              child: _buttonContent(),
+              child: _buttonContent(context),
             )
           : OutlinedButton(
               onPressed: isLoading ? null : onPressed,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.line, width: 1.5),
+                side: BorderSide(color: context.appColors.line, width: 1.5),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
-                backgroundColor: AppTheme.surface,
+                backgroundColor: context.appColors.surface,
               ),
-              child: _buttonContent(),
+              child: _buttonContent(context),
             ),
     );
   }
 
-  Widget _buttonContent() => Row(
+  Widget _buttonContent(BuildContext context) => Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           leading,
@@ -534,7 +534,7 @@ class _SocialButton extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: dark ? Colors.white : AppTheme.ink,
+              color: dark ? Colors.white : context.appColors.ink,
             ),
           ),
         ],
@@ -547,18 +547,18 @@ void _showAppleComingSoon(BuildContext context) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Row(
         children: [
-          const Icon(Icons.apple, size: 22, color: AppTheme.ink),
+          Icon(Icons.apple, size: 22, color: context.appColors.ink),
           const SizedBox(width: 10),
           Text(
             'Apple Sign-In',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppTheme.ink,
+              color: context.appColors.ink,
             ),
           ),
         ],
@@ -567,7 +567,7 @@ void _showAppleComingSoon(BuildContext context) {
         'Apple Sign-In is not yet implemented.\nUse email or Google for now.',
         style: GoogleFonts.plusJakartaSans(
           fontSize: 14,
-          color: AppTheme.inkSoft,
+          color: context.appColors.inkSoft,
           height: 1.5,
         ),
       ),

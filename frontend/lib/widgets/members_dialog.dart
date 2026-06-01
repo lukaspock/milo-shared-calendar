@@ -36,8 +36,8 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surface,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -53,7 +53,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.line,
+                color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -75,14 +75,14 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.ink,
+                  color: context.appColors.ink,
                   letterSpacing: -0.5,
                 ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: AppTheme.inkMuted),
+                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
               ),
             ],
           ),
@@ -94,9 +94,9 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
             future: _membersFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator(color: AppTheme.ink)),
+                  child: Center(child: CircularProgressIndicator(color: context.appColors.ink)),
                 );
               }
               if (snapshot.hasError) {
@@ -110,7 +110,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                       Text(
                         'Could not load members',
                         style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.inkSoft,
+                          color: context.appColors.inkSoft,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -119,7 +119,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                       Text(
                         'Check your connection and try again.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.inkMuted,
+                          color: context.appColors.inkMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -132,8 +132,8 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.ink,
-                          side: const BorderSide(color: AppTheme.line, width: 1.5),
+                          foregroundColor: context.appColors.ink,
+                          side: BorderSide(color: context.appColors.line, width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -161,9 +161,9 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceSoft,
+                        color: context.appColors.surfaceSoft,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.line, width: 1),
+                        border: Border.all(color: context.appColors.line, width: 1),
                       ),
                       child: Row(
                         children: [
@@ -202,14 +202,14 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.ink,
+                                    color: context.appColors.ink,
                                   ),
                                 ),
                                 Text(
                                   m.email,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
-                                    color: AppTheme.inkMuted,
+                                    color: context.appColors.inkMuted,
                                     fontWeight: FontWeight.w400,
                                   ),
                                   maxLines: 1,
@@ -223,10 +223,10 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: m.isOwner ? hue.bg : AppTheme.surface,
+                              color: m.isOwner ? hue.bg : context.appColors.surface,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: m.isOwner ? hue.dot : AppTheme.line,
+                                color: m.isOwner ? hue.dot : context.appColors.line,
                               ),
                             ),
                             child: Text(
@@ -234,7 +234,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: m.isOwner ? hue.ink : AppTheme.inkSoft,
+                                color: m.isOwner ? hue.ink : context.appColors.inkSoft,
                               ),
                             ),
                           ),
@@ -260,9 +260,9 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: AppTheme.surface,
+                                  color: context.appColors.surface,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppTheme.line),
+                                  border: Border.all(color: context.appColors.line),
                                 ),
                                 child: const Icon(Icons.person_remove_rounded,
                                     size: 14, color: AppTheme.danger),

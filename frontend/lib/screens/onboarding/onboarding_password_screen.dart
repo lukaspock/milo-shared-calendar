@@ -78,7 +78,7 @@ class _OnboardingPasswordScreenState
               _obscure
                   ? Icons.visibility_outlined
                   : Icons.visibility_off_outlined,
-              color: AppTheme.inkMuted,
+              color: context.appColors.inkMuted,
               size: 18,
             ),
             onPressed: () => setState(() => _obscure = !_obscure),
