@@ -94,8 +94,8 @@ class AppTheme {
   static const inkMuted = Color(0xFFA39A8C);
 
   // Accents
-  static const accent  = Color(0xFF7C5CFF);
-  static const accent2 = Color(0xFFFFB347);
+  static const accent  = Color(0xFFFFB347);
+  static const accent2 = Color(0xFFFF9950);
 
   // Danger
   static const danger = Color(0xFFE85535);
