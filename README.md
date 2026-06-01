@@ -42,9 +42,6 @@ The goal is a calendar that feels as lightweight as a shared notes app but as po
 ## Getting started (local dev)
 
 ```bash
-# Start backend + database
-docker compose up --build
-
 # Run the Flutter app
 cd frontend && flutter run
 ```
@@ -55,7 +52,7 @@ See [CLAUDE.md](CLAUDE.md) for full setup, environment variables, and production
 
 ## Known Limitations
 
-- **Google Sign In / Sign Up is not yet functional.** A native iOS OAuth client ID needs to be configured in the app before Google authentication works. Use email + password registration for now.
+- **Google Sign In / Sign Up is not yet functional for the WebApp.** A native iOS OAuth client ID needs to be configured in the app before Google authentication works. Use email + password registration for now.
 - Google Calendar sync (connecting your personal Google Calendar) is available and works independently of Google Sign-In.
 
 ---
