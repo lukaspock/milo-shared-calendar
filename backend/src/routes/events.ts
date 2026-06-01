@@ -59,6 +59,59 @@ async function insertRecurringInstances(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function advanceDate(date: Date, rule: string): Date {
+  const d = new Date(date);
+  if (rule === "daily")        d.setDate(d.getDate() + 1);
+  else if (rule === "weekly")  d.setDate(d.getDate() + 7);
+  else if (rule === "monthly") d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+/** Insert recurring instances into the DB (up to 500, within 3 months if no end date) */
+async function insertRecurringInstances(
+  parentId: string,
+  calendarId: string,
+  createdBy: string,
+  title: string,
+  description: string | null,
+  baseStart: Date,
+  baseEnd: Date,
+  color: string,
+  rule: string,
+  recurrenceEnd: string | null,
+): Promise<void> {
+  const duration = baseEnd.getTime() - baseStart.getTime();
+  const cutoff = recurrenceEnd
+    ? new Date(recurrenceEnd)
+    : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 3 months
+
+  let cursor = new Date(baseStart);
+  let count = 0;
+
+  while (count < 500) {
+    cursor = advanceDate(cursor, rule);
+    if (cursor > cutoff) break;
+    count++;
+
+    const instStart = new Date(cursor);
+    const instEnd   = new Date(instStart.getTime() + duration);
+
+    await db`
+      INSERT INTO events
+        (calendar_id, created_by, title, description, start_time, end_time, color,
+         recurrence_rule, recurrence_end, parent_event_id)
+      VALUES
+        (${calendarId}, ${createdBy}, ${title}, ${description ?? null},
+         ${instStart.toISOString()}, ${instEnd.toISOString()}, ${color},
+         ${rule}, ${recurrenceEnd ?? null}, ${parentId})
+    `;
+  }
+}
+
 export async function createEvent(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   let body: {
@@ -190,6 +243,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
   const isCreator = event.created_by === userId;
   const isOwner = membership[0].role === "owner";
   if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can edit this event", 403);
+
 
   if (body.edit_all) {
     // Update this event and all future instances in the series
