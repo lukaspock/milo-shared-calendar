@@ -62,5 +62,12 @@ export async function runMigrations(): Promise<void> {
       ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP
   `;
 
+  // parent_event_id: links recurring instances back to the root event
+  // ON DELETE CASCADE so deleting the root removes all instances automatically
+  await db`
+    ALTER TABLE events
+      ADD COLUMN IF NOT EXISTS parent_event_id UUID REFERENCES events(id) ON DELETE CASCADE
+  `;
+
   console.log("[db] migrations applied");
 }

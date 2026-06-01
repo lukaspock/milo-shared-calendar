@@ -121,6 +121,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     RecurrenceRule? recurrenceRule,
     DateTime? recurrenceEnd,
     bool clearRecurrence = false,
+    bool editAll = false,
   }) async {
     try {
       final res = await _api.put('/events/$id', data: {
@@ -133,12 +134,17 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         if (clearRecurrence) 'recurrence_rule': null,
         if (recurrenceEnd != null)
           'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
+        if (editAll) 'edit_all': true,
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
-        final updated = list.map((e) => e.id == id ? event : e).toList();
-        state = AsyncValue.data(updated);
-        _cache.saveEvents(calendarId, updated);
+        if (editAll) {
+          fetch();
+        } else {
+          final updated = list.map((e) => e.id == id ? event : e).toList();
+          state = AsyncValue.data(updated);
+          _cache.saveEvents(calendarId, updated);
+        }
       });
       // Fire-and-forget: sync update to device calendar + reschedule reminder
       DeviceCalendarService().syncEvent(event);
@@ -150,13 +156,18 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     }
   }
 
-  Future<bool> deleteEvent(String id) async {
+  Future<bool> deleteEvent(String id, {bool deleteAll = false}) async {
     try {
-      await _api.delete('/events/$id');
+      await _api.delete('/events/$id',
+          data: deleteAll ? {'delete_all': true} : null);
       state.whenData((list) {
-        final updated = list.where((e) => e.id != id).toList();
-        state = AsyncValue.data(updated);
-        _cache.saveEvents(calendarId, updated);
+        if (deleteAll) {
+          fetch();
+        } else {
+          final updated = list.where((e) => e.id != id).toList();
+          state = AsyncValue.data(updated);
+          _cache.saveEvents(calendarId, updated);
+        }
       });
       // Fire-and-forget: remove from device calendar + cancel reminder
       DeviceCalendarService().deleteDeviceEvent(id);

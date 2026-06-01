@@ -108,6 +108,8 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
   `;
   if (membership.length === 0) return error("Not a member of this calendar", 403);
 
+  // Recurring instances are stored as DB rows (parent_event_id set), so a simple
+  // query returns both the root event and all its generated instances.
   const events = await db`
     SELECT e.*, u.name AS creator_name, u.color AS creator_color
     FROM events e
@@ -116,51 +118,7 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     ORDER BY e.start_time ASC
   `;
 
-  const result: Record<string, unknown>[] = [];
-  const windowEnd = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-
-  for (const event of events) {
-    result.push(event as Record<string, unknown>);
-
-    const rule = event.recurrence_rule as string | null;
-    if (!rule) continue;
-
-    const baseStart = new Date(event.start_time as string);
-    const baseEnd   = new Date(event.end_time as string);
-    const duration  = baseEnd.getTime() - baseStart.getTime();
-    const cutoff    = event.recurrence_end
-      ? new Date(event.recurrence_end as string)
-      : windowEnd;
-
-    let cursor = new Date(baseStart);
-    let count = 0;
-
-    while (count < 500) {
-      // Advance cursor by one recurrence unit
-      if (rule === "daily")   cursor.setDate(cursor.getDate() + 1);
-      else if (rule === "weekly")  cursor.setDate(cursor.getDate() + 7);
-      else if (rule === "monthly") cursor.setMonth(cursor.getMonth() + 1);
-      else break;
-
-      if (cursor > cutoff || cursor > windowEnd) break;
-      count++;
-
-      const instStart = new Date(cursor);
-      const instEnd   = new Date(instStart.getTime() + duration);
-
-      result.push({
-        ...(event as Record<string, unknown>),
-        start_time: instStart.toISOString(),
-        end_time:   instEnd.toISOString(),
-      });
-    }
-  }
-
-  result.sort((a, b) =>
-    new Date(a.start_time as string).getTime() - new Date(b.start_time as string).getTime()
-  );
-
-  return json(result);
+  return json(events);
 }
 
 export async function listMembers(ctx: RequestContext): Promise<Response> {
