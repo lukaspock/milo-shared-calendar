@@ -137,6 +137,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       );
       ok = ev != null;
     } else {
+      // For recurring events ask whether to edit just this one or all future
+      bool editAll = false;
+      if (_existingEvent!.isRecurring || _existingEvent!.isRecurringInstance) {
+        if (!mounted) return;
+        final choice = await _showSeriesDialog(
+          title: 'Edit recurring event',
+          singleLabel: 'Edit this event only',
+          allLabel: 'Edit all future events',
+        );
+        if (choice == null || !mounted) {
+          setState(() => _isLoading = false);
+          return;
+        }
+        editAll = choice;
+      }
       ok = await notifier.updateEvent(
         _existingEvent!.id,
         title: _titleCtrl.text.trim(),
@@ -146,6 +161,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         recurrenceRule: _recurrenceRule,
         clearRecurrence: _recurrenceRule == RecurrenceRule.none,
         recurrenceEnd: _recurrenceEnd,
+        editAll: editAll,
       );
     }
 
@@ -161,30 +177,76 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
-  Future<void> _delete() async {
-    final confirm = await showDialog<bool>(
+  /// Shows a dialog with "Cancel", [singleLabel], and [allLabel].
+  /// Returns true = all, false = single, null = cancelled.
+  Future<bool?> _showSeriesDialog({
+    required String title,
+    required String singleLabel,
+    required String allLabel,
+  }) {
+    return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete event'),
-        content: const Text('Are you sure you want to delete this event?'),
+        title: Text(title),
+        content: const Text('This event is part of a recurring series.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(singleLabel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(allLabel),
           ),
         ],
       ),
     );
-    if (confirm != true || !mounted) return;
+  }
+
+  Future<void> _delete() async {
+    bool deleteAll = false;
+
+    if (_existingEvent!.isRecurring || _existingEvent!.isRecurringInstance) {
+      // Ask: delete just this one or all in series
+      final choice = await _showSeriesDialog(
+        title: 'Delete recurring event',
+        singleLabel: 'Delete this event',
+        allLabel: 'Delete all in series',
+      );
+      if (choice == null || !mounted) return;
+      deleteAll = choice;
+    } else {
+      // Simple confirmation for non-recurring
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Delete event'),
+          content: const Text('Are you sure you want to delete this event?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true || !mounted) return;
+    }
+
     setState(() => _isLoading = true);
     final ok = await ref
         .read(eventsProvider(widget.calendarId).notifier)
-        .deleteEvent(_existingEvent!.id);
+        .deleteEvent(_existingEvent!.id, deleteAll: deleteAll);
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (ok) context.go('/calendar/${widget.calendarId}');

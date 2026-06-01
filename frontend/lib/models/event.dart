@@ -31,6 +31,8 @@ class CalendarEvent {
   final DateTime updatedAt;
   final RecurrenceRule recurrenceRule;
   final DateTime? recurrenceEnd;
+  /// Non-null for instances generated from a recurring root event.
+  final String? parentEventId;
 
   const CalendarEvent({
     required this.id,
@@ -47,9 +49,11 @@ class CalendarEvent {
     required this.updatedAt,
     this.recurrenceRule = RecurrenceRule.none,
     this.recurrenceEnd,
+    this.parentEventId,
   });
 
   bool get isRecurring => recurrenceRule != RecurrenceRule.none;
+  bool get isRecurringInstance => parentEventId != null;
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     final colorHex = json['color'] as String? ?? '#6C63FF';
@@ -69,6 +73,7 @@ class CalendarEvent {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       recurrenceRule: RecurrenceRule.fromApi(json['recurrence_rule'] as String?),
       recurrenceEnd: recEndRaw != null ? DateTime.parse(recEndRaw) : null,
+      parentEventId: json['parent_event_id'] as String?,
     );
   }
 
@@ -116,6 +121,7 @@ class CalendarEvent {
       updatedAt: DateTime.now(),
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       recurrenceEnd: recurrenceEnd ?? this.recurrenceEnd,
+      parentEventId: parentEventId,
     );
   }
 }

@@ -5,6 +5,59 @@ import { broadcastToCalendar } from "../ws/websocket";
 import { sendEventNotification } from "../services/email";
 import { syncEventCreated, syncEventUpdated, syncEventDeleted } from "../services/google_calendar";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function advanceDate(date: Date, rule: string): Date {
+  const d = new Date(date);
+  if (rule === "daily")        d.setDate(d.getDate() + 1);
+  else if (rule === "weekly")  d.setDate(d.getDate() + 7);
+  else if (rule === "monthly") d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+/** Insert recurring instances into the DB (up to 500, within 3 months if no end date) */
+async function insertRecurringInstances(
+  parentId: string,
+  calendarId: string,
+  createdBy: string,
+  title: string,
+  description: string | null,
+  baseStart: Date,
+  baseEnd: Date,
+  color: string,
+  rule: string,
+  recurrenceEnd: string | null,
+): Promise<void> {
+  const duration = baseEnd.getTime() - baseStart.getTime();
+  const cutoff = recurrenceEnd
+    ? new Date(recurrenceEnd)
+    : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 3 months
+
+  let cursor = new Date(baseStart);
+  let count = 0;
+
+  while (count < 500) {
+    cursor = advanceDate(cursor, rule);
+    if (cursor > cutoff) break;
+    count++;
+
+    const instStart = new Date(cursor);
+    const instEnd   = new Date(instStart.getTime() + duration);
+
+    await db`
+      INSERT INTO events
+        (calendar_id, created_by, title, description, start_time, end_time, color,
+         recurrence_rule, recurrence_end, parent_event_id)
+      VALUES
+        (${calendarId}, ${createdBy}, ${title}, ${description ?? null},
+         ${instStart.toISOString()}, ${instEnd.toISOString()}, ${color},
+         ${rule}, ${recurrenceEnd ?? null}, ${parentId})
+    `;
+  }
+}
+
 export async function createEvent(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   let body: {
@@ -54,6 +107,22 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
 
   const event = events[0];
 
+  // Generate recurring instances in the DB (fire-and-forget to not block response)
+  if (recurrence_rule) {
+    insertRecurringInstances(
+      event.id as string,
+      calendar_id,
+      userId,
+      title,
+      description ?? null,
+      new Date(start_time),
+      new Date(end_time),
+      eventColor!,
+      recurrence_rule,
+      recurrence_end ?? null,
+    ).catch(console.error);
+  }
+
   // Fire-and-forget: email notifications + Google Calendar sync
   (async () => {
     const creator = await db`SELECT name FROM users WHERE id = ${userId}`;
@@ -97,6 +166,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     color?: string;
     recurrence_rule?: string | null;
     recurrence_end?: string | null;
+    edit_all?: boolean;
   };
   try {
     body = await ctx.req.json();
@@ -113,6 +183,38 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${event.calendar_id}
   `;
   if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  if (body.edit_all) {
+    // Update this event and all future instances in the series
+    const rootId = (event.parent_event_id ?? event.id) as string;
+    const newTitle       = body.title ?? (event.title as string);
+    const newDescription = 'description' in body ? (body.description ?? null) : (event.description as string | null);
+    const newColor       = body.color ?? (event.color as string);
+    const newRule        = 'recurrence_rule' in body ? (body.recurrence_rule ?? null) : (event.recurrence_rule as string | null);
+    const newEnd         = 'recurrence_end'  in body ? (body.recurrence_end  ?? null) : (event.recurrence_end  as string | null);
+    const fromTime       = event.start_time as string;
+
+    await db`
+      UPDATE events SET
+        title           = ${newTitle},
+        description     = ${newDescription},
+        color           = ${newColor},
+        recurrence_rule = ${newRule},
+        recurrence_end  = ${newEnd}
+      WHERE (id = ${rootId} OR parent_event_id = ${rootId})
+        AND start_time >= ${fromTime}
+    `;
+    const updatedRows = await db`SELECT * FROM events WHERE id = ${id}`;
+    const ue = updatedRows[0];
+    syncEventUpdated({
+      eventId: id,
+      title: ue.title as string,
+      description: ue.description as string | null,
+      startTime: new Date(ue.start_time as string),
+      endTime: new Date(ue.end_time as string),
+    }).catch(console.error);
+    return json(ue);
+  }
 
   const updated = await db`
     UPDATE events SET
@@ -158,9 +260,25 @@ export async function deleteEvent(ctx: RequestContext): Promise<Response> {
   const isOwner = membership[0].role === "owner";
   if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can delete events", 403);
 
-  // Sync Google Calendar deletions before removing the DB row (cascade deletes google_event_ids)
-  syncEventDeleted(id).catch(console.error);
+  // Check if caller wants to delete all events in the series
+  let deleteAll = false;
+  try {
+    const body = await ctx.req.json() as Record<string, unknown>;
+    deleteAll = body.delete_all === true;
+  } catch {
+    // No body or non-JSON — default to single delete
+  }
 
+  if (deleteAll) {
+    // Delete root event — ON DELETE CASCADE removes all child instances automatically
+    const rootId = (event.parent_event_id ?? event.id) as string;
+    syncEventDeleted(rootId).catch(console.error);
+    await db`DELETE FROM events WHERE id = ${rootId}`;
+    return json({ message: "All events in series deleted" });
+  }
+
+  // Single-instance delete
+  syncEventDeleted(id).catch(console.error);
   await db`DELETE FROM events WHERE id = ${id}`;
 
   return json({ message: "Event deleted" });
