@@ -126,7 +126,7 @@ describe("joinCalendar", () => {
     const body = await res.json() as { role: string };
     expect(body.role).toBe("member");
     expect(mockBroadcast).toHaveBeenCalledTimes(1);
-    const [calId, msg] = mockBroadcast.mock.calls[0] as [string, { type: string }];
+    const [calId, msg] = mockBroadcast.mock.calls[0] as unknown as [string, { type: string }];
     expect(calId).toBe(CAL_ID);
     expect(msg.type).toBe("member_joined");
   });
