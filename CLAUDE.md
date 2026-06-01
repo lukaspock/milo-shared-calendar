@@ -28,7 +28,7 @@ Both the backend API and PostgreSQL database are hosted on Render.com.
 
 | Service  | URL                                          |
 |----------|----------------------------------------------|
-| Backend  | `https://milo-api.onrender.com` |
+| Backend  | `https://api.milocalendar.tech` |
 | DB (internal) | `postgresql://sharedcal_db_user:...@dpg-d85c41p9rddc73a7i9eg-a/sharedcal_db` |
 | DB (external) | `postgresql://sharedcal_db_user:...@dpg-d85c41p9rddc73a7i9eg-a.oregon-postgres.render.com/sharedcal_db` |
 
@@ -50,7 +50,7 @@ ipconfig getifaddr en0
 flutter run --dart-define=API_HOST=<your-mac-ip>
 
 # Against production backend
-flutter run --dart-define=API_HOST=milo-api.onrender.com
+flutter run --dart-define=API_HOST=api.milocalendar.tech
 ```
 
 Phone and Mac must be on the same network for local dev. Check macOS Firewall if the phone can't connect (System Settings → Network → Firewall).
@@ -140,7 +140,7 @@ Users can authenticate via email+password or via Google Sign-In. Either way, the
 **Google Cloud Project:** `SharedCal` — same project used for Gmail email sending.
 Enabled APIs: Gmail API, Google Calendar API v3.
 OAuth client: Web application type (Client ID `583283682704-...`).
-Callback URL must be registered: `https://milo-api.onrender.com/auth/google-calendar/callback`.
+Callback URL must be registered: `https://api.milocalendar.tech/auth/google-calendar/callback`.
 
 ## Known gotchas
 

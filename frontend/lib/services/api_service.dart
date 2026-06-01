@@ -4,7 +4,7 @@ import '../models/poll.dart';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
-  defaultValue: 'milo-api.onrender.com',
+  defaultValue: 'api.milocalendar.tech',
 );
 const _isLocal = _apiHost == '127.0.0.1' || _apiHost == 'localhost';
 const _baseUrl = _isLocal ? 'http://$_apiHost:3000' : 'https://$_apiHost';

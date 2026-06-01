@@ -4,7 +4,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 const FROM = process.env.FROM_EMAIL ?? "lukaspock.dev@gmail.com";
-const APP_URL = process.env.APP_URL ?? "https://milo-api.onrender.com";
+const APP_URL = process.env.APP_URL ?? "https://api.milocalendar.tech";
 
 function getGmailClient() {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) return null;
