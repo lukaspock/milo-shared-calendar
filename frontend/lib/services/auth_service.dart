@@ -1,16 +1,19 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import 'api_service.dart';
 
 // Web Application client ID from Google Cloud Console.
-// The serverClientId enables serverAuthCode so our backend can get
-// a refresh token and sync to Google Calendar.
-const _kServerClientId =
+// Used as clientId on web (required by google_sign_in_web) and as
+// serverClientId on mobile (so the backend can verify ID tokens and
+// exchange for Calendar refresh tokens).
+const _kWebClientId =
     '583283682704-ru7t2guho8bd8p42gmi1u6c8ruq9mq3a.apps.googleusercontent.com';
 
 final _googleSignIn = GoogleSignIn(
-  serverClientId: _kServerClientId,
+  clientId: kIsWeb ? _kWebClientId : null,
+  serverClientId: kIsWeb ? null : _kWebClientId,
   scopes: [
     'email',
     'https://www.googleapis.com/auth/calendar',
