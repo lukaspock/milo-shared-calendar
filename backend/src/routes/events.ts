@@ -117,7 +117,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
       description ?? null,
       new Date(start_time),
       new Date(end_time),
-      eventColor,
+      eventColor!,
       recurrence_rule,
       recurrence_end ?? null,
     ).catch(console.error);
