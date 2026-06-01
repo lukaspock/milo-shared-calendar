@@ -105,8 +105,19 @@ frontend:test:
   coverage: '/lines\s*\.*:\s*(\d+\.\d+)%/'
   script:
     - dart pub global activate junitreport
-    - flutter test --coverage --reporter json | $HOME/.pub-cache/bin/tojunit > junit-report.xml
-    - lcov --summary coverage/lcov.info
+    # Write json output to file first to avoid broken-pipe when piping with --coverage
+    - flutter test --coverage --reporter json > test-output.json || true
+    - $PUB_CACHE/bin/tojunit < test-output.json > junit-report.xml
+    # Re-run without --coverage to get a clean exit code (fails the job if tests fail)
+    - flutter test
+    # Print coverage summary for the GitLab coverage regex to parse
+    - |
+      total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
+      hit=$(grep -c "^DA:[0-9]*,[^0]" coverage/lcov.info || echo 0)
+      if [ "$total" -gt 0 ]; then
+        pct=$(echo "scale=2; $hit * 100 / $total" | bc)
+        echo "lines...: $pct%"
+      fi
   artifacts:
     when: always
     reports:
