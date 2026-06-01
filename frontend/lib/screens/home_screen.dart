@@ -1871,7 +1871,6 @@ class _ThemePicker extends ConsumerWidget {
         children: options.map((opt) {
           final (mode, icon, label) = opt;
           final selected = current == mode;
-          final isLast = mode == ThemeMode.dark;
           return Expanded(
             child: GestureDetector(
               onTap: () => ref.read(themeProvider.notifier).setMode(mode),
