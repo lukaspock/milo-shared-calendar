@@ -3,6 +3,9 @@
   <h1>Milo — Shared Calendar</h1>
   <p><strong>Shared calendars, made simple.</strong></p>
   <a href="https://milocalendar.tech">🌐 milocalendar.tech</a>
+  <br/><br/>
+  <a href="https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/-/pipelines"><img src="https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/badges/main/pipeline.svg" alt="Pipeline Status"/></a>
+  <a href="https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/-/commits/main"><img src="https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/badges/main/coverage.svg" alt="Coverage"/></a>
 </div>
 
 ---

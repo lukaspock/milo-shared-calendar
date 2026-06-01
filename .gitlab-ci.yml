@@ -2,8 +2,10 @@
 #
 # Pipeline overview:
 #   lint   → type-check backend (Bun/TS) + format-check & analyze Flutter frontend
-#   test   → run backend & Flutter tests
+#   test   → run backend & Flutter tests (with JUnit reports + coverage)
 #   deploy → publish Flutter web to GitLab Pages + trigger Render backend deploy
+#            + create GitLab Release on semver tags
+#   sast   → GitLab Basic SAST (secret detection, semgrep)
 #
 # Required CI/CD variable (Settings → CI/CD → Variables):
 #   RENDER_DEPLOY_HOOK   The Render service "Deploy Hook" URL. Mark it Masked.
@@ -16,6 +18,11 @@ stages:
   - lint
   - test
   - deploy
+  - release
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 # Avoid duplicate pipelines: run for merge requests, and for branch pushes that
 # don't already have an open MR (prevents the "detached + branch" double pipeline).
@@ -95,8 +102,28 @@ backend:test:
 frontend:test:
   extends: .flutter
   stage: test
+  coverage: '/lines\s*\.*:\s*(\d+\.\d+)%/'
   script:
+    - dart pub global activate junitreport
+    # Write json output to file first to avoid broken-pipe when piping with --coverage
+    - flutter test --coverage --reporter json > test-output.json || true
+    - $PUB_CACHE/bin/tojunit < test-output.json > junit-report.xml
+    # Re-run without --coverage to get a clean exit code (fails the job if tests fail)
     - flutter test
+    # Print coverage summary for the GitLab coverage regex to parse
+    - |
+      total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
+      hit=$(grep -c "^DA:[0-9]*,[^0]" coverage/lcov.info || echo 0)
+      if [ "$total" -gt 0 ]; then
+        pct=$(echo "scale=2; $hit * 100 / $total" | bc)
+        echo "lines...: $pct%"
+      fi
+  artifacts:
+    when: always
+    reports:
+      junit: frontend/junit-report.xml
+    paths:
+      - frontend/coverage/
 
 # ---------------------------------------------------------------------------
 # Deploy — GitLab Pages + Render backend (main only)
@@ -119,6 +146,9 @@ deploy:render:
   image: curlimages/curl:latest
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+  environment:
+    name: production
+    url: https://api.milocalendar.tech
   script:
     - |
       if [ -z "$RENDER_DEPLOY_HOOK" ]; then
@@ -128,3 +158,27 @@ deploy:render:
     - echo "Triggering Render deploy…"
     - curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
     - echo "Render deploy triggered."
+
+release:create:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "SharedCal $CI_COMMIT_TAG"
+    description: |
+      ## SharedCal $CI_COMMIT_TAG
+
+      Released from commit $CI_COMMIT_SHORT_SHA on branch $CI_COMMIT_REF_NAME.
+
+      **[Flutter Web App](https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/)**
+      **[Backend API](https://api.milocalendar.tech)**
+    assets:
+      links:
+        - name: "Flutter Web App"
+          url: "https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/"
+        - name: "Backend API"
+          url: "https://api.milocalendar.tech"
