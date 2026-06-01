@@ -104,4 +104,7 @@ abstract final class AppImages {
 
   static AppImage check({double size = 24}) =>
       AppImage(name: 'dummy_check', fallbackEmoji: '✅', size: size);
+
+  static AppImage moon({double size = 24}) =>
+      AppImage(name: 'dummy_moon', fallbackEmoji: '🌙', size: size);
 }

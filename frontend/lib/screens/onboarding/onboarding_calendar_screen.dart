@@ -59,7 +59,7 @@ class _OnboardingCalendarScreenState
 
     return OnboardingShell(
       step: 4,
-      totalSteps: 5,
+      totalSteps: 6,
       onBack: null,
       illustration: AppImages.calendar(size: 72),
       illustrationHue: stickerHues[2],

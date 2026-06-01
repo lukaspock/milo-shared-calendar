@@ -112,23 +112,34 @@ class LoginScreen extends ConsumerWidget {
                 dark: true,
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
               // ── Use Email ────────────────────────────────────────────────
-              Center(
-                child: GestureDetector(
-                  onTap: isLoading
-                      ? null
-                      : () => _showEmailSignIn(context, ref),
-                  child: Text(
-                    'Use email instead',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: context.appColors.inkSoft,
-                      decoration: TextDecoration.underline,
-                      decorationColor: context.appColors.inkMuted,
-                    ),
+              SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: isLoading ? null : () => _showEmailSignIn(context, ref),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: context.appColors.line, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28)),
+                    backgroundColor: context.appColors.surface,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.mail_outline_rounded,
+                          size: 18, color: context.appColors.inkSoft),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Continue with email',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.ink,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -495,13 +506,16 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       height: 56,
       child: dark
           ? ElevatedButton(
               onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: context.appColors.ink,
+                // Apple button is always black — matches Apple HIG and stays
+                // legible in both light (ink ≈ black) and dark mode.
+                backgroundColor: isDark ? Colors.black : context.appColors.ink,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(

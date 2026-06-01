@@ -16,8 +16,10 @@ import 'screens/onboarding/onboarding_notifications_screen.dart';
 import 'screens/onboarding/onboarding_password_screen.dart';
 import 'screens/onboarding/onboarding_verify_screen.dart';
 import 'screens/onboarding/onboarding_calendar_screen.dart';
+import 'screens/onboarding/onboarding_theme_screen.dart';
 import 'screens/onboarding/onboarding_ready_screen.dart';
 import 'theme/app_theme.dart';
+import 'providers/theme_provider.dart';
 
 final _router = GoRouter(
   initialLocation: '/',
@@ -58,6 +60,10 @@ final _router = GoRouter(
     GoRoute(
         path: '/onboarding/calendar',
         builder: (_, _s) => const OnboardingCalendarScreen()),
+    // Step 5 — appearance / theme picker
+    GoRoute(
+        path: '/onboarding/theme',
+        builder: (_, _s) => const OnboardingThemeScreen()),
     // Final — celebration screen
     GoRoute(
         path: '/onboarding/ready',
@@ -100,12 +106,13 @@ class SharedCalApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
     return MaterialApp.router(
       title: 'Shared Calendar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }
