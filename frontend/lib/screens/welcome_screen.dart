@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 
-// Pastel orange — warmer than the default bg, used only on this screen.
+// Pastel orange — warmer than the default bg, used only on this screen (light mode).
 const _kWelcomeBg = Color(0xFFFFEDD8);
 const _kButtonOrange = Color(0xFFFFB347);
 
@@ -20,8 +20,10 @@ class WelcomeScreen extends ConsumerWidget {
       }
     });
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: _kWelcomeBg,
+      backgroundColor: isDark ? context.appColors.bg : _kWelcomeBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -116,6 +118,13 @@ class _AccentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // In dark mode use the ink color (cream) as the button background so it
+    // stands out clearly against the near-black scaffold; keep orange for light.
+    final buttonBg = isDark ? context.appColors.ink : _kButtonOrange;
+    // Text on cream ink → use dark bg colour; text on orange → use dark ink.
+    final buttonFg = isDark ? context.appColors.bg : context.appColors.ink;
+
     return SizedBox(
       height: 58,
       child: DecoratedBox(
@@ -123,7 +132,7 @@ class _AccentButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: _kButtonOrange.withValues(alpha: 0.4),
+              color: buttonBg.withValues(alpha: 0.35),
               offset: const Offset(0, 6),
               blurRadius: 16,
             ),
@@ -132,8 +141,8 @@ class _AccentButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: _kButtonOrange,
-            foregroundColor: context.appColors.ink,
+            backgroundColor: buttonBg,
+            foregroundColor: buttonFg,
             minimumSize: const Size(double.infinity, 58),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28)),
