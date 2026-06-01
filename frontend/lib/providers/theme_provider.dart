@@ -6,7 +6,7 @@ const _kThemeKey = 'app_theme_mode';
 
 class ThemeNotifier extends Notifier<ThemeMode> {
   @override
-  ThemeMode build() => ThemeMode.system;
+  ThemeMode build() => ThemeMode.light;
 
   /// Load persisted choice. Call once at startup before runApp.
   Future<void> load() async {
@@ -22,9 +22,9 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   }
 
   static ThemeMode _fromString(String? s) => switch (s) {
-        'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.light, // default for new installs
       };
 
   static String _toString(ThemeMode m) => switch (m) {
