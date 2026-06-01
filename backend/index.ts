@@ -13,8 +13,8 @@ import { startReminderScheduler } from "./src/services/reminder.service";
 const router = new Router();
 
 // --- Legal (public) ---
-router.get("/privacy", () => privacyPolicy());
-router.get("/terms", () => termsOfService());
+router.get("/privacy", async () => privacyPolicy());
+router.get("/terms", async () => termsOfService());
 
 // --- Auth ---
 // Rate-limited: 10 requests/min per IP on unauthenticated credential endpoints
