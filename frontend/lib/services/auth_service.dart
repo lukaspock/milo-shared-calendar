@@ -77,7 +77,19 @@ class AuthService {
   }
 
   Future<({String token, AppUser user})> signInWithGoogle() async {
-    final googleUser = await _googleSignIn.signIn();
+    GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await _googleSignIn.signIn();
+    } catch (e) {
+      // On web, google_sign_in_web calls the People API after OAuth to fetch
+      // the user profile. If that API is disabled the call throws, but GIS
+      // already set currentUser with the tokens we actually need.
+      if (kIsWeb) {
+        googleUser = _googleSignIn.currentUser;
+      } else {
+        rethrow;
+      }
+    }
     if (googleUser == null) throw Exception('Google sign-in cancelled');
 
     final googleAuth = await googleUser.authentication;
