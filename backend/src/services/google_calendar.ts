@@ -4,6 +4,7 @@ import { encrypt, decrypt } from "./crypto";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const APP_URL = process.env.APP_URL ?? "https://api.milocalendar.tech";
 
 
 function makeAuth(accessToken?: string | null, refreshToken?: string | null) {
@@ -29,7 +30,7 @@ export function generateCalendarConnectUrl(userId: string): string {
   if (!CLIENT_ID) throw new Error("Google OAuth not configured");
   const state = crypto.randomUUID();
   pendingCalendarConnects.set(state, { userId, expiresAt: Date.now() + 15 * 60_000 });
-  const redirectUri = `${process.env.APP_URL}/auth/google-calendar/callback`;
+  const redirectUri = `${APP_URL}/auth/google-calendar/callback`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", CLIENT_ID);
   url.searchParams.set("redirect_uri", redirectUri);
@@ -46,7 +47,7 @@ export async function handleCalendarCallback(code: string, state: string): Promi
   if (!pending || pending.expiresAt < Date.now()) return false;
   pendingCalendarConnects.delete(state);
   if (!CLIENT_ID || !CLIENT_SECRET) return false;
-  const redirectUri = `${process.env.APP_URL}/auth/google-calendar/callback`;
+  const redirectUri = `${APP_URL}/auth/google-calendar/callback`;
   try {
     const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, redirectUri);
     const { tokens } = await auth.getToken(code);
