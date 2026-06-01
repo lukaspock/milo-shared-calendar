@@ -9,6 +9,7 @@ import '../models/calendar.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
+import '../providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/device_calendar_service.dart';
 import '../services/local_notification_service.dart';
@@ -114,14 +115,6 @@ class HomeScreen extends ConsumerWidget {
                           _CircleButton(
                             icon: Icons.settings_rounded,
                             onTap: () => _showSettingsSheet(context),
-                          ),
-                          const SizedBox(width: 8),
-                          _CircleButton(
-                            icon: Icons.logout_rounded,
-                            onTap: () async {
-                              await ref.read(authProvider.notifier).logout();
-                              if (context.mounted) context.go('/welcome');
-                            },
                           ),
                         ],
                       ),
@@ -1588,6 +1581,13 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
 
           const SizedBox(height: 20),
 
+          // ── Appearance ────────────────────────────────────────────────────
+          _SheetSection(label: 'APPEARANCE'),
+          const SizedBox(height: 10),
+          _ThemePicker(),
+
+          const SizedBox(height: 20),
+
           // ── Sign out ──────────────────────────────────────────────────────
           _SheetActionRow(
             icon: Icons.logout_rounded,
@@ -1843,6 +1843,79 @@ class _JoinCalendarSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Theme picker (used in settings sheet) ─────────────────────────────────────
+
+class _ThemePicker extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(themeProvider);
+
+    const options = [
+      (ThemeMode.system, Icons.brightness_auto_rounded, 'System'),
+      (ThemeMode.light,  Icons.light_mode_rounded,      'Light'),
+      (ThemeMode.dark,   Icons.dark_mode_rounded,        'Dark'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.appColors.line, width: 1),
+      ),
+      child: Row(
+        children: options.map((opt) {
+          final (mode, icon, label) = opt;
+          final selected = current == mode;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => ref.read(themeProvider.notifier).setMode(mode),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.all(4),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.accent.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: selected
+                      ? Border.all(color: AppTheme.accent, width: 1.5)
+                      : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 18,
+                      color: selected
+                          ? AppTheme.accent
+                          : context.appColors.inkMuted,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected
+                            ? AppTheme.accent
+                            : context.appColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

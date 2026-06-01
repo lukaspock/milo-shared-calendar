@@ -110,7 +110,10 @@ class _OnboardingNameEmailScreenState
               onPressed:
                   isLoading ? null : () => _showAppleComingSoon(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: context.appColors.ink,
+                // Always black — matches Apple HIG; in dark mode ink is cream.
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.black
+                    : context.appColors.ink,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 54),
                 shape: RoundedRectangleBorder(
@@ -136,40 +139,34 @@ class _OnboardingNameEmailScreenState
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
-          // ── Divider ─────────────────────────────────────────────────────
-          Row(children: [
-            Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'or',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.appColors.inkMuted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+          // ── Continue with email ─────────────────────────────────────────
+          SizedBox(
+            height: 54,
+            child: OutlinedButton(
+              onPressed: isLoading ? null : () => context.go('/onboarding/email'),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: context.appColors.line, width: 1.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
+                backgroundColor: context.appColors.surface,
               ),
-            ),
-            Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
-          ]),
-
-          const SizedBox(height: 16),
-
-          // ── Use Email ───────────────────────────────────────────────────
-          Center(
-            child: GestureDetector(
-              onTap: isLoading ? null : () => context.go('/onboarding/email'),
-              child: Text(
-                'Use email instead →',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.accent,
-                  decoration: TextDecoration.underline,
-                  decorationColor: AppTheme.accent,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mail_outline_rounded,
+                      size: 18, color: context.appColors.inkSoft),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Continue with email',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.appColors.ink,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

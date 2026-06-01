@@ -41,14 +41,14 @@ class _OnboardingNotificationsScreenState
     setState(() => _saving = true);
     // Account already exists — persist the choice via the API.
     await ref.read(authProvider.notifier).updateNotificationType(_notifType);
-    if (mounted) context.go('/onboarding/ready');
+    if (mounted) context.go('/onboarding/theme');
   }
 
   @override
   Widget build(BuildContext context) {
     return OnboardingShell(
       step: 5,
-      totalSteps: 5,
+      totalSteps: 6,
       onBack: () => context.go('/onboarding/calendar'),
       illustration: AppImages.bell(size: 72),
       illustrationHue: stickerHues[1],
