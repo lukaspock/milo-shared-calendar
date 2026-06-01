@@ -84,7 +84,9 @@ export const websocketHandler = {
         `;
         if (membership.length > 0) {
           addToRoom(calendarId, ws);
-          ws.data.calendarIds.push(calendarId);
+          if (!ws.data.calendarIds.includes(calendarId)) {
+            ws.data.calendarIds.push(calendarId);
+          }
         }
       }
       ws.send(

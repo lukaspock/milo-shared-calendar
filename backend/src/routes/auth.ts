@@ -31,8 +31,8 @@ export async function register(ctx: RequestContext): Promise<Response> {
   const passwordHash = await Bun.password.hash(password);
 
   const colors = ["#6C63FF", "#FF6584", "#43B89C", "#F5A623", "#4A90E2", "#E74C3C", "#2ECC71", "#9B59B6"];
-  const countResult = await db`SELECT COUNT(*) AS count FROM users`;
-  const idx = Number(countResult[0].count) % colors.length;
+  const countResult = await db`SELECT COUNT(*)::integer AS count FROM users`;
+  const idx = (countResult[0].count as number) % colors.length;
   const color = colors[idx];
 
   const verificationToken = crypto.randomUUID();
