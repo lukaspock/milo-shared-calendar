@@ -24,11 +24,19 @@ async function assemblePoll(poll: Record<string, unknown>) {
         `
       : [];
 
+  const voteOptions = await db`
+    SELECT id, label, color, position
+    FROM poll_vote_options
+    WHERE poll_id = ${poll.id as string}
+    ORDER BY position
+  `;
+
   const creators = await db`SELECT name FROM users WHERE id = ${poll.created_by as string}`;
 
   return {
     ...poll,
     creator_name: creators[0]?.name ?? "Unknown",
+    vote_options: voteOptions,
     options: options.map((opt: Record<string, unknown>) => ({
       ...opt,
       votes: votes
@@ -50,6 +58,7 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
     title?: string;
     description?: string;
     options?: { start_time: string; end_time: string }[];
+    vote_options?: { label: string; color: string }[];
   };
   try {
     body = await ctx.req.json();
@@ -57,7 +66,7 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
     return error("Invalid JSON body");
   }
 
-  const { title, description, options } = body;
+  const { title, description, options, vote_options } = body;
   if (!title) return error("title is required");
   if (!options || options.length === 0)
     return error("At least one option is required");
@@ -81,6 +90,16 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
       INSERT INTO poll_options (poll_id, start_time, end_time)
       VALUES (${poll.id}, ${opt.start_time}, ${opt.end_time})
     `;
+  }
+
+  if (vote_options && vote_options.length >= 2) {
+    for (let i = 0; i < vote_options.length; i++) {
+      const vo = vote_options[i];
+      await db`
+        INSERT INTO poll_vote_options (poll_id, label, color, position)
+        VALUES (${poll.id}, ${vo.label}, ${vo.color ?? "#6C63FF"}, ${i})
+      `;
+    }
   }
 
   const full = await assemblePoll(poll);
@@ -146,14 +165,22 @@ export async function votePoll(ctx: RequestContext): Promise<Response> {
 
   const { option_id, vote } = body;
   if (!option_id || !vote) return error("option_id and vote are required");
-  if (!["yes", "no", "maybe"].includes(vote))
-    return error("vote must be yes, no, or maybe");
 
   const polls = await db`SELECT * FROM event_polls WHERE id = ${id}`;
   if (polls.length === 0) return error("Poll not found", 404);
   const poll = polls[0];
 
   if (poll.closed) return error("Poll is closed", 400);
+
+  // Validate vote value: against custom options if defined, else legacy yes/no/maybe
+  const customOpts = await db`SELECT label FROM poll_vote_options WHERE poll_id = ${id}`;
+  if (customOpts.length > 0) {
+    const valid = customOpts.map((o: Record<string, unknown>) => o.label as string);
+    if (!valid.includes(vote)) return error("Invalid vote option");
+  } else {
+    if (!["yes", "no", "maybe"].includes(vote))
+      return error("vote must be yes, no, or maybe");
+  }
 
   const membership = await db`
     SELECT 1 FROM calendar_members

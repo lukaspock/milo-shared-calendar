@@ -36,6 +36,7 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
     required String title,
     String? description,
     required List<PollOptionInput> options,
+    List<PollVoteOptionInput>? voteOptions,
   }) async {
     try {
       final poll = await _api.createPoll(
@@ -43,6 +44,7 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
         title: title,
         description: description,
         options: options,
+        voteOptions: voteOptions,
       );
       state.whenData(
           (list) => state = AsyncValue.data([poll, ...list]));

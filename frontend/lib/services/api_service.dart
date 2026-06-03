@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/poll.dart';
+import '../models/reaction.dart';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
@@ -65,6 +66,7 @@ class ApiService {
     required String title,
     String? description,
     required List<PollOptionInput> options,
+    List<PollVoteOptionInput>? voteOptions,
   }) async {
     final res = await post('/calendars/$calendarId/polls', data: {
       'title': title,
@@ -75,6 +77,10 @@ class ApiService {
                 'end_time': o.end.toUtc().toIso8601String(),
               })
           .toList(),
+      if (voteOptions != null && voteOptions.length >= 2)
+        'vote_options': voteOptions
+            .map((o) => {'label': o.label, 'color': o.color})
+            .toList(),
     });
     return EventPoll.fromJson(res.data as Map<String, dynamic>);
   }
@@ -112,5 +118,25 @@ class ApiService {
 
   Future<void> deletePoll(String pollId) async {
     await delete('/polls/$pollId');
+  }
+
+  // ── Reactions ──────────────────────────────────────────────────────────────
+
+  Future<List<EventReaction>> fetchReactions(String eventId) async {
+    final res = await get('/events/$eventId/reactions');
+    return (res.data as List)
+        .map((e) => EventReaction.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<EventReaction>> addReaction(String eventId, String emoji) async {
+    final res = await post('/events/$eventId/reactions', data: {'emoji': emoji});
+    return (res.data as List)
+        .map((e) => EventReaction.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> removeReaction(String eventId, String emoji) async {
+    await delete('/events/$eventId/reactions/${Uri.encodeComponent(emoji)}');
   }
 }

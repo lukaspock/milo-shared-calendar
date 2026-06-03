@@ -65,7 +65,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Confirm this slot?'),
+        title: const Text('Create event?'),
         content: const Text(
             'This will close the poll and create a regular event for this time slot.'),
         actions: [
@@ -75,7 +75,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirm'),
+            child: const Text('Create Event'),
           ),
         ],
       ),
@@ -90,11 +90,11 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Poll confirmed! Event added to calendar.')),
+            content: Text('Event created and added to calendar.')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to confirm. Try again.')),
+        const SnackBar(content: Text('Failed to create event. Try again.')),
       );
     }
   }
@@ -271,7 +271,6 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                     // Meta row
                     Row(
                       children: [
-                        // Status badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
@@ -329,7 +328,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 
                     // Options
                     Text(
-                      'Time options',
+                      'TIME OPTIONS',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -348,6 +347,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _OptionCard(
                           option: opt,
+                          voteOptions: poll.voteOptions,
                           myVote: myVote,
                           isConfirmed: isConfirmed,
                           pollClosed: poll.closed,
@@ -376,6 +376,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 class _OptionCard extends StatelessWidget {
   const _OptionCard({
     required this.option,
+    required this.voteOptions,
     required this.myVote,
     required this.isConfirmed,
     required this.pollClosed,
@@ -388,6 +389,7 @@ class _OptionCard extends StatelessWidget {
   });
 
   final PollOption option;
+  final List<PollVoteOption> voteOptions;
   final String? myVote;
   final bool isConfirmed;
   final bool pollClosed;
@@ -397,6 +399,8 @@ class _OptionCard extends StatelessWidget {
   final void Function(String) onVote;
   final VoidCallback onConfirm;
   final CalHue calHue;
+
+  bool get _hasCustomOptions => voteOptions.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -478,30 +482,36 @@ class _OptionCard extends StatelessWidget {
           // Vote counts
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                _VoteCount(
-                    label: '✅ ${option.yesCount}',
-                    color: const Color(0xFF28A745)),
-                const SizedBox(width: 12),
-                _VoteCount(
-                    label: '❓ ${option.maybeCount}',
-                    color: const Color(0xFFC8951A)),
-                const SizedBox(width: 12),
-                _VoteCount(
-                    label: '❌ ${option.noCount}',
-                    color: const Color(0xFFDC3545)),
-                const Spacer(),
-                Text(
-                  '${option.votes.length} vote${option.votes.length == 1 ? '' : 's'}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: context.appColors.inkMuted,
-                    fontWeight: FontWeight.w500,
+            child: _hasCustomOptions
+                ? _CustomVoteCounts(
+                    option: option,
+                    voteOptions: voteOptions,
+                    context: context,
+                  )
+                : Row(
+                    children: [
+                      _VoteCount(
+                          label: '✅ ${option.yesCount}',
+                          color: const Color(0xFF28A745)),
+                      const SizedBox(width: 12),
+                      _VoteCount(
+                          label: '❓ ${option.maybeCount}',
+                          color: const Color(0xFFC8951A)),
+                      const SizedBox(width: 12),
+                      _VoteCount(
+                          label: '❌ ${option.noCount}',
+                          color: const Color(0xFFDC3545)),
+                      const Spacer(),
+                      Text(
+                        '${option.votes.length} vote${option.votes.length == 1 ? '' : 's'}',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: context.appColors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
 
           // Vote chips (only when open)
@@ -512,53 +522,60 @@ class _OptionCard extends StatelessWidget {
                 color: context.appColors.line),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _VoteChip(
-                      label: 'Yes',
-                      emoji: '✅',
-                      selected: myVote == 'yes',
-                      bgColor: const Color(0xFFD4EDDA),
-                      borderColor: const Color(0xFF28A745),
-                      onTap: isLoading
-                          ? null
-                          : () => onVote(
-                              myVote == 'yes' ? 'no' : 'yes'),
+              child: _hasCustomOptions
+                  ? _CustomVoteChips(
+                      voteOptions: voteOptions,
+                      myVote: myVote,
+                      isLoading: isLoading,
+                      onVote: onVote,
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _VoteChip(
+                            label: 'Yes',
+                            emoji: '✅',
+                            selected: myVote == 'yes',
+                            bgColor: const Color(0xFFD4EDDA),
+                            borderColor: const Color(0xFF28A745),
+                            onTap: isLoading
+                                ? null
+                                : () => onVote(
+                                    myVote == 'yes' ? 'no' : 'yes'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _VoteChip(
+                            label: 'Maybe',
+                            emoji: '❓',
+                            selected: myVote == 'maybe',
+                            bgColor: const Color(0xFFFFF3CD),
+                            borderColor: const Color(0xFFE5B130),
+                            onTap: isLoading
+                                ? null
+                                : () => onVote('maybe'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _VoteChip(
+                            label: 'No',
+                            emoji: '❌',
+                            selected: myVote == 'no',
+                            bgColor: const Color(0xFFF8D7DA),
+                            borderColor: const Color(0xFFDC3545),
+                            onTap: isLoading
+                                ? null
+                                : () => onVote('no'),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _VoteChip(
-                      label: 'Maybe',
-                      emoji: '❓',
-                      selected: myVote == 'maybe',
-                      bgColor: const Color(0xFFFFF3CD),
-                      borderColor: const Color(0xFFE5B130),
-                      onTap: isLoading
-                          ? null
-                          : () => onVote('maybe'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _VoteChip(
-                      label: 'No',
-                      emoji: '❌',
-                      selected: myVote == 'no',
-                      bgColor: const Color(0xFFF8D7DA),
-                      borderColor: const Color(0xFFDC3545),
-                      onTap: isLoading
-                          ? null
-                          : () => onVote('no'),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
 
-          // Confirm button (creator only, poll open)
+          // Create Event button (creator only, poll open)
           if (!pollClosed && isCreator) ...[
             Container(
                 height: 1,
@@ -580,7 +597,7 @@ class _OptionCard extends StatelessWidget {
                   ),
                   icon: AppImages.target(size: 14),
                   label: Text(
-                    'Confirm this slot',
+                    'Create Event',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -592,6 +609,99 @@ class _OptionCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _CustomVoteCounts extends StatelessWidget {
+  const _CustomVoteCounts({
+    required this.option,
+    required this.voteOptions,
+    required this.context,
+  });
+
+  final PollOption option;
+  final List<PollVoteOption> voteOptions;
+  final BuildContext context;
+
+  @override
+  Widget build(_) {
+    return Row(
+      children: [
+        ...voteOptions.map((vo) {
+          final count = option.countFor(vo.label);
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _VoteCount(
+              label: '$count  ${vo.label}',
+              color: vo.flutterColor,
+            ),
+          );
+        }),
+        const Spacer(),
+        Text(
+          '${option.votes.length} vote${option.votes.length == 1 ? '' : 's'}',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            color: context.appColors.inkMuted,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CustomVoteChips extends StatelessWidget {
+  const _CustomVoteChips({
+    required this.voteOptions,
+    required this.myVote,
+    required this.isLoading,
+    required this.onVote,
+  });
+
+  final List<PollVoteOption> voteOptions;
+  final String? myVote;
+  final bool isLoading;
+  final void Function(String) onVote;
+
+  @override
+  Widget build(BuildContext context) {
+    // Wrap in case there are many options (3+)
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: voteOptions.map((vo) {
+        final selected = myVote == vo.label;
+        final color = vo.flutterColor;
+        final bg = color.withOpacity(0.12);
+        return GestureDetector(
+          onTap: isLoading
+              ? null
+              : () => onVote(selected ? '' : vo.label),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: selected ? color : color.withOpacity(0.3),
+                width: selected ? 2 : 1,
+              ),
+            ),
+            child: Text(
+              vo.label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight:
+                    selected ? FontWeight.w800 : FontWeight.w500,
+                color: selected ? color : color.withOpacity(0.7),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

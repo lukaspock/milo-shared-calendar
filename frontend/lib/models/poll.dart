@@ -1,7 +1,41 @@
+import 'package:flutter/material.dart';
+
 class PollOptionInput {
   final DateTime start;
   final DateTime end;
   const PollOptionInput({required this.start, required this.end});
+}
+
+class PollVoteOptionInput {
+  String label;
+  String color;
+  PollVoteOptionInput({required this.label, required this.color});
+}
+
+class PollVoteOption {
+  final String id;
+  final String label;
+  final String color;
+  final int position;
+
+  const PollVoteOption({
+    required this.id,
+    required this.label,
+    required this.color,
+    required this.position,
+  });
+
+  Color get flutterColor {
+    final h = color.replaceAll('#', '');
+    return Color(int.parse('FF$h', radix: 16));
+  }
+
+  factory PollVoteOption.fromJson(Map<String, dynamic> json) => PollVoteOption(
+        id: json['id'] as String,
+        label: json['label'] as String,
+        color: json['color'] as String? ?? '#6C63FF',
+        position: json['position'] as int? ?? 0,
+      );
 }
 
 class PollVote {
@@ -37,6 +71,9 @@ class PollOption {
     required this.votes,
   });
 
+  int countFor(String label) => votes.where((v) => v.vote == label).length;
+
+  // Legacy helpers for polls without custom vote options
   int get yesCount => votes.where((v) => v.vote == 'yes').length;
   int get noCount => votes.where((v) => v.vote == 'no').length;
   int get maybeCount => votes.where((v) => v.vote == 'maybe').length;
@@ -70,6 +107,7 @@ class EventPoll {
   final bool closed;
   final String? confirmedOptionId;
   final List<PollOption> options;
+  final List<PollVoteOption> voteOptions;
   final DateTime createdAt;
 
   const EventPoll({
@@ -82,8 +120,11 @@ class EventPoll {
     required this.closed,
     this.confirmedOptionId,
     required this.options,
+    this.voteOptions = const [],
     required this.createdAt,
   });
+
+  bool get hasCustomVoteOptions => voteOptions.isNotEmpty;
 
   int get totalVoters {
     final seen = <String>{};
@@ -106,6 +147,9 @@ class EventPoll {
         confirmedOptionId: json['confirmed_option_id'] as String?,
         options: (json['options'] as List? ?? [])
             .map((o) => PollOption.fromJson(o as Map<String, dynamic>))
+            .toList(),
+        voteOptions: (json['vote_options'] as List? ?? [])
+            .map((o) => PollVoteOption.fromJson(o as Map<String, dynamic>))
             .toList(),
         createdAt: DateTime.parse(json['created_at'] as String),
       );
