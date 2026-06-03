@@ -23,8 +23,8 @@ final _googleSignIn = GoogleSignIn(
       : (defaultTargetPlatform == TargetPlatform.macOS
           ? _kMacOSClientId
           : null),
-  serverClientId: kIsWeb ? null : _kWebClientId,
-  scopes: ['email'],
+  serverClientId: _kWebClientId,
+  scopes: ['email', 'openid'],
 );
 
 class AuthService {
