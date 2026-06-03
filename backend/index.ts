@@ -13,7 +13,23 @@ import { startReminderScheduler } from "./src/services/reminder.service";
 
 const router = new Router();
 
-// --- Legal (public) ---
+// --- Google Search Console verification ---
+router.get("/googleab6029f8803fe017.html", async () => new Response("google-site-verification: googleab6029f8803fe017.html", { headers: { "Content-Type": "text/html" } }));
+
+// --- Landing page + Legal (public) ---
+router.get("/", async () => new Response(`<!DOCTYPE html><html><head>
+<meta charset="utf-8"><title>Milo - Shared Calendar</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{box-sizing:border-box}body{margin:0;background:#FFF8F0;font-family:'Helvetica Neue',Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}h1{font-size:32px;font-weight:800;color:#1F1B16;margin:0 0 8px}p{color:#6B6357;font-size:16px;margin:0 0 24px}a{color:#6C63FF;text-decoration:none;font-size:14px;margin:0 8px}</style>
+</head><body>
+<div>
+  <div style="font-size:64px;margin-bottom:16px">📅</div>
+  <h1>Milo - Shared Calendar</h1>
+  <p>A shared calendar app for you and your people.</p>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/terms">Terms of Service</a>
+</div>
+</body></html>`, { headers: { "Content-Type": "text/html" } }));
 router.get("/privacy", async () => privacyPolicy());
 router.get("/terms", async () => termsOfService());
 

@@ -35,7 +35,7 @@ export function generateCalendarConnectUrl(userId: string): string {
   url.searchParams.set("client_id", CLIENT_ID);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "https://www.googleapis.com/auth/calendar");
+  url.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events");
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("prompt", "consent");
   url.searchParams.set("state", state);
