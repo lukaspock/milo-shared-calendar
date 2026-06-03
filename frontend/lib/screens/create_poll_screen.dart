@@ -14,6 +14,18 @@ class _Slot {
   _Slot(this.start, this.end);
 }
 
+// Predefined palette for vote option colors
+const _colorPalette = [
+  '#28A745', // green
+  '#DC3545', // red
+  '#E5B130', // amber
+  '#2196F3', // blue
+  '#9C27B0', // purple
+  '#FF5722', // deep orange
+  '#00BCD4', // cyan
+  '#FF9800', // orange
+];
+
 class CreatePollScreen extends ConsumerStatefulWidget {
   final String calendarId;
   const CreatePollScreen({super.key, required this.calendarId});
@@ -29,6 +41,10 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
   bool _isLoading = false;
 
   final List<_Slot> _slots = [];
+  final List<PollVoteOptionInput> _voteOptions = [
+    PollVoteOptionInput(label: 'Going', color: '#28A745'),
+    PollVoteOptionInput(label: 'Not going', color: '#DC3545'),
+  ];
 
   @override
   void initState() {
@@ -100,6 +116,15 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // Validate vote option labels
+    for (final vo in _voteOptions) {
+      if (vo.label.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All vote options need a label.')),
+        );
+        return;
+      }
+    }
     setState(() => _isLoading = true);
 
     final poll = await ref
@@ -112,6 +137,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
           options: _slots
               .map((s) => PollOptionInput(start: s.start, end: s.end))
               .toList(),
+          voteOptions: _voteOptions,
         );
 
     if (!mounted) return;
@@ -134,6 +160,79 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
     ];
     return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}  '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _hexToColor(String hex) {
+    final h = hex.replaceAll('#', '');
+    return Color(int.parse('FF$h', radix: 16));
+  }
+
+  void _pickVoteOptionColor(int index) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: context.appColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Pick a color',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.ink,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _colorPalette.map((hex) {
+                final selected = _voteOptions[index].color == hex;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _voteOptions[index].color = hex);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _hexToColor(hex),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? context.appColors.ink
+                            : Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                    child: selected
+                        ? const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 20)
+                        : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -283,9 +382,9 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Options header
+                      // Time options header
                       Text(
-                        'Time options',
+                        'TIME OPTIONS',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -316,7 +415,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         );
                       }),
 
-                      // Add option button
+                      // Add time option button
                       if (_slots.length < 6)
                         GestureDetector(
                           onTap: () {
@@ -330,8 +429,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           },
                           child: Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
                               color: context.appColors.surfaceSoft,
                               borderRadius: BorderRadius.circular(16),
@@ -342,7 +440,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                             ),
                             child: Center(
                               child: Text(
-                                '+ Add option',
+                                '+ Add time option',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -353,6 +451,191 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           ),
                         ),
 
+                      const SizedBox(height: 28),
+
+                      // Vote options header
+                      Text(
+                        'VOTING OPTIONS',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: context.appColors.inkMuted,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'How members will respond to each time slot',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: context.appColors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Vote option rows
+                      Container(
+                        decoration: BoxDecoration(
+                          color: context.appColors.surface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                              color: context.appColors.line, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.appColors.line.withOpacity(0.5),
+                              offset: const Offset(0, 4),
+                              blurRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: _voteOptions.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final vo = entry.value;
+                            final isLast = i == _voteOptions.length - 1;
+                            return Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  child: Row(
+                                    children: [
+                                      // Color swatch
+                                      GestureDetector(
+                                        onTap: () => _pickVoteOptionColor(i),
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: _hexToColor(vo.color),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: _hexToColor(vo.color)
+                                                  .withOpacity(0.3),
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Label input
+                                      Expanded(
+                                        child: TextField(
+                                          onChanged: (v) => setState(
+                                              () => vo.label = v),
+                                          controller:
+                                              TextEditingController.fromValue(
+                                            TextEditingValue(
+                                              text: vo.label,
+                                              selection:
+                                                  TextSelection.collapsed(
+                                                      offset:
+                                                          vo.label.length),
+                                            ),
+                                          ),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: context.appColors.ink,
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: 'Option label',
+                                            hintStyle:
+                                                GoogleFonts.plusJakartaSans(
+                                              fontSize: 14,
+                                              color: context.appColors.inkMuted,
+                                            ),
+                                            border: InputBorder.none,
+                                            isDense: true,
+                                            contentPadding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
+                                      // Remove button (only if > 2 options)
+                                      if (_voteOptions.length > 2)
+                                        GestureDetector(
+                                          onTap: () => setState(
+                                              () => _voteOptions.removeAt(i)),
+                                          child: Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: context
+                                                  .appColors.surfaceSoft,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                  color:
+                                                      context.appColors.line,
+                                                  width: 1),
+                                            ),
+                                            child: Icon(
+                                                Icons.close_rounded,
+                                                size: 14,
+                                                color: context
+                                                    .appColors.inkMuted),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (!isLast)
+                                  Container(
+                                    height: 1,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    color: context.appColors.line,
+                                  ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+
+                      // Add vote option button (up to 5)
+                      if (_voteOptions.length < 5) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              final usedColors = _voteOptions
+                                  .map((o) => o.color)
+                                  .toSet();
+                              final nextColor = _colorPalette.firstWhere(
+                                (c) => !usedColors.contains(c),
+                                orElse: () => _colorPalette[
+                                    _voteOptions.length %
+                                        _colorPalette.length],
+                              );
+                              _voteOptions.add(PollVoteOptionInput(
+                                  label: '', color: nextColor));
+                            });
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: context.appColors.surfaceSoft,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: context.appColors.line, width: 1.5),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '+ Add vote option',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.appColors.inkSoft,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 32),
 
                       // Create button
@@ -362,7 +645,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: context.appColors.ink.withOpacity(0.33),
-                              offset: Offset(0, 4),
+                              offset: const Offset(0, 4),
                               blurRadius: 0,
                             ),
                           ],

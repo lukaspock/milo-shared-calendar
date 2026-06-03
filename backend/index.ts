@@ -5,6 +5,7 @@ import { register, login, deleteUser, verifyEmail, resendVerification, getMe, up
 import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
+import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
@@ -47,6 +48,9 @@ router.post("/events", createEvent, [authMiddleware]);
 router.put("/events/:id", updateEvent, [authMiddleware]);
 router.delete("/events/:id", deleteEvent, [authMiddleware]);
 router.post("/events/:id/notify", notifyMembers, [authMiddleware]);
+router.get("/events/:id/reactions", getReactions, [authMiddleware]);
+router.post("/events/:id/reactions", addReaction, [authMiddleware]);
+router.delete("/events/:id/reactions/:emoji", removeReaction, [authMiddleware]);
 
 // --- Polls (protected) ---
 router.post("/calendars/:calendarId/polls", createPoll, [authMiddleware]);

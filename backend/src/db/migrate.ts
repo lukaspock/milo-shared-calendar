@@ -69,5 +69,31 @@ export async function runMigrations(): Promise<void> {
       ADD COLUMN IF NOT EXISTS parent_event_id UUID REFERENCES events(id) ON DELETE CASCADE
   `;
 
+  // Custom vote options per poll (replaces hardcoded yes/no/maybe)
+  await db`
+    CREATE TABLE IF NOT EXISTS poll_vote_options (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      poll_id    UUID REFERENCES event_polls(id) ON DELETE CASCADE,
+      label      TEXT NOT NULL,
+      color      TEXT NOT NULL DEFAULT '#6C63FF',
+      position   INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT now()
+    )
+  `;
+
+  // Drop the yes/no/maybe constraint so custom labels can be stored
+  await db`ALTER TABLE poll_votes DROP CONSTRAINT IF EXISTS poll_votes_vote_check`;
+
+  // Emoji reactions on events (one row per user+emoji+event)
+  await db`
+    CREATE TABLE IF NOT EXISTS event_reactions (
+      event_id   UUID REFERENCES events(id) ON DELETE CASCADE,
+      user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+      emoji      TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT now(),
+      PRIMARY KEY (event_id, user_id, emoji)
+    )
+  `;
+
   console.log("[db] migrations applied");
 }

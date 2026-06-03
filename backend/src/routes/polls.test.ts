@@ -60,7 +60,9 @@ beforeEach(() => mockDb.mockReset());
 describe("votePoll", () => {
   test("returns 400 when vote value is invalid", async () => {
     const ctx = makeCtx(USER_ID, { option_id: OPTION_ID, vote: "maybe_not" }, { id: POLL_ID });
-    mockDb.mockResolvedValueOnce([fakePoll]); // poll lookup
+    mockDb
+      .mockResolvedValueOnce([fakePoll]) // poll lookup
+      .mockResolvedValueOnce([]);        // poll_vote_options → empty (legacy yes/no/maybe mode)
     const res = await votePoll(ctx);
     expect(res.status).toBe(400);
     const body = await res.json() as { error: string };
@@ -86,6 +88,7 @@ describe("votePoll", () => {
   test("returns 403 for non-member", async () => {
     mockDb
       .mockResolvedValueOnce([fakePoll]) // poll lookup
+      .mockResolvedValueOnce([])         // poll_vote_options → empty
       .mockResolvedValueOnce([]);        // membership → empty
     const ctx = makeCtx(OTHER_USER_ID, { option_id: OPTION_ID, vote: "yes" }, { id: POLL_ID });
     const res = await votePoll(ctx);
@@ -94,9 +97,10 @@ describe("votePoll", () => {
 
   test("returns 404 when option does not belong to poll", async () => {
     mockDb
-      .mockResolvedValueOnce([fakePoll])         // poll
+      .mockResolvedValueOnce([fakePoll])           // poll
+      .mockResolvedValueOnce([])                   // poll_vote_options → empty
       .mockResolvedValueOnce([{ role: "member" }]) // membership
-      .mockResolvedValueOnce([]);                // option lookup → empty
+      .mockResolvedValueOnce([]);                  // option lookup → empty
     const ctx = makeCtx(USER_ID, { option_id: "wrong-id", vote: "yes" }, { id: POLL_ID });
     const res = await votePoll(ctx);
     expect(res.status).toBe(404);
@@ -105,12 +109,14 @@ describe("votePoll", () => {
   test("records vote and returns updated poll", async () => {
     mockDb
       .mockResolvedValueOnce([fakePoll])           // poll
+      .mockResolvedValueOnce([])                   // poll_vote_options → empty
       .mockResolvedValueOnce([{ role: "member" }]) // membership
       .mockResolvedValueOnce([fakeOption])          // option lookup
       .mockResolvedValueOnce([])                   // upsert vote
       // assemblePoll queries:
       .mockResolvedValueOnce([fakeOption])          // options
       .mockResolvedValueOnce([])                   // votes
+      .mockResolvedValueOnce([])                   // poll_vote_options (assemblePoll)
       .mockResolvedValueOnce([{ name: "Test" }]);  // creator name
     const ctx = makeCtx(USER_ID, { option_id: OPTION_ID, vote: "yes" }, { id: POLL_ID });
     const res = await votePoll(ctx);
@@ -165,6 +171,7 @@ describe("confirmPoll", () => {
       // assemblePoll:
       .mockResolvedValueOnce([fakeOption])            // options
       .mockResolvedValueOnce([])                     // votes
+      .mockResolvedValueOnce([])                     // poll_vote_options (assemblePoll)
       .mockResolvedValueOnce([{ name: "Test" }])     // creator name
       // fire-and-forget email:
       .mockResolvedValueOnce([])                     // members

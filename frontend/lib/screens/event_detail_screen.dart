@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/event.dart';
+import '../models/reaction.dart';
+import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
+
+// Common emoji options for quick reactions
+const _quickEmojis = ['❤️', '🎉', '👍', '😂', '🔥', '😮', '👏', '🙌'];
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String calendarId;
@@ -34,6 +40,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   RecurrenceRule _recurrenceRule = RecurrenceRule.none;
   DateTime? _recurrenceEnd;
 
+  List<EventReaction> _reactions = [];
+  bool _reactionsLoading = false;
+
   bool get _isNew => widget.eventId == 'new';
   CalendarEvent? get _existingEvent =>
       widget.extra is CalendarEvent ? widget.extra as CalendarEvent : null;
@@ -48,6 +57,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _endTime = _existingEvent!.endTime;
       _recurrenceRule = _existingEvent!.recurrenceRule;
       _recurrenceEnd = _existingEvent!.recurrenceEnd;
+      _loadReactions();
     } else if (widget.extra is DateTime) {
       final d = widget.extra as DateTime;
       _startTime = DateTime(d.year, d.month, d.day, 9, 0);
@@ -60,6 +70,30 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     _titleCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadReactions() async {
+    if (_isNew) return;
+    setState(() => _reactionsLoading = true);
+    try {
+      final list = await ApiService().fetchReactions(widget.eventId);
+      if (mounted) setState(() => _reactions = list);
+    } catch (_) {}
+    if (mounted) setState(() => _reactionsLoading = false);
+  }
+
+  Future<void> _addReaction(String emoji) async {
+    try {
+      final list = await ApiService().addReaction(widget.eventId, emoji);
+      if (mounted) setState(() => _reactions = list);
+    } catch (_) {}
+  }
+
+  Future<void> _removeReaction(String emoji) async {
+    try {
+      await ApiService().removeReaction(widget.eventId, emoji);
+      await _loadReactions();
+    } catch (_) {}
   }
 
   Future<void> _pickDateTime({required bool isStart}) async {
@@ -137,7 +171,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       );
       ok = ev != null;
     } else {
-      // For recurring events ask whether to edit just this one or all future
       bool editAll = false;
       if (_existingEvent!.isRecurring || _existingEvent!.isRecurringInstance) {
         if (!mounted) return;
@@ -177,8 +210,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
-  /// Shows a dialog with "Cancel", [singleLabel], and [allLabel].
-  /// Returns true = all, false = single, null = cancelled.
   Future<bool?> _showSeriesDialog({
     required String title,
     required String singleLabel,
@@ -212,7 +243,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     bool deleteAll = false;
 
     if (_existingEvent!.isRecurring || _existingEvent!.isRecurringInstance) {
-      // Ask: delete just this one or all in series
       final choice = await _showSeriesDialog(
         title: 'Delete recurring event',
         singleLabel: 'Delete this event',
@@ -221,7 +251,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       if (choice == null || !mounted) return;
       deleteAll = choice;
     } else {
-      // Simple confirmation for non-recurring
       final confirm = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -259,7 +288,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: context.appColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         child: Column(
@@ -321,13 +350,84 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: context.appColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'React',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.ink,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickEmojis.map((e) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addReaction(e);
+                  },
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: context.appColors.line, width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text(e,
+                          style: const TextStyle(fontSize: 26)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(authProvider).user;
+    final currentUserId = currentUser?.id ?? '';
+
     final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
         ?.where((c) => c.id == widget.calendarId)
         .firstOrNull;
     final calHue = calendar != null ? hueFor(calendar) : stickerHues[0];
+
+    // Determine if current user can edit this event
+    final isCreator = _existingEvent != null &&
+        _existingEvent!.createdBy == currentUserId;
+    final isOwner = calendar?.isOwner ?? false;
+    final canEdit = _isNew || isCreator || isOwner;
 
     return Scaffold(
       backgroundColor: context.appColors.bg,
@@ -358,7 +458,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     child: Text(
                       _isNew
                           ? 'New event${calendar != null ? ' in ${calendar.name}' : ''}'
-                          : 'Edit event',
+                          : canEdit
+                              ? 'Edit event'
+                              : 'Event',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -382,236 +484,598 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
             const SizedBox(height: 16),
 
-            // ── Scrollable form ──────────────────────────────────────────────
+            // ── Body ────────────────────────────────────────────────────────
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Huge title input
-                      TextFormField(
-                        controller: _titleCtrl,
-                        autofocus: _isNew,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          color: context.appColors.ink,
-                          letterSpacing: -0.8,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Event title',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: context.appColors.inkMuted,
-                            letterSpacing: -0.8,
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                          filled: false,
-                        ),
-                        validator: (v) =>
-                            v != null && v.trim().isNotEmpty ? null : 'Title required',
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Field card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.appColors.surface,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: context.appColors.line, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.appColors.line.withOpacity(0.5),
-                              offset: const Offset(0, 4),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            _FieldRow(
-                              icon: AppImages.calendar(size: 16),
-                              label: 'When',
-                              value: _fmtFull(_startTime),
-                              onTap: () => _pickDateTime(isStart: true),
-                              isFirst: true,
-                            ),
-                            _Divider(),
-                            _FieldRow(
-                              icon: AppImages.flag(size: 16),
-                              label: 'Ends',
-                              value: _fmtFull(_endTime),
-                              onTap: () => _pickDateTime(isStart: false),
-                            ),
-                            _Divider(),
-                            _FieldRow(
-                              icon: Icon(Icons.repeat_rounded,
-                                  size: 16, color: context.appColors.inkSoft),
-                              label: 'Repeat',
-                              value: _recurrenceRule.label,
-                              onTap: _pickRecurrence,
-                              isLast: _recurrenceRule == RecurrenceRule.none,
-                            ),
-                            if (_recurrenceRule != RecurrenceRule.none) ...[
-                              _Divider(),
-                              _FieldRow(
-                                icon: Icon(Icons.event_outlined,
-                                    size: 16, color: context.appColors.inkSoft),
-                                label: 'Repeat until',
-                                value: _recurrenceEnd != null
-                                    ? '${_recurrenceEnd!.year}-'
-                                      '${_recurrenceEnd!.month.toString().padLeft(2, '0')}-'
-                                      '${_recurrenceEnd!.day.toString().padLeft(2, '0')}'
-                                    : 'No end date',
-                                onTap: _pickRecurrenceEnd,
-                                isLast: true,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Notes card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.appColors.surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: context.appColors.line, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.appColors.line.withOpacity(0.5),
-                              offset: const Offset(0, 4),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: TextFormField(
-                          controller: _descCtrl,
-                          maxLines: 4,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: context.appColors.ink,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 14,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Add notes…',
-                            hintStyle: GoogleFonts.plusJakartaSans(
-                              color: context.appColors.inkMuted,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                            prefixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 12, top: 14),
-                              child: AppImages.note(size: 16),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0, minHeight: 0,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Save button
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.appColors.ink.withOpacity(0.33),
-                              offset: Offset(0, 4),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _save,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    _isNew ? 'Save event' : 'Save changes',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w700, fontSize: 15,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-
-                      // Delete button (existing events only)
-                      if (!_isNew) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x33E85535),
-                                  offset: Offset(0, 4),
-                                  blurRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _delete,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.danger,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                              ),
-                              icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                              label: Text(
-                                'Delete event',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+              child: canEdit
+                  ? _buildEditForm(context, calHue)
+                  : _buildViewMode(context, calHue, currentUserId),
             ),
           ],
         ),
       ),
     );
   }
+
+  // ── Edit form (creator / owner / new event) ──────────────────────────────
+
+  Widget _buildEditForm(BuildContext context, CalHue calHue) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Huge title input
+            TextFormField(
+              controller: _titleCtrl,
+              autofocus: _isNew,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.ink,
+                letterSpacing: -0.8,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Event title',
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.inkMuted,
+                  letterSpacing: -0.8,
+                ),
+                contentPadding: EdgeInsets.zero,
+                filled: false,
+              ),
+              validator: (v) =>
+                  v != null && v.trim().isNotEmpty ? null : 'Title required',
+            ),
+
+            const SizedBox(height: 20),
+
+            // Field card
+            Container(
+              decoration: BoxDecoration(
+                color: context.appColors.surface,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: context.appColors.line, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.line.withOpacity(0.5),
+                    offset: const Offset(0, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _FieldRow(
+                    icon: AppImages.calendar(size: 16),
+                    label: 'When',
+                    value: _fmtFull(_startTime),
+                    onTap: () => _pickDateTime(isStart: true),
+                    isFirst: true,
+                  ),
+                  _Divider(),
+                  _FieldRow(
+                    icon: AppImages.flag(size: 16),
+                    label: 'Ends',
+                    value: _fmtFull(_endTime),
+                    onTap: () => _pickDateTime(isStart: false),
+                  ),
+                  _Divider(),
+                  _FieldRow(
+                    icon: Icon(Icons.repeat_rounded,
+                        size: 16, color: context.appColors.inkSoft),
+                    label: 'Repeat',
+                    value: _recurrenceRule.label,
+                    onTap: _pickRecurrence,
+                    isLast: _recurrenceRule == RecurrenceRule.none,
+                  ),
+                  if (_recurrenceRule != RecurrenceRule.none) ...[
+                    _Divider(),
+                    _FieldRow(
+                      icon: Icon(Icons.event_outlined,
+                          size: 16, color: context.appColors.inkSoft),
+                      label: 'Repeat until',
+                      value: _recurrenceEnd != null
+                          ? '${_recurrenceEnd!.year}-'
+                            '${_recurrenceEnd!.month.toString().padLeft(2, '0')}-'
+                            '${_recurrenceEnd!.day.toString().padLeft(2, '0')}'
+                          : 'No end date',
+                      onTap: _pickRecurrenceEnd,
+                      isLast: true,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Notes card
+            Container(
+              decoration: BoxDecoration(
+                color: context.appColors.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.appColors.line, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.line.withOpacity(0.5),
+                    offset: const Offset(0, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextFormField(
+                controller: _descCtrl,
+                maxLines: 4,
+                style: GoogleFonts.plusJakartaSans(
+                  color: context.appColors.ink,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Add notes…',
+                  hintStyle: GoogleFonts.plusJakartaSans(
+                    color: context.appColors.inkMuted,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(right: 12, top: 14),
+                    child: AppImages.note(size: 16),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 0, minHeight: 0,
+                  ),
+                ),
+              ),
+            ),
+
+            // Reactions section (edit mode, existing events)
+            if (!_isNew) ...[
+              const SizedBox(height: 24),
+              _ReactionsSection(
+                reactions: _reactions,
+                loading: _reactionsLoading,
+                currentUserId: ref.watch(authProvider).user?.id ?? '',
+                onAdd: _showEmojiPicker,
+                onRemove: _removeReaction,
+              ),
+            ],
+
+            const SizedBox(height: 32),
+
+            // Save button
+            DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.ink.withOpacity(0.33),
+                    offset: const Offset(0, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _save,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          _isNew ? 'Save event' : 'Save changes',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700, fontSize: 15,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+
+            // Delete button (existing events only)
+            if (!_isNew) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33E85535),
+                        offset: Offset(0, 4),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _delete,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.danger,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    label: Text(
+                      'Delete event',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── View mode (non-creator / non-owner) ──────────────────────────────────
+
+  Widget _buildViewMode(
+      BuildContext context, CalHue calHue, String currentUserId) {
+    final event = _existingEvent;
+    if (event == null) {
+      return Center(
+        child: CircularProgressIndicator(color: context.appColors.ink),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Text(
+            event.title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.ink,
+              letterSpacing: -0.8,
+            ),
+          ),
+
+          if (event.creatorName != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'by ${event.creatorName}',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: context.appColors.inkMuted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // Time info card (read-only)
+          Container(
+            decoration: BoxDecoration(
+              color: context.appColors.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: context.appColors.line, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: context.appColors.line.withOpacity(0.5),
+                  offset: const Offset(0, 4),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _ReadOnlyRow(
+                  icon: AppImages.calendar(size: 16),
+                  label: 'When',
+                  value: _fmtFull(event.startTime),
+                  isFirst: true,
+                ),
+                _Divider(),
+                _ReadOnlyRow(
+                  icon: AppImages.flag(size: 16),
+                  label: 'Ends',
+                  value: _fmtFull(event.endTime),
+                  isLast: event.recurrenceRule == RecurrenceRule.none,
+                ),
+                if (event.recurrenceRule != RecurrenceRule.none) ...[
+                  _Divider(),
+                  _ReadOnlyRow(
+                    icon: Icon(Icons.repeat_rounded,
+                        size: 16, color: context.appColors.inkSoft),
+                    label: 'Repeats',
+                    value: event.recurrenceRule.label,
+                    isLast: true,
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          if (event.description != null && event.description!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: context.appColors.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.appColors.line, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.line.withOpacity(0.5),
+                    offset: const Offset(0, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppImages.note(size: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      event.description!,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        color: context.appColors.ink,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+
+          // Reactions
+          _ReactionsSection(
+            reactions: _reactions,
+            loading: _reactionsLoading,
+            currentUserId: currentUserId,
+            onAdd: _showEmojiPicker,
+            onRemove: _removeReaction,
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+// ── Reactions section ─────────────────────────────────────────────────────────
+
+class _ReactionsSection extends StatelessWidget {
+  const _ReactionsSection({
+    required this.reactions,
+    required this.loading,
+    required this.currentUserId,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<EventReaction> reactions;
+  final bool loading;
+  final String currentUserId;
+  final VoidCallback onAdd;
+  final void Function(String emoji) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    // Group reactions by emoji
+    final grouped = <String, List<EventReaction>>{};
+    for (final r in reactions) {
+      grouped.putIfAbsent(r.emoji, () => []).add(r);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'REACTIONS',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: context.appColors.inkMuted,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: context.appColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: context.appColors.line, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_reaction_outlined,
+                        size: 14, color: context.appColors.inkSoft),
+                    const SizedBox(width: 4),
+                    Text(
+                      'React',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.appColors.inkSoft,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        if (loading)
+          Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2, color: context.appColors.inkMuted),
+            ),
+          )
+        else if (grouped.isEmpty)
+          Text(
+            'No reactions yet — be the first!',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: context.appColors.inkMuted,
+              fontWeight: FontWeight.w400,
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: grouped.entries.map((entry) {
+              final emoji = entry.key;
+              final list = entry.value;
+              final mine = list.any((r) => r.userId == currentUserId);
+              final names =
+                  list.map((r) => r.userName).take(3).join(', ');
+              final tooltip = list.length > 3
+                  ? '$names and ${list.length - 3} more'
+                  : names;
+
+              return Tooltip(
+                message: tooltip,
+                child: GestureDetector(
+                  onTap: () => mine ? onRemove(emoji) : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: mine
+                          ? context.appColors.inkMuted.withOpacity(0.12)
+                          : context.appColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: mine
+                            ? context.appColors.ink.withOpacity(0.3)
+                            : context.appColors.line,
+                        width: mine ? 2 : 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(emoji,
+                            style: const TextStyle(fontSize: 16)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${list.length}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Read-only row ──────────────────────────────────────────────────────────
+
+class _ReadOnlyRow extends StatelessWidget {
+  const _ReadOnlyRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isFirst = false,
+    this.isLast = false,
+  });
+
+  final Widget icon;
+  final String label;
+  final String value;
+  final bool isFirst;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(20) : Radius.zero,
+          bottom: isLast ? const Radius.circular(20) : Radius.zero,
+        ),
+      ),
+      child: Row(
+        children: [
+          icon,
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.appColors.inkSoft,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.ink,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Field row (tappable) ───────────────────────────────────────────────────
 
 class _FieldRow extends StatelessWidget {
   const _FieldRow({
