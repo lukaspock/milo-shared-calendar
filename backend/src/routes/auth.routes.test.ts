@@ -13,7 +13,7 @@ mock.module("../services/google_calendar", () => ({
   handleCalendarCallback: mock(() => Promise.resolve()),
 }));
 
-import { register, login, getMe, updateNotificationType } from "./auth";
+import { register, login, getMe, updateNotificationType, updateProfile } from "./auth";
 import type { RequestContext } from "../types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -215,6 +215,126 @@ describe("getMe", () => {
     const res = await getMe(ctx);
     const body = await res.json() as { has_google_calendar: boolean };
     expect(body.has_google_calendar).toBe(false);
+  });
+
+  test("returns avatar_url when set", async () => {
+    const userWithAvatar = { ...fakeUser, avatar_url: "https://res.cloudinary.com/dvlvgosxk/image/upload/v1/avatars/abc.jpg" };
+    mockDb
+      .mockResolvedValueOnce([userWithAvatar])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({}, { sub: fakeUser.id, email: fakeUser.email, name: fakeUser.name });
+    const res = await getMe(ctx);
+    const body = await res.json() as { avatar_url: string | null };
+    expect(body.avatar_url).toBe(userWithAvatar.avatar_url);
+  });
+
+  test("returns avatar_url as null when not set", async () => {
+    mockDb
+      .mockResolvedValueOnce([{ ...fakeUser, avatar_url: null }])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({}, { sub: fakeUser.id, email: fakeUser.email, name: fakeUser.name });
+    const res = await getMe(ctx);
+    const body = await res.json() as { avatar_url: string | null };
+    expect(body.avatar_url).toBeNull();
+  });
+});
+
+// ── updateProfile ─────────────────────────────────────────────────────────────
+
+describe("updateProfile", () => {
+  const authCtx = { sub: fakeUser.id, email: fakeUser.email, name: fakeUser.name };
+  const updatedUser = { ...fakeUser, avatar_url: null };
+
+  test("returns 400 when body has no updatable fields", async () => {
+    const ctx = makeCtx({}, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toContain("at least one");
+  });
+
+  test("returns 400 when name is empty string", async () => {
+    const ctx = makeCtx({ name: "   " }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toContain("empty");
+  });
+
+  test("returns 404 when user does not exist", async () => {
+    mockDb.mockResolvedValueOnce([]); // user not found
+    const ctx = makeCtx({ name: "Bob" }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(404);
+  });
+
+  test("updates name only and returns updated user", async () => {
+    mockDb
+      .mockResolvedValueOnce([{ id: fakeUser.id }])           // user exists check
+      .mockResolvedValueOnce([])                               // UPDATE
+      .mockResolvedValueOnce([{ ...updatedUser, name: "Bob" }]) // SELECT after update
+      .mockResolvedValueOnce([]);                              // gcal tokens
+    const ctx = makeCtx({ name: "Bob" }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { name: string };
+    expect(body.name).toBe("Bob");
+  });
+
+  test("updates color only and returns updated user", async () => {
+    mockDb
+      .mockResolvedValueOnce([{ id: fakeUser.id }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...updatedUser, color: "#FF6584" }])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({ color: "#FF6584" }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { color: string };
+    expect(body.color).toBe("#FF6584");
+  });
+
+  test("updates avatar_url and returns it in response", async () => {
+    const url = "https://res.cloudinary.com/dvlvgosxk/image/upload/v1/avatars/xyz.jpg";
+    mockDb
+      .mockResolvedValueOnce([{ id: fakeUser.id }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...updatedUser, avatar_url: url }])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({ avatar_url: url }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { avatar_url: string };
+    expect(body.avatar_url).toBe(url);
+  });
+
+  test("clears avatar_url when set to null", async () => {
+    mockDb
+      .mockResolvedValueOnce([{ id: fakeUser.id }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...updatedUser, avatar_url: null }])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({ avatar_url: null }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { avatar_url: string | null };
+    expect(body.avatar_url).toBeNull();
+  });
+
+  test("updates all three fields at once", async () => {
+    const url = "https://res.cloudinary.com/dvlvgosxk/image/upload/v1/avatars/xyz.jpg";
+    mockDb
+      .mockResolvedValueOnce([{ id: fakeUser.id }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ...updatedUser, name: "Charlie", color: "#2ECC71", avatar_url: url }])
+      .mockResolvedValueOnce([]);
+    const ctx = makeCtx({ name: "Charlie", color: "#2ECC71", avatar_url: url }, authCtx);
+    const res = await updateProfile(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { name: string; color: string; avatar_url: string };
+    expect(body.name).toBe("Charlie");
+    expect(body.color).toBe("#2ECC71");
+    expect(body.avatar_url).toBe(url);
   });
 });
 

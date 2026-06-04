@@ -108,6 +108,49 @@ describe("createEvent", () => {
     const body = await res.json() as typeof fakeEvent;
     expect(body.title).toBe("Team Sync");
   });
+
+  test("persists icon when provided", async () => {
+    const eventWithIcon = { ...fakeEvent, icon: "🎂" };
+    mockDb
+      .mockResolvedValueOnce([{ role: "member" }])
+      .mockResolvedValueOnce([{ color: "#6C63FF" }])
+      .mockResolvedValueOnce([eventWithIcon])
+      .mockResolvedValueOnce([{ name: "Test User" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ name: "Cal" }]);
+    const ctx = makeCtx(USER_ID, {
+      calendar_id: CALENDAR_ID,
+      title: "Birthday",
+      start_time: "2026-06-01T10:00:00Z",
+      end_time: "2026-06-01T11:00:00Z",
+      icon: "🎂",
+    });
+    const res = await createEvent(ctx);
+    expect(res.status).toBe(201);
+    const body = await res.json() as { icon: string };
+    expect(body.icon).toBe("🎂");
+  });
+
+  test("creates event without icon when not provided", async () => {
+    const eventNoIcon = { ...fakeEvent, icon: null };
+    mockDb
+      .mockResolvedValueOnce([{ role: "member" }])
+      .mockResolvedValueOnce([{ color: "#6C63FF" }])
+      .mockResolvedValueOnce([eventNoIcon])
+      .mockResolvedValueOnce([{ name: "Test User" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ name: "Cal" }]);
+    const ctx = makeCtx(USER_ID, {
+      calendar_id: CALENDAR_ID,
+      title: "Team Sync",
+      start_time: "2026-06-01T10:00:00Z",
+      end_time: "2026-06-01T11:00:00Z",
+    });
+    const res = await createEvent(ctx);
+    expect(res.status).toBe(201);
+    const body = await res.json() as { icon: string | null };
+    expect(body.icon).toBeNull();
+  });
 });
 
 // ── updateEvent ───────────────────────────────────────────────────────────────
@@ -140,6 +183,43 @@ describe("updateEvent", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as typeof updated;
     expect(body.title).toBe("Updated");
+  });
+
+  test("updates icon and returns it in response", async () => {
+    const updated = { ...fakeEvent, icon: "✈️" };
+    mockDb
+      .mockResolvedValueOnce([fakeEvent])
+      .mockResolvedValueOnce([{ role: "member" }])
+      .mockResolvedValueOnce([updated]);
+    const ctx = makeCtx(USER_ID, { icon: "✈️" }, { id: EVENT_ID });
+    const res = await updateEvent(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { icon: string };
+    expect(body.icon).toBe("✈️");
+  });
+
+  test("clears icon when set to null", async () => {
+    const eventWithIcon = { ...fakeEvent, icon: "🎂" };
+    const updated = { ...fakeEvent, icon: null };
+    mockDb
+      .mockResolvedValueOnce([eventWithIcon])
+      .mockResolvedValueOnce([{ role: "member" }])
+      .mockResolvedValueOnce([updated]);
+    const ctx = makeCtx(USER_ID, { icon: null }, { id: EVENT_ID });
+    const res = await updateEvent(ctx);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { icon: string | null };
+    expect(body.icon).toBeNull();
+  });
+
+  test("returns 403 when member is not creator or owner", async () => {
+    const otherEvent = { ...fakeEvent, created_by: OTHER_USER_ID };
+    mockDb
+      .mockResolvedValueOnce([otherEvent])
+      .mockResolvedValueOnce([{ role: "member" }]); // member but not creator
+    const ctx = makeCtx(USER_ID, { title: "X" }, { id: EVENT_ID });
+    const res = await updateEvent(ctx);
+    expect(res.status).toBe(403);
   });
 });
 
