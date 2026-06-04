@@ -93,7 +93,8 @@ class ApiService {
       return url;
     } on DioException catch (e) {
       final body = e.response?.data;
-      final msg = (body is Map ? body['error']?['message'] : null) ?? e.message ?? 'Unknown error';
+      final errMap = body is Map ? body['error'] : null;
+      final msg = (errMap is Map ? errMap['message'] : null) as String? ?? e.message ?? 'Unknown error';
       throw CloudinaryUploadException(msg.toString());
     } catch (e) {
       throw CloudinaryUploadException(e.toString());
