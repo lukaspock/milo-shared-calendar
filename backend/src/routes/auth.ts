@@ -5,6 +5,7 @@ import type { RequestContext } from "../types";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
 import { google } from "googleapis";
 import { generateCalendarConnectUrl, handleCalendarCallback } from "../services/google_calendar";
+import { cleanupAssets } from "../services/cloudinary";
 
 export async function register(ctx: RequestContext): Promise<Response> {
   let body: { email?: string; password?: string; name?: string; notification_type?: string };
@@ -184,8 +185,9 @@ export async function updateProfile(ctx: RequestContext): Promise<Response> {
     return error("Name cannot be empty");
   }
 
-  const users = await db`SELECT id FROM users WHERE id = ${userId}`;
+  const users = await db`SELECT id, avatar_url FROM users WHERE id = ${userId}`;
   if (users.length === 0) return error("User not found", 404);
+  const oldAvatarUrl = users[0].avatar_url as string | null;
 
   // Build the update dynamically — only set fields that were provided
   if (name && color && avatar_url !== undefined) {
@@ -202,6 +204,11 @@ export async function updateProfile(ctx: RequestContext): Promise<Response> {
     await db`UPDATE users SET color = ${color} WHERE id = ${userId}`;
   } else {
     await db`UPDATE users SET avatar_url = ${avatar_url ?? null} WHERE id = ${userId}`;
+  }
+
+  // Clean up old Cloudinary avatar if it changed or was removed
+  if (avatar_url !== undefined && oldAvatarUrl && oldAvatarUrl !== avatar_url) {
+    cleanupAssets([oldAvatarUrl]);
   }
 
   const updated = await db`
@@ -428,6 +435,8 @@ export async function submitResetPassword(ctx: RequestContext): Promise<Response
 
 export async function deleteUser(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
+  const rows = await db`SELECT avatar_url FROM users WHERE id = ${userId}`;
+  if (rows.length > 0) cleanupAssets([rows[0].avatar_url as string | null]);
   await db`DELETE FROM users WHERE id = ${userId}`;
   return json({ message: "Account deleted" });
 }

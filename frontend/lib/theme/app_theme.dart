@@ -410,6 +410,39 @@ Future<void> persistCalendarHue(String calendarId, int hueIndex) async {
   await prefs.setInt('cal_hue_$calendarId', hueIndex);
 }
 
+// In-memory icon overrides for calendars.
+final Map<String, String> _calendarIconOverrides = {};
+
+/// Returns the custom icon (emoji or URL) for [c], or null to use the default.
+String? calendarIcon(CalendarModel c) => _calendarIconOverrides[c.id];
+
+void setCalendarIcon(String calendarId, String icon) {
+  _calendarIconOverrides[calendarId] = icon;
+}
+
+/// Call once at startup to restore saved icon choices.
+Future<void> loadCalendarIcons() async {
+  final prefs = await SharedPreferences.getInstance();
+  final keys = prefs.getKeys().where((k) => k.startsWith('cal_icon_'));
+  for (final k in keys) {
+    final id = k.substring('cal_icon_'.length);
+    final icon = prefs.getString(k);
+    if (icon != null) _calendarIconOverrides[id] = icon;
+  }
+}
+
+Future<void> persistCalendarIcon(String calendarId, String icon) async {
+  setCalendarIcon(calendarId, icon);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('cal_icon_$calendarId', icon);
+}
+
+Future<void> clearPersistedCalendarIcon(String calendarId) async {
+  _calendarIconOverrides.remove(calendarId);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('cal_icon_$calendarId');
+}
+
 // ─── StickerTile ────────────────────────────────────────────────────────────
 
 class StickerTile extends StatelessWidget {

@@ -76,6 +76,15 @@ class ApiService {
   Future<String> uploadEventIconToCloudinary(File file) =>
       _uploadToCloudinary(file, folder: 'event_icons');
 
+  /// Asks the backend to delete a Cloudinary asset. Fire-and-forget safe.
+  Future<void> deleteAsset(String url) async {
+    try {
+      await delete('/assets', data: {'url': url});
+    } catch (_) {
+      // Best-effort — never block the caller
+    }
+  }
+
   Future<String> _uploadToCloudinary(File file, {required String folder}) async {
     try {
       final uploadDio = Dio();

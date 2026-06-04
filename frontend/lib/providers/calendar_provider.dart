@@ -4,6 +4,7 @@ import '../models/member.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
 import '../services/websocket_service.dart';
+import '../theme/app_theme.dart';
 import 'auth_provider.dart';
 
 class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
@@ -118,8 +119,24 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
   }
 
   Future<bool> deleteCalendar(String calendarId) async {
+    // Grab the calendar's local photo icon before deletion so we can clean it up
+    CalendarModel? calendar;
+    state.whenData((list) {
+      try { calendar = list.firstWhere((c) => c.id == calendarId); } catch (_) {}
+    });
+    final iconUrl = calendar != null ? calendarIcon(calendar!) : null;
+    final isPhotoIcon = iconUrl != null &&
+        (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'));
+
     try {
       await _api.delete('/calendars/$calendarId');
+
+      // Clear local icon cache entry
+      await clearPersistedCalendarIcon(calendarId);
+
+      // Ask backend to delete the Cloudinary photo icon (fire-and-forget)
+      if (isPhotoIcon) _api.deleteAsset(iconUrl);
+
       state.whenData((list) {
         final updated = list.where((c) => c.id != calendarId).toList();
         state = AsyncValue.data(updated);

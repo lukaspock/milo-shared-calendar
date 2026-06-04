@@ -8,6 +8,7 @@ import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/rout
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
+import { deleteAsset } from "./src/routes/assets";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
 import { startReminderScheduler } from "./src/services/reminder.service";
 
@@ -49,6 +50,7 @@ router.patch("/auth/me", updateProfile, [authMiddleware]);
 router.post("/auth/google-calendar/connect", connectGoogleCalendar, [authMiddleware]);
 router.get("/auth/google-calendar/callback", googleCalendarCallback);
 router.delete("/users/me", deleteUser, [authMiddleware]);
+router.delete("/assets", deleteAsset, [authMiddleware]);
 
 // --- Calendars (protected) ---
 router.get("/calendars", listCalendars, [authMiddleware]);

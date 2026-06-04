@@ -15,9 +15,9 @@ class OnboardingThemeScreen extends ConsumerWidget {
     final current = ref.watch(themeProvider);
 
     return OnboardingShell(
-      step: 5,
-      totalSteps: 6,
-      onBack: null,
+      step: 6,
+      totalSteps: 7,
+      onBack: () => context.go('/onboarding/avatar'),
       illustration: AppImages.moon(size: 72),
       illustrationHue: stickerHues[3],
       title: 'Choose your look',
