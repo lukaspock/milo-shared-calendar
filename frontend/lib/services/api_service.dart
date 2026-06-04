@@ -70,26 +70,34 @@ class ApiService {
 
   // ── Cloudinary avatar upload ───────────────────────────────────────────────
 
-  /// Uploads [file] directly to Cloudinary and returns the secure CDN URL.
-  /// Returns null if Cloudinary is not configured or the upload fails.
-  Future<String?> uploadAvatarToCloudinary(File file) async {
-    if (_cloudinaryCloudName.isEmpty || _cloudinaryUploadPreset.isEmpty) {
-      return null; // Not configured yet
-    }
+  Future<String> uploadAvatarToCloudinary(File file) =>
+      _uploadToCloudinary(file, folder: 'avatars');
+
+  Future<String> uploadEventIconToCloudinary(File file) =>
+      _uploadToCloudinary(file, folder: 'event_icons');
+
+  Future<String> _uploadToCloudinary(File file, {required String folder}) async {
     try {
       final uploadDio = Dio();
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(file.path),
         'upload_preset': _cloudinaryUploadPreset,
-        'folder': 'avatars',
+        'folder': folder,
       });
       final res = await uploadDio.post(
         'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload',
         data: formData,
       );
-      return (res.data as Map<String, dynamic>)['secure_url'] as String?;
-    } catch (_) {
-      return null;
+      final url = (res.data as Map<String, dynamic>)['secure_url'] as String?;
+      if (url == null) throw CloudinaryUploadException('No secure_url in response');
+      return url;
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      final errMap = body is Map ? body['error'] : null;
+      final msg = (errMap is Map ? errMap['message'] : null) as String? ?? e.message ?? 'Unknown error';
+      throw CloudinaryUploadException(msg.toString());
+    } catch (e) {
+      throw CloudinaryUploadException(e.toString());
     }
   }
 
@@ -173,4 +181,11 @@ class ApiService {
   Future<void> removeReaction(String eventId, String emoji) async {
     await delete('/events/$eventId/reactions/${Uri.encodeComponent(emoji)}');
   }
+}
+
+class CloudinaryUploadException implements Exception {
+  final String message;
+  const CloudinaryUploadException(this.message);
+  @override
+  String toString() => 'CloudinaryUploadException: $message';
 }

@@ -887,23 +887,10 @@ class _DayCell extends StatelessWidget {
             const SizedBox(height: 3),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected ? calHue.dot.withOpacity(0.25) : calHue.bg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  events.length > 1 ? '+${events.length}' : events[0].title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 8,
-                    color: calHue.ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.clip,
-                ),
+              child: _DayCellBadge(
+                events: events,
+                calHue: calHue,
+                isSelected: isSelected,
               ),
             ),
           ],
@@ -938,21 +925,6 @@ class _EventRowState extends State<_EventRow> {
   @override
   Widget build(BuildContext context) {
     final hue = widget.calHue;
-    final start = widget.event.startTime;
-    final months = [
-      'JAN',
-      'FEB',
-      'MAR',
-      'APR',
-      'MAY',
-      'JUN',
-      'JUL',
-      'AUG',
-      'SEP',
-      'OCT',
-      'NOV',
-      'DEC',
-    ];
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -979,43 +951,7 @@ class _EventRowState extends State<_EventRow> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 52,
-              decoration: BoxDecoration(
-                color: hue.bg,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: hue.deep.withOpacity(0.13),
-                    offset: const Offset(0, 3),
-                    blurRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    months[start.month - 1],
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: hue.ink,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  Text(
-                    '${start.day}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: hue.ink,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _EventRowIcon(event: widget.event, hue: hue),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1063,6 +999,157 @@ class _EventRowState extends State<_EventRow> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+bool _isIconUrl(String s) => s.startsWith('http://') || s.startsWith('https://');
+
+const _months = [
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+];
+
+// Badge shown inside a day cell — icon or title for 1 event, count for many.
+class _DayCellBadge extends StatelessWidget {
+  const _DayCellBadge({
+    required this.events,
+    required this.calHue,
+    required this.isSelected,
+  });
+  final List<CalendarEvent> events;
+  final CalHue calHue;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isSelected ? calHue.dot.withOpacity(0.25) : calHue.bg;
+    final single = events.length == 1;
+    final icon = single ? events[0].icon : null;
+
+    if (single && icon != null && _isIconUrl(icon)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: SizedBox(
+          width: double.infinity,
+          height: 18,
+          child: Image.network(
+            icon,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _textBadge(events[0].title, bg),
+          ),
+        ),
+      );
+    }
+
+    if (single && icon != null) {
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        alignment: Alignment.center,
+        child: Text(icon, style: const TextStyle(fontSize: 11, height: 1.3)),
+      );
+    }
+
+    return _textBadge(single ? events[0].title : '+${events.length}', bg);
+  }
+
+  Widget _textBadge(String text, Color bg) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        child: Text(
+          text,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 8,
+            color: calHue.ink,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.clip,
+        ),
+      );
+}
+
+// Left-side icon box for an event row — event icon when set, date otherwise.
+class _EventRowIcon extends StatelessWidget {
+  const _EventRowIcon({required this.event, required this.hue});
+  final CalendarEvent event;
+  final CalHue hue;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = event.icon;
+    final decoration = BoxDecoration(
+      color: hue.bg,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: hue.deep.withOpacity(0.13),
+          offset: const Offset(0, 3),
+          blurRadius: 0,
+        ),
+      ],
+    );
+
+    if (icon != null && _isIconUrl(icon)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 44,
+          height: 52,
+          child: Image.network(
+            icon,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _dateFallback(decoration),
+          ),
+        ),
+      );
+    }
+
+    if (icon != null) {
+      return Container(
+        width: 44,
+        height: 52,
+        decoration: decoration,
+        alignment: Alignment.center,
+        child: Text(icon, style: const TextStyle(fontSize: 26)),
+      );
+    }
+
+    return _dateFallback(decoration);
+  }
+
+  Widget _dateFallback(BoxDecoration decoration) {
+    final start = event.startTime;
+    return Container(
+      width: 44,
+      height: 52,
+      decoration: decoration,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            _months[start.month - 1],
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: hue.ink,
+              letterSpacing: 0.5,
+            ),
+          ),
+          Text(
+            '${start.day}',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: hue.ink,
+            ),
+          ),
+        ],
       ),
     );
   }

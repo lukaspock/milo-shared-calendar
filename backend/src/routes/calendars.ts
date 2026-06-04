@@ -132,7 +132,7 @@ export async function listMembers(ctx: RequestContext): Promise<Response> {
   if (membership.length === 0) return error("Not a member of this calendar", 403);
 
   const members = await db`
-    SELECT u.id, u.email, u.name, u.color, cm.role, cm.joined_at
+    SELECT u.id, u.email, u.name, u.color, u.avatar_url, cm.role, cm.joined_at
     FROM users u
     INNER JOIN calendar_members cm ON cm.user_id = u.id
     WHERE cm.calendar_id = ${id}

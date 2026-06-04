@@ -5,6 +5,7 @@ class CalendarMember {
   final String color;
   final String role;
   final DateTime joinedAt;
+  final String? avatarUrl;
 
   const CalendarMember({
     required this.id,
@@ -13,6 +14,7 @@ class CalendarMember {
     required this.color,
     required this.role,
     required this.joinedAt,
+    this.avatarUrl,
   });
 
   factory CalendarMember.fromJson(Map<String, dynamic> json) => CalendarMember(
@@ -22,6 +24,7 @@ class CalendarMember {
         color: json['color'] as String,
         role: json['role'] as String,
         joinedAt: DateTime.parse(json['joined_at'] as String),
+        avatarUrl: json['avatar_url'] as String?,
       );
 
   bool get isOwner => role == 'owner';
