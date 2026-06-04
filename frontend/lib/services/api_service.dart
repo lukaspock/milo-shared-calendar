@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../models/reaction.dart';
 
@@ -76,6 +77,9 @@ class ApiService {
   Future<String> uploadEventIconToCloudinary(File file) =>
       _uploadToCloudinary(file, folder: 'event_icons');
 
+  Future<String> uploadEventPhotoToCloudinary(File file) =>
+      _uploadToCloudinary(file, folder: 'event_photos');
+
   /// Asks the backend to delete a Cloudinary asset. Fire-and-forget safe.
   Future<void> deleteAsset(String url) async {
     try {
@@ -108,6 +112,24 @@ class ApiService {
     } catch (e) {
       throw CloudinaryUploadException(e.toString());
     }
+  }
+
+  // ── Event photos ──────────────────────────────────────────────────────────
+
+  Future<EventPhoto> addEventPhoto(String eventId, String photoUrl) async {
+    final res = await post('/events/$eventId/photos', data: {'photo_url': photoUrl});
+    return EventPhoto.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<List<EventPhoto>> getCalendarPhotos(String calendarId) async {
+    final res = await get('/calendars/$calendarId/photos');
+    return (res.data as List)
+        .map((e) => EventPhoto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteEventPhoto(String eventId, String photoId) async {
+    await delete('/events/$eventId/photos/$photoId');
   }
 
   // ── Polls ──────────────────────────────────────────────────────────────────

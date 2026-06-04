@@ -13,7 +13,7 @@ export async function listCalendars(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
 
   const calendars = await db`
-    SELECT c.id, c.name, c.owner_id, c.invite_code, c.created_at,
+    SELECT c.id, c.name, c.owner_id, c.invite_code, c.created_at, c.photo_mode,
            cm.role,
            (SELECT COUNT(*)::integer FROM calendar_members WHERE calendar_id = c.id) AS member_count
     FROM calendars c
@@ -26,7 +26,7 @@ export async function listCalendars(ctx: RequestContext): Promise<Response> {
 
 export async function createCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
-  let body: { name?: string };
+  let body: { name?: string; photo_mode?: boolean };
   try {
     body = await ctx.req.json();
   } catch {
@@ -34,6 +34,7 @@ export async function createCalendar(ctx: RequestContext): Promise<Response> {
   }
 
   if (!body.name?.trim()) return error("name is required");
+  const photoMode = body.photo_mode === true;
 
   let inviteCode: string;
   // Ensure unique invite code
@@ -44,8 +45,8 @@ export async function createCalendar(ctx: RequestContext): Promise<Response> {
   }
 
   const calendars = await db`
-    INSERT INTO calendars (name, owner_id, invite_code)
-    VALUES (${body.name.trim()}, ${userId}, ${inviteCode})
+    INSERT INTO calendars (name, owner_id, invite_code, photo_mode)
+    VALUES (${body.name.trim()}, ${userId}, ${inviteCode}, ${photoMode})
     RETURNING *
   `;
   const calendar = calendars[0];
@@ -181,6 +182,10 @@ export async function deleteCalendar(ctx: RequestContext): Promise<Response> {
   // Clean up any Cloudinary photo icons on events in this calendar (fire-and-forget)
   const eventIcons = await db`SELECT icon FROM events WHERE calendar_id = ${id}`;
   cleanupAssets(eventIcons.map((e: Record<string, unknown>) => e.icon as string | null));
+
+  // Clean up event memory photos for this calendar (fire-and-forget)
+  const photoUrls = await db`SELECT photo_url FROM event_photos WHERE calendar_id = ${id}`;
+  cleanupAssets(photoUrls.map((p: Record<string, unknown>) => p.photo_url as string));
 
   await db`DELETE FROM calendars WHERE id = ${id}`;
   return json({ message: "Calendar deleted" });
