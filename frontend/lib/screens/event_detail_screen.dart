@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
 import '../models/reaction.dart';
 import '../providers/auth_provider.dart';
@@ -11,6 +13,8 @@ import '../providers/events_provider.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
+
+bool _isEventIconUrl(String s) => s.startsWith('http://') || s.startsWith('https://');
 
 // Common emoji options for quick reactions
 const _quickEmojis = ['❤️', '🎉', '👍', '😂', '🔥', '😮', '👏', '🙌'];
@@ -539,14 +543,25 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: context.appColors.line, width: 1.5),
                     ),
-                    child: Center(
-                      child: Text(
-                        _selectedIcon ?? '＋',
-                        style: TextStyle(
-                          fontSize: _selectedIcon != null ? 22 : 18,
-                          color: _selectedIcon != null ? null : context.appColors.inkMuted,
-                        ),
-                      ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: _selectedIcon != null && _isEventIconUrl(_selectedIcon!)
+                          ? Image.network(
+                              _selectedIcon!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 22),
+                            )
+                          : Center(
+                              child: Text(
+                                _selectedIcon ?? '＋',
+                                style: TextStyle(
+                                  fontSize: _selectedIcon != null ? 22 : 18,
+                                  color: _selectedIcon != null ? null : context.appColors.inkMuted,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -795,7 +810,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (event.icon != null) ...[
-                Text(event.icon!, style: const TextStyle(fontSize: 28)),
+                _EventIconDisplay(icon: event.icon!, size: 36),
                 const SizedBox(width: 10),
               ],
               Expanded(
@@ -1336,10 +1351,39 @@ class _IconPickerSheet extends StatefulWidget {
 }
 
 class _IconPickerSheetState extends State<_IconPickerSheet> {
-  bool _showFull = false;
+  // 'presets' | 'emoji' | 'photo'
+  String _mode = 'presets';
+  bool _uploading = false;
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 256,
+      maxHeight: 256,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final url = await ApiService().uploadEventIconToCloudinary(File(picked.path));
+      if (mounted) {
+        setState(() => _uploading = false);
+        widget.onSelected(url);
+      }
+    } on CloudinaryUploadException catch (e) {
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: ${e.message}')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final expanded = _mode == 'emoji';
     return Container(
       decoration: BoxDecoration(
         color: widget.surfaceColor,
@@ -1347,16 +1391,16 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
-        mainAxisSize: _showFull ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
         children: [
+          // Grabber
           Container(
             width: 36, height: 4,
-            decoration: BoxDecoration(
-              color: widget.lineColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            decoration: BoxDecoration(color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 16),
+
+          // Header + mode tabs
           Row(
             children: [
               Text(
@@ -1365,20 +1409,20 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                   fontSize: 17, fontWeight: FontWeight.w700, color: widget.inkColor),
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: () => setState(() => _showFull = !_showFull),
-                child: Text(
-                  _showFull ? 'Presets' : 'Any emoji',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13, fontWeight: FontWeight.w600,
-                    color: widget.inkColor.withOpacity(0.5),
-                  ),
-                ),
-              ),
+              _ModeTab(label: 'Presets', active: _mode == 'presets', inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'presets')),
+              const SizedBox(width: 10),
+              _ModeTab(label: 'Emoji', active: _mode == 'emoji', inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'emoji')),
+              const SizedBox(width: 10),
+              _ModeTab(label: 'Photo', active: _mode == 'photo', inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'photo')),
             ],
           ),
           const SizedBox(height: 16),
-          if (!_showFull)
+
+          // Content
+          if (_mode == 'presets')
             Wrap(
               spacing: 8, runSpacing: 8,
               children: _premadeIcons.map((e) {
@@ -1389,9 +1433,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                     duration: const Duration(milliseconds: 100),
                     width: 52, height: 52,
                     decoration: BoxDecoration(
-                      color: selected
-                          ? widget.inkColor.withOpacity(0.1)
-                          : widget.surfaceSoftColor,
+                      color: selected ? widget.inkColor.withOpacity(0.1) : widget.surfaceSoftColor,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: selected ? widget.inkColor.withOpacity(0.5) : widget.lineColor,
@@ -1403,7 +1445,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                 );
               }).toList(),
             )
-          else
+          else if (_mode == 'emoji')
             Expanded(
               child: epf.EmojiPicker(
                 onEmojiSelected: (_, emoji) => widget.onSelected(emoji.emoji),
@@ -1425,9 +1467,94 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                   bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
                 ),
               ),
+            )
+          else
+            GestureDetector(
+              onTap: _uploading ? null : _pickPhoto,
+              child: Container(
+                width: double.infinity,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: widget.surfaceSoftColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: widget.lineColor,
+                    width: 1.5,
+                    style: BorderStyle.solid,
+                  ),
+                ),
+                child: _uploading
+                    ? Center(child: CircularProgressIndicator(color: widget.inkColor, strokeWidth: 2))
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_photo_alternate_outlined,
+                              size: 32, color: widget.inkMutedColor),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Pick from gallery',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: widget.inkMutedColor,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
         ],
       ),
     );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.label,
+    required this.active,
+    required this.inkColor,
+    required this.onTap,
+  });
+  final String label;
+  final bool active;
+  final Color inkColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+            color: active ? inkColor : inkColor.withOpacity(0.4),
+          ),
+        ),
+      );
+}
+
+// Renders an event icon — either a network image (URL) or emoji text.
+class _EventIconDisplay extends StatelessWidget {
+  const _EventIconDisplay({required this.icon, this.size = 28});
+  final String icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isEventIconUrl(icon)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          icon,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      );
+    }
+    return Text(icon, style: TextStyle(fontSize: size));
   }
 }

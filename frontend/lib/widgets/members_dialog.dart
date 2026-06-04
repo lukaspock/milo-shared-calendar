@@ -167,30 +167,20 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                       ),
                       child: Row(
                         children: [
-                          // Avatar
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: hue.bg,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: hue.deep.withOpacity(0.13),
-                                  offset: const Offset(0, 3),
-                                  blurRadius: 0,
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              m.name.isNotEmpty ? m.name[0].toUpperCase() : '?',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: hue.ink,
-                              ),
-                            ),
+                          // Avatar — photo if set, otherwise colour initial
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: m.avatarUrl != null
+                                ? Image.network(
+                                    m.avatarUrl!,
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _MemberInitialsAvatar(
+                                      name: m.name, hue: hue,
+                                    ),
+                                  )
+                                : _MemberInitialsAvatar(name: m.name, hue: hue),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -281,6 +271,37 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
       ),
     );
   }
+}
+
+class _MemberInitialsAvatar extends StatelessWidget {
+  final String name;
+  final CalHue hue;
+  const _MemberInitialsAvatar({required this.name, required this.hue});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: hue.bg,
+          boxShadow: [
+            BoxShadow(
+              color: hue.deep.withOpacity(0.13),
+              offset: const Offset(0, 3),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: hue.ink,
+          ),
+        ),
+      );
 }
 
 // Alias kept so any old references compile

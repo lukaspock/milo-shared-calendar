@@ -2054,20 +2054,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     if (picked == null || !mounted) return;
 
     setState(() => _uploading = true);
-    final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
-    if (mounted) {
-      setState(() {
-        _uploading = false;
-        if (url != null) {
-          _avatarUrl = url;
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Photo upload failed. Set up Cloudinary first.'),
-            ),
-          );
-        }
-      });
+    try {
+      final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
+      if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
+    } on CloudinaryUploadException catch (e) {
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Photo upload failed: ${e.message}')),
+        );
+      }
     }
   }
 
