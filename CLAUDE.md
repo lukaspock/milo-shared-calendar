@@ -85,21 +85,22 @@ docker compose up --build
 Required after adding the poll tables (`event_polls`, `poll_options`, `poll_votes`).
 The production Render DB was migrated manually via psql — those tables already exist there.
 
-`backend/src/db/migrate.ts` runs automatically on every backend start via `runMigrations()` in `index.ts`. It uses `ADD COLUMN IF NOT EXISTS` so it's safe to run repeatedly. Currently adds `email_verified`, `verification_token`, `verification_expires_at` to `users`.
+`backend/src/db/migrate.ts` runs automatically on every backend start via `runMigrations()` in `index.ts`. It uses `ADD COLUMN IF NOT EXISTS` so it's safe to run repeatedly. Adds all schema changes since the initial `schema.sql` — see the file for the full list.
 
 ## Database schema (summary)
 
-| Table                    | Purpose                                                                          |
-|--------------------------|----------------------------------------------------------------------------------|
-| `users`                  | Accounts — email, password_hash (nullable), name, color, google_id               |
-| `calendars`              | Calendars — name, owner_id, invite_code                                          |
-| `calendar_members`       | Junction — user_id, calendar_id, role (owner/member)                             |
-| `events`                 | Calendar events — title, start_time, end_time, color                             |
-| `event_polls`            | Polls — title, options, open/closed state                                        |
-| `poll_options`           | Time-slot options for a poll                                                     |
-| `poll_votes`             | Per-user votes (yes/no/maybe) per option                                         |
-| `google_calendar_tokens` | Per-user Google OAuth tokens for Calendar sync                                   |
-| `google_event_ids`       | Mapping SharedCal event IDs → Google Calendar event IDs per user                 |
+| Table                    | Purpose                                                                                    |
+|--------------------------|--------------------------------------------------------------------------------------------|
+| `users`                  | Accounts — email, password_hash (nullable), name, color, avatar_url, google_id            |
+| `calendars`              | Calendars — name, owner_id, invite_code                                                    |
+| `calendar_members`       | Junction — user_id, calendar_id, role (owner/member)                                       |
+| `events`                 | Calendar events — title, start_time, end_time, color, icon                                 |
+| `event_reactions`        | Emoji reactions — event_id, user_id, emoji (PK on all three)                               |
+| `event_polls`            | Polls — title, options, open/closed state                                                   |
+| `poll_options`           | Time-slot options for a poll                                                                |
+| `poll_votes`             | Per-user votes (yes/no/maybe) per option                                                    |
+| `google_calendar_tokens` | Per-user Google OAuth tokens for Calendar sync                                              |
+| `google_event_ids`       | Mapping SharedCal event IDs → Google Calendar event IDs per user                           |
 
 ## Features
 
@@ -107,9 +108,11 @@ The production Render DB was migrated manually via psql — those tables already
 - **Email verification:** Verification email sent on register via Gmail API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
 - **Calendars:** Create, join via invite code, view members, kick members (owner only). Owner can delete calendar (cascades all data), members can leave.
 - **Account deletion:** Users can delete their own account from the home screen.
-- **Events:** Create / edit / delete events. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
+- **Events:** Create / edit / delete events. Optional emoji icon per event (20 presets or any emoji via full keyboard). Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
+- **Emoji reactions:** React to any event with any emoji. Quick-pick 8 common emojis or open the full emoji keyboard. One row per user+emoji+event. Broadcast in real-time via WebSocket `reaction_update`.
+- **Profile editing:** `PATCH /auth/me` — update name, colour, and avatar URL. Profile photos upload directly from device to Cloudinary (unsigned preset, cloud `dvlvgosxk`) and are stored as a CDN URL on the user record.
 - **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
-- **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`.
+- **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`, `reaction_update`.
 - **Google Calendar sync**: Events are mirrored to the user's personal Google Calendar automatically. Available to all users via a web OAuth connect flow.
 
 ## Google Sign-In & Calendar integration
@@ -157,3 +160,4 @@ Callback URL must be registered: `https://api.milocalendar.tech/auth/google-cale
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
 - Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).
+- Cloudinary avatar upload uses an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app.

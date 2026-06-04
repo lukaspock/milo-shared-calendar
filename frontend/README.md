@@ -33,11 +33,29 @@ lib/
 ├── main.dart              Entry point
 ├── app.dart               Router + MaterialApp
 ├── theme/app_theme.dart   Design tokens, CalHue palette, StickerTile
-├── models/                CalendarModel, CalendarEvent, AppUser, ...
-├── services/              ApiService (Dio), AuthService, WebSocketService
+├── models/                CalendarModel, CalendarEvent, AppUser, EventReaction, ...
+├── services/              ApiService (Dio + Cloudinary upload), AuthService, WebSocketService
 ├── providers/             Riverpod state — auth, calendars, events, polls
 └── screens/               All UI screens
 ```
+
+## Key packages
+
+| Package | Purpose |
+|---------|---------|
+| `dio` | HTTP client + interceptors |
+| `flutter_riverpod` | State management |
+| `go_router` | Navigation |
+| `google_fonts` | Plus Jakarta Sans typeface |
+| `emoji_picker_flutter` | Full emoji keyboard for reactions and event icons |
+| `image_picker` | Gallery/camera access for profile photo upload |
+| `shared_preferences` | Persist JWT + cached user |
+| `web_socket_channel` | Real-time WebSocket connection |
+| `url_launcher` | Open Google OAuth in browser |
+
+## Cloudinary avatar upload
+
+Profile photos are uploaded directly from the device to Cloudinary (unsigned preset `avatars`, cloud `dvlvgosxk`). The resulting CDN URL is saved on the user record via `PATCH /auth/me`. No API secret is required or stored in the app.
 
 ## Known issues
 

@@ -44,9 +44,10 @@ See the root [CLAUDE.md](../CLAUDE.md) for full environment variable reference a
 
 | Group | Base path | Description |
 |-------|-----------|-------------|
-| Auth | `/auth` | Register, login, Google OAuth, email verification |
+| Auth | `/auth` | Register, login, Google OAuth, email verification, profile update |
 | Calendars | `/calendars` | Create, join, manage members |
-| Events | `/events` | CRUD + real-time WS notifications |
+| Events | `/events` | CRUD + icon field + real-time WS notifications |
+| Reactions | `/events/:id/reactions` | Emoji reactions per event per user |
 | Polls | `/calendars/:id/polls` | Create, vote, confirm |
 
 See [CLAUDE.md](CLAUDE.md) for the full route table and WebSocket protocol.
