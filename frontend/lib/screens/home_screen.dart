@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -531,7 +532,11 @@ class _CalendarCardState extends State<_CalendarCard> {
               hue: hue,
               size: 48,
               radius: 14,
-              child: Icon(Icons.calendar_today_rounded, size: 20, color: context.appColors.inkMuted),
+              child: _calendarIconChild(
+                calendarIcon(widget.calendar),
+                tileSize: 48,
+                fallbackColor: context.appColors.inkMuted,
+              ),
             ),
             const SizedBox(width: 14),
 
@@ -814,6 +819,39 @@ class _EmptyState extends StatelessWidget {
 
 // ── Create calendar bottom sheet ──────────────────────────────────────────────
 
+const _calendarQuickIcons = ['📅', '🏠', '💼', '🎓', '🎵', '🎉', '✈️', '🌿'];
+
+const _calendarPresetIcons = [
+  '📅', '🗓️', '🏠', '💼', '🎓', '🏋️', '✈️', '🎵',
+  '👨‍👩‍👧', '🎉', '⚽', '🍕', '🌿', '📚', '🤝', '🏖️',
+  '🎨', '💡', '🎤', '🌟', '🎮', '🐾', '🍳', '❤️',
+];
+
+Widget _calendarIconChild(
+  String? icon, {
+  required double tileSize,
+  required Color fallbackColor,
+}) {
+  if (icon == null) {
+    return Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor);
+  }
+  if (icon.startsWith('http://') || icon.startsWith('https://')) {
+    final photoSize = tileSize * 0.75;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Image.network(
+        icon,
+        width: photoSize,
+        height: photoSize,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor),
+      ),
+    );
+  }
+  return Text(icon, style: TextStyle(fontSize: tileSize * 0.45, height: 1.0));
+}
+
 class _CreateCalendarSheet extends StatefulWidget {
   const _CreateCalendarSheet({required this.ctrl, required this.ref});
   final TextEditingController ctrl;
@@ -825,6 +863,7 @@ class _CreateCalendarSheet extends StatefulWidget {
 
 class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
   int _selectedHue = 0;
+  String? _selectedIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -879,7 +918,11 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
               hue: stickerHues[_selectedHue],
               size: 96,
               radius: 28,
-              child: AppImages.calendar(size: 38),
+              child: _calendarIconChild(
+                _selectedIcon,
+                tileSize: 96,
+                fallbackColor: context.appColors.inkMuted,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -919,6 +962,109 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // Icon picker
+          Text(
+            'ICON',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10, fontWeight: FontWeight.w700,
+              color: context.appColors.inkMuted, letterSpacing: 0.9,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                // "No icon" default option
+                GestureDetector(
+                  onTap: () => setState(() => _selectedIcon = null),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    width: 44,
+                    height: 44,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: _selectedIcon == null
+                          ? context.appColors.ink.withOpacity(0.08)
+                          : context.appColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedIcon == null
+                            ? context.appColors.ink.withOpacity(0.4)
+                            : context.appColors.line,
+                        width: _selectedIcon == null ? 2 : 1.5,
+                      ),
+                    ),
+                    child: Icon(Icons.calendar_today_rounded,
+                        size: 18, color: context.appColors.inkMuted),
+                  ),
+                ),
+                // Quick preset emojis
+                ..._calendarQuickIcons.map((e) {
+                  final selected = e == _selectedIcon;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedIcon = e),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 100),
+                      width: 44,
+                      height: 44,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? context.appColors.ink.withOpacity(0.08)
+                            : context.appColors.surfaceSoft,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected
+                              ? context.appColors.ink.withOpacity(0.4)
+                              : context.appColors.line,
+                          width: selected ? 2 : 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(e, style: const TextStyle(fontSize: 22)),
+                      ),
+                    ),
+                  );
+                }),
+                // "More" button
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showModalBottomSheet<String>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => _CalendarIconPickerSheet(
+                        current: _selectedIcon,
+                        surfaceColor: context.appColors.surface,
+                        lineColor: context.appColors.line,
+                        inkColor: context.appColors.ink,
+                        inkMutedColor: context.appColors.inkMuted,
+                        surfaceSoftColor: context.appColors.surfaceSoft,
+                      ),
+                    );
+                    if (picked != null && mounted) {
+                      setState(() => _selectedIcon = picked);
+                    }
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appColors.line, width: 1.5),
+                    ),
+                    child: Icon(Icons.more_horiz_rounded,
+                        size: 20, color: context.appColors.inkMuted),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -987,12 +1133,16 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     if (widget.ctrl.text.trim().isEmpty) return;
                     final name = widget.ctrl.text.trim();
                     final chosenHue = _selectedHue;
+                    final chosenIcon = _selectedIcon;
                     Navigator.pop(context);
                     final cal = await widget.ref
                         .read(calendarProvider.notifier)
                         .createCalendar(name);
                     if (cal != null) {
                       await persistCalendarHue(cal.id, chosenHue);
+                      if (chosenIcon != null) {
+                        await persistCalendarIcon(cal.id, chosenIcon);
+                      }
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Created! Code: ${cal.inviteCode}')),
@@ -1008,6 +1158,231 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Shared mode tab widget ────────────────────────────────────────────────────
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.label,
+    required this.active,
+    required this.inkColor,
+    required this.onTap,
+  });
+  final String label;
+  final bool active;
+  final Color inkColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+            color: active ? inkColor : inkColor.withOpacity(0.4),
+          ),
+        ),
+      );
+}
+
+// ── Calendar icon picker sheet ────────────────────────────────────────────────
+
+class _CalendarIconPickerSheet extends StatefulWidget {
+  const _CalendarIconPickerSheet({
+    required this.current,
+    required this.surfaceColor,
+    required this.lineColor,
+    required this.inkColor,
+    required this.inkMutedColor,
+    required this.surfaceSoftColor,
+  });
+
+  final String? current;
+  final Color surfaceColor;
+  final Color lineColor;
+  final Color inkColor;
+  final Color inkMutedColor;
+  final Color surfaceSoftColor;
+
+  @override
+  State<_CalendarIconPickerSheet> createState() => _CalendarIconPickerSheetState();
+}
+
+class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
+  String _mode = 'presets';
+  bool _uploading = false;
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 256,
+      maxHeight: 256,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final url = await ApiService().uploadEventIconToCloudinary(File(picked.path));
+      if (mounted) {
+        setState(() => _uploading = false);
+        Navigator.pop(context, url);
+      }
+    } on CloudinaryUploadException catch (e) {
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: ${e.message}')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final expanded = _mode == 'emoji';
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+                color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Calendar icon',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: widget.inkColor),
+              ),
+              const Spacer(),
+              _ModeTab(
+                  label: 'Presets',
+                  active: _mode == 'presets',
+                  inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'presets')),
+              const SizedBox(width: 10),
+              _ModeTab(
+                  label: 'Emoji',
+                  active: _mode == 'emoji',
+                  inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'emoji')),
+              const SizedBox(width: 10),
+              _ModeTab(
+                  label: 'Photo',
+                  active: _mode == 'photo',
+                  inkColor: widget.inkColor,
+                  onTap: () => setState(() => _mode = 'photo')),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_mode == 'presets')
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _calendarPresetIcons.map((e) {
+                final selected = e == widget.current;
+                return GestureDetector(
+                  onTap: () => Navigator.pop(context, e),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? widget.inkColor.withOpacity(0.1)
+                          : widget.surfaceSoftColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected
+                            ? widget.inkColor.withOpacity(0.5)
+                            : widget.lineColor,
+                        width: selected ? 2 : 1.5,
+                      ),
+                    ),
+                    child: Center(
+                        child: Text(e,
+                            style: const TextStyle(fontSize: 26))),
+                  ),
+                );
+              }).toList(),
+            )
+          else if (_mode == 'emoji')
+            Expanded(
+              child: epf.EmojiPicker(
+                onEmojiSelected: (_, emoji) =>
+                    Navigator.pop(context, emoji.emoji),
+                config: epf.Config(
+                  emojiViewConfig: epf.EmojiViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    emojiSizeMax: 28,
+                  ),
+                  searchViewConfig: epf.SearchViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    buttonIconColor: widget.inkColor,
+                  ),
+                  categoryViewConfig: epf.CategoryViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    iconColor: widget.inkColor.withOpacity(0.4),
+                    iconColorSelected: widget.inkColor,
+                    indicatorColor: widget.inkColor,
+                  ),
+                  bottomActionBarConfig:
+                      const epf.BottomActionBarConfig(enabled: false),
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _uploading ? null : _pickPhoto,
+              child: Container(
+                width: double.infinity,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: widget.surfaceSoftColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: widget.lineColor, width: 1.5),
+                ),
+                child: _uploading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            color: widget.inkColor, strokeWidth: 2))
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_photo_alternate_outlined,
+                              size: 32, color: widget.inkMutedColor),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Pick from gallery',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: widget.inkMutedColor,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
         ],
       ),
     );

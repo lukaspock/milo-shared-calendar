@@ -16,6 +16,7 @@ import 'screens/onboarding/onboarding_notifications_screen.dart';
 import 'screens/onboarding/onboarding_password_screen.dart';
 import 'screens/onboarding/onboarding_verify_screen.dart';
 import 'screens/onboarding/onboarding_calendar_screen.dart';
+import 'screens/onboarding/onboarding_avatar_screen.dart';
 import 'screens/onboarding/onboarding_theme_screen.dart';
 import 'screens/onboarding/onboarding_ready_screen.dart';
 import 'theme/app_theme.dart';
@@ -60,7 +61,11 @@ final _router = GoRouter(
     GoRoute(
         path: '/onboarding/calendar',
         builder: (_, _s) => const OnboardingCalendarScreen()),
-    // Step 5 — appearance / theme picker
+    // Step 6 — profile photo
+    GoRoute(
+        path: '/onboarding/avatar',
+        builder: (_, _s) => const OnboardingAvatarScreen()),
+    // Step 7 — appearance / theme picker
     GoRoute(
         path: '/onboarding/theme',
         builder: (_, _s) => const OnboardingThemeScreen()),

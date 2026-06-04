@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await loadCalendarHues();
+  await loadCalendarIcons();
   // Initialize on-device notifications + the global WebSocket listener that
   // surfaces them. Safe no-op for users on email notifications.
   await LocalNotificationService().init();

@@ -4,6 +4,7 @@ import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
 import { sendEventNotification } from "../services/email";
 import { syncEventCreated, syncEventUpdated, syncEventDeleted } from "../services/google_calendar";
+import { cleanupAssets } from "../services/cloudinary";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -281,12 +282,15 @@ export async function deleteEvent(ctx: RequestContext): Promise<Response> {
   if (deleteAll) {
     // Delete root event — ON DELETE CASCADE removes all child instances automatically
     const rootId = (event.parent_event_id ?? event.id) as string;
+    const series = await db`SELECT icon FROM events WHERE id = ${rootId} OR parent_event_id = ${rootId}`;
+    cleanupAssets(series.map((e: Record<string, unknown>) => e.icon as string | null));
     syncEventDeleted(rootId).catch(console.error);
     await db`DELETE FROM events WHERE id = ${rootId}`;
     return json({ message: "All events in series deleted" });
   }
 
   // Single-instance delete
+  cleanupAssets([event.icon as string | null]);
   syncEventDeleted(id).catch(console.error);
   await db`DELETE FROM events WHERE id = ${id}`;
 

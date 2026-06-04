@@ -12,6 +12,19 @@ import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 import '../widgets/members_dialog.dart';
 
+Widget _calIconChild(String icon, double tileSize, Color fallbackColor) {
+  if (icon.startsWith('http://') || icon.startsWith('https://')) {
+    final s = tileSize * 0.75;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Image.network(icon, width: s, height: s, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor)),
+    );
+  }
+  return Text(icon, style: TextStyle(fontSize: tileSize * 0.45, height: 1.0));
+}
+
 class CalendarScreen extends ConsumerStatefulWidget {
   final String calendarId;
   const CalendarScreen({super.key, required this.calendarId});
@@ -84,11 +97,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: Icon(
-                      Icons.calendar_today_rounded,
-                      size: 18,
-                      color: context.appColors.inkMuted,
-                    ),
+                    child: calendar != null && calendarIcon(calendar) != null
+                        ? _calIconChild(calendarIcon(calendar)!, 40, context.appColors.inkMuted)
+                        : Icon(
+                            Icons.calendar_today_rounded,
+                            size: 18,
+                            color: context.appColors.inkMuted,
+                          ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(

@@ -2,6 +2,7 @@ import db from "../db/client";
 import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
+import { cleanupAssets } from "../services/cloudinary";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -176,6 +177,10 @@ export async function deleteCalendar(ctx: RequestContext): Promise<Response> {
   if (membership.length === 0 || membership[0].role !== 'owner') {
     return error("Only the calendar owner can delete this calendar", 403);
   }
+
+  // Clean up any Cloudinary photo icons on events in this calendar (fire-and-forget)
+  const eventIcons = await db`SELECT icon FROM events WHERE calendar_id = ${id}`;
+  cleanupAssets(eventIcons.map((e: Record<string, unknown>) => e.icon as string | null));
 
   await db`DELETE FROM calendars WHERE id = ${id}`;
   return json({ message: "Calendar deleted" });
