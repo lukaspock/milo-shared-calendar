@@ -27,6 +27,9 @@ The goal is a calendar that feels as lightweight as a shared notes app but as po
 - **Recurring events** — daily, weekly, or monthly repeats with per-instance or series-wide editing
 - **Reminders** — email and on-device notifications 30 minutes before an event starts
 - **Google Calendar sync** — mirror events to your personal Google Calendar automatically
+- **Emoji reactions** — react to events with any emoji; quick-pick the most common or open the full keyboard
+- **Event icons** — attach an emoji icon to an event (20 presets or pick any emoji)
+- **Profile editing** — change your display name, colour, and profile photo (Cloudinary-hosted avatar)
 - **Sign in with Google** — or use email + password, your choice _(currently unavailable — see Known Limitations)_
 
 ## Stack

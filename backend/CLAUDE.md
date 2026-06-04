@@ -45,7 +45,9 @@ backend/
 | POST   | `/auth/google`                | —    | Sign in / register via Google ID token           |
 | GET    | `/auth/verify/:token`         | —    | Verify email via link — returns HTML page        |
 | POST   | `/auth/resend-verification`        | JWT  | Regenerate + resend verification email           |
-| GET    | `/auth/me`                         | JWT  | Return current user (fresh from DB)              |
+| GET    | `/auth/me`                         | JWT  | Return current user (incl. `avatar_url`)         |
+| PATCH  | `/auth/me`                         | JWT  | Update `name`, `color`, and/or `avatar_url`      |
+| PUT    | `/auth/notification-type`          | JWT  | Switch between `email` and `push` notifications  |
 | DELETE | `/users/me`                        | JWT  | Delete own account                               |
 | POST   | `/auth/google-calendar/connect`    | JWT  | Generate Google OAuth URL for Calendar access    |
 | GET    | `/auth/google-calendar/callback`   | —    | OAuth callback — stores tokens, returns HTML page|
@@ -63,12 +65,15 @@ backend/
 | DELETE | `/calendars/:id/members/:userId`    | Kick member (owner only)         |
 
 ### Events (all require JWT)
-| Method | Path                 | Description                        |
-|--------|----------------------|------------------------------------|
-| POST   | `/events`            | Create event                       |
-| PUT    | `/events/:id`        | Update event (any member)          |
-| DELETE | `/events/:id`        | Delete event (creator or owner)    |
-| POST   | `/events/:id/notify` | Push WS notification to members   |
+| Method | Path                          | Description                                         |
+|--------|-------------------------------|-----------------------------------------------------|
+| POST   | `/events`                     | Create event (supports optional `icon` field)       |
+| PUT    | `/events/:id`                 | Update event (supports optional `icon` field)       |
+| DELETE | `/events/:id`                 | Delete event (creator or owner)                     |
+| POST   | `/events/:id/notify`          | Push WS notification to members                     |
+| GET    | `/events/:id/reactions`       | List all emoji reactions for an event               |
+| POST   | `/events/:id/reactions`       | Add a reaction `{ emoji }` (upsert per user+emoji)  |
+| DELETE | `/events/:id/reactions/:emoji`| Remove caller's reaction for that emoji             |
 
 ### Polls (all require JWT)
 | Method | Path                            | Description                                          |
