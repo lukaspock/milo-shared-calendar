@@ -5,17 +5,11 @@ import '../models/poll.dart';
 import '../models/reaction.dart';
 
 // ── Cloudinary config ──────────────────────────────────────────────────────
-// Fill these in once you've created your Cloudinary account:
-//   1. Cloud name: your Cloudinary dashboard → top-left
-//   2. Upload preset: Settings → Upload → Upload presets → Add preset (Unsigned)
-const _cloudinaryCloudName = String.fromEnvironment(
-  'CLOUDINARY_CLOUD_NAME',
-  defaultValue: '', // Set via flutter run --dart-define=CLOUDINARY_CLOUD_NAME=xxx
-);
-const _cloudinaryUploadPreset = String.fromEnvironment(
-  'CLOUDINARY_UPLOAD_PRESET',
-  defaultValue: '', // Set via flutter run --dart-define=CLOUDINARY_UPLOAD_PRESET=xxx
-);
+// Values are injected at build time via dart_defines.json (gitignored).
+// Run with: flutter run --dart-define-from-file=dart_defines.json
+// Both values are non-secret (unsigned preset — safe to pass via CI env vars).
+const _cloudinaryCloudName = String.fromEnvironment('CLOUDINARY_CLOUD_NAME');
+const _cloudinaryUploadPreset = String.fromEnvironment('CLOUDINARY_UPLOAD_PRESET');
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
