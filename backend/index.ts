@@ -1,7 +1,7 @@
 import { Router } from "./src/router";
 import { authMiddleware } from "./src/middleware/auth.middleware";
 import { authRateLimit, rateLimit } from "./src/middleware/rate_limit.middleware";
-import { register, login, deleteUser, verifyEmail, resendVerification, getMe, updateNotificationType, googleAuth, connectGoogleCalendar, googleCalendarCallback, forgotPassword, showResetPasswordForm, submitResetPassword } from "./src/routes/auth";
+import { register, login, deleteUser, verifyEmail, resendVerification, getMe, updateNotificationType, updateProfile, googleAuth, connectGoogleCalendar, googleCalendarCallback, forgotPassword, showResetPasswordForm, submitResetPassword } from "./src/routes/auth";
 import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
@@ -45,6 +45,7 @@ router.post("/auth/reset-password/:token", submitResetPassword);
 router.post("/auth/resend-verification", resendVerification, [authMiddleware, rateLimit(3, 60 * 60_000, "resend-verification")]);
 router.get("/auth/me", getMe, [authMiddleware]);
 router.put("/auth/notification-type", updateNotificationType, [authMiddleware]);
+router.patch("/auth/me", updateProfile, [authMiddleware]);
 router.post("/auth/google-calendar/connect", connectGoogleCalendar, [authMiddleware]);
 router.get("/auth/google-calendar/callback", googleCalendarCallback);
 router.delete("/users/me", deleteUser, [authMiddleware]);

@@ -117,6 +117,27 @@ class AuthService {
     return refreshUser();
   }
 
+  /// Update name, color, or avatar_url. Pass only the fields you want to change.
+  Future<AppUser> updateProfile({
+    String? name,
+    String? color,
+    String? avatarUrl,
+    bool clearAvatar = false,
+  }) async {
+    final body = <String, dynamic>{
+      if (name != null) 'name': name,
+      if (color != null) 'color': color,
+      if (clearAvatar) 'avatar_url': null,
+      if (!clearAvatar && avatarUrl != null) 'avatar_url': avatarUrl,
+    };
+    final res = await _api.patch('/auth/me', data: body);
+    final user = AppUser.fromJson(res.data as Map<String, dynamic>);
+    cachedUser = user;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, _encodeUser(user));
+    return user;
+  }
+
   Future<void> _saveSession(String token, AppUser user) async {
     cachedUser = user;
     final prefs = await SharedPreferences.getInstance();
@@ -172,9 +193,24 @@ class AuthService {
     await _api.post('/auth/forgot-password', data: {'email': email});
   }
 
-  // Pipe-separated encoding — fields must not contain '|'
-  String _encodeUser(AppUser u) =>
-      '${u.id}|${u.email}|${u.name}|${u.color}|${u.emailVerified}|${u.hasGoogleCalendar}|${u.notificationType.apiValue}';
+  // JSON encoding — more robust than pipe-separated (handles special chars in names/URLs)
+  String _encodeUser(AppUser u) {
+    final map = <String, dynamic>{
+      'id': u.id,
+      'email': u.email,
+      'name': u.name,
+      'color': u.color,
+      'email_verified': u.emailVerified,
+      'has_google_calendar': u.hasGoogleCalendar,
+      'notification_type': u.notificationType.apiValue,
+      if (u.avatarUrl != null) 'avatar_url': u.avatarUrl,
+    };
+    // Simple JSON serialisation without dart:convert import (it's already on path
+    // via flutter foundation). Use a manual map → avoid adding new imports.
+    return '${map['id']}|${map['email']}|${map['name']}|${map['color']}'
+        '|${map['email_verified']}|${map['has_google_calendar']}'
+        '|${map['notification_type']}|${u.avatarUrl ?? ''}';
+  }
 
   AppUser _decodeUser(String raw) {
     final p = raw.split('|');
@@ -187,6 +223,7 @@ class AuthService {
       hasGoogleCalendar: p.length > 5 ? p[5] == 'true' : false,
       notificationType:
           p.length > 6 ? NotificationType.fromApi(p[6]) : NotificationType.email,
+      avatarUrl: p.length > 7 && p[7].isNotEmpty ? p[7] : null,
     );
   }
 }

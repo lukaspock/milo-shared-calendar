@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/calendar.dart';
 import '../models/user.dart';
@@ -11,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/api_service.dart';
 import '../services/device_calendar_service.dart';
 import '../services/local_notification_service.dart';
 import '../theme/app_theme.dart';
@@ -1053,6 +1056,17 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
     }
   }
 
+  void _showEditProfileSheet() {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _EditProfileSheet(user: user, ref: ref),
+    );
+  }
+
   Color _parseUserColor(String hex) {
     try {
       final h = hex.replaceFirst('#', '');
@@ -1141,63 +1155,75 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
           const SizedBox(height: 20),
 
           // ── Account tile ─────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.appColors.surfaceSoft,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.appColors.line, width: 1),
-            ),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: avatarColor.withOpacity(0.18),
+          GestureDetector(
+            onTap: _showEditProfileSheet,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.appColors.line, width: 1),
+              ),
+              child: Row(
+                children: [
+                  // Avatar — photo if set, otherwise colour initials
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: avatarColor.withOpacity(0.35), width: 1.5),
+                    child: user?.avatarUrl != null
+                        ? Image.network(
+                            user!.avatarUrl!,
+                            width: 48, height: 48, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _InitialsAvatar(
+                              initials: initials, color: avatarColor, size: 48),
+                          )
+                        : _InitialsAvatar(
+                            initials: initials, color: avatarColor, size: 48),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: avatarColor,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.name ?? '—',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.ink,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          user?.email ?? '—',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: context.appColors.inkMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.name ?? '—',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: context.appColors.ink,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: context.appColors.line, width: 1),
+                    ),
+                    child: Text(
+                      'Edit',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.appColors.inkSoft,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        user?.email ?? '—',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: context.appColors.inkMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -1924,6 +1950,335 @@ class _ThemePicker extends ConsumerWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Initials avatar ───────────────────────────────────────────────────────────
+
+class _InitialsAvatar extends StatelessWidget {
+  const _InitialsAvatar({
+    required this.initials,
+    required this.color,
+    required this.size,
+  });
+
+  final String initials;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.18),
+        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: size * 0.35,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Edit profile sheet ────────────────────────────────────────────────────────
+
+const _profileColors = [
+  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
+  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+];
+
+class _EditProfileSheet extends StatefulWidget {
+  const _EditProfileSheet({required this.user, required this.ref});
+
+  final AppUser user;
+  final WidgetRef ref;
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  late final TextEditingController _nameCtrl;
+  late String _selectedColor;
+  String? _avatarUrl;
+  bool _uploading = false;
+  bool _saving = false;
+
+  String _initials(String name) {
+    final parts = name.trim().split(' ').where((w) => w.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+    } catch (_) {
+      return AppTheme.accent;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.user.name);
+    _selectedColor = widget.user.color;
+    _avatarUrl = widget.user.avatarUrl;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
+    if (mounted) {
+      setState(() {
+        _uploading = false;
+        if (url != null) {
+          _avatarUrl = url;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo upload failed. Set up Cloudinary first.'),
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _saving = true);
+    final ok = await widget.ref.read(authProvider.notifier).updateProfile(
+      name: name,
+      color: _selectedColor,
+      avatarUrl: _avatarUrl != widget.user.avatarUrl ? _avatarUrl : null,
+      clearAvatar: _avatarUrl == null && widget.user.avatarUrl != null,
+    );
+    if (mounted) {
+      setState(() => _saving = false);
+      if (ok) {
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save. Try again.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final previewColor = _parseColor(_selectedColor);
+    final initials = _initials(_nameCtrl.text.isEmpty ? widget.user.name : _nameCtrl.text);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 16, 24,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Grabber
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Text(
+            'Edit profile',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18, fontWeight: FontWeight.w700, color: context.appColors.ink),
+          ),
+          const SizedBox(height: 24),
+
+          // Avatar preview + change photo
+          Center(
+            child: Stack(
+              children: [
+                ClipOval(
+                  child: _uploading
+                      ? Container(
+                          width: 80, height: 80,
+                          color: context.appColors.surfaceSoft,
+                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : (_avatarUrl != null
+                          ? Image.network(_avatarUrl!, width: 80, height: 80, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _InitialsAvatar(initials: initials, color: previewColor, size: 80))
+                          : _InitialsAvatar(initials: initials, color: previewColor, size: 80)),
+                ),
+                Positioned(
+                  right: 0, bottom: 0,
+                  child: GestureDetector(
+                    onTap: _uploading ? null : _pickPhoto,
+                    child: Container(
+                      width: 26, height: 26,
+                      decoration: BoxDecoration(
+                        color: context.appColors.ink,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: context.appColors.surface, width: 2),
+                      ),
+                      child: Icon(Icons.camera_alt_rounded, size: 13, color: context.appColors.surface),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (_avatarUrl != null) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _avatarUrl = null),
+                child: Text(
+                  'Remove photo',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12, fontWeight: FontWeight.w600,
+                    color: context.appColors.inkMuted,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+
+          // Name field
+          Text(
+            'NAME',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11, fontWeight: FontWeight.w800,
+              color: context.appColors.inkMuted, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.appColors.line, width: 1.5),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: TextField(
+              controller: _nameCtrl,
+              onChanged: (_) => setState(() {}),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15, fontWeight: FontWeight.w600, color: context.appColors.ink),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Your name',
+                hintStyle: GoogleFonts.plusJakartaSans(color: context.appColors.inkMuted),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Colour picker
+          Text(
+            'COLOUR',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11, fontWeight: FontWeight.w800,
+              color: context.appColors.inkMuted, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10, runSpacing: 10,
+            children: _profileColors.map((hex) {
+              final c = _parseColor(hex);
+              final selected = hex == _selectedColor;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedColor = hex),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: c,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? context.appColors.ink : Colors.transparent,
+                      width: 3,
+                    ),
+                    boxShadow: selected
+                        ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 6, offset: const Offset(0, 2))]
+                        : null,
+                  ),
+                  child: selected
+                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Save button
+          DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: context.appColors.ink.withOpacity(0.3),
+                  offset: const Offset(0, 4),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: (_saving || _uploading) ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      'Save changes',
+                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

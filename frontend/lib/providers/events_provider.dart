@@ -79,6 +79,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     required DateTime startTime,
     required DateTime endTime,
     String? color,
+    String? icon,
     RecurrenceRule recurrenceRule = RecurrenceRule.none,
     DateTime? recurrenceEnd,
   }) async {
@@ -90,6 +91,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         'start_time': startTime.toUtc().toIso8601String(),
         'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
+        if (icon != null) 'icon': icon,
         if (recurrenceRule != RecurrenceRule.none)
           'recurrence_rule': recurrenceRule.apiValue,
         if (recurrenceEnd != null)
@@ -118,6 +120,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     DateTime? startTime,
     DateTime? endTime,
     String? color,
+    String? icon,
     RecurrenceRule? recurrenceRule,
     DateTime? recurrenceEnd,
     bool clearRecurrence = false,
@@ -130,6 +133,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
         if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
         if (color != null) 'color': color,
+        'icon': icon, // always send (null clears it)
         if (recurrenceRule != null) 'recurrence_rule': recurrenceRule.apiValue,
         if (clearRecurrence) 'recurrence_rule': null,
         if (recurrenceEnd != null)

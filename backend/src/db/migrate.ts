@@ -95,5 +95,11 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // Profile pictures: Cloudinary URL stored per user
+  await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
+
+  // Event icons: a single emoji or short string chosen at creation/edit time
+  await db`ALTER TABLE events ADD COLUMN IF NOT EXISTS icon TEXT`;
+
   console.log("[db] migrations applied");
 }

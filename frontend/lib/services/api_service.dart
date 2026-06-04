@@ -1,7 +1,13 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/poll.dart';
 import '../models/reaction.dart';
+
+// ── Cloudinary config ──────────────────────────────────────────────────────
+// Unsigned preset — cloud name and preset name are safe to commit.
+const _cloudinaryCloudName = 'dvlvgosxk';
+const _cloudinaryUploadPreset = 'avatars';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
@@ -58,6 +64,34 @@ class ApiService {
 
   Future<Response<T>> delete<T>(String path, {dynamic data}) =>
       _dio.delete<T>(path, data: data);
+
+  Future<Response<T>> patch<T>(String path, {dynamic data}) =>
+      _dio.patch<T>(path, data: data);
+
+  // ── Cloudinary avatar upload ───────────────────────────────────────────────
+
+  /// Uploads [file] directly to Cloudinary and returns the secure CDN URL.
+  /// Returns null if Cloudinary is not configured or the upload fails.
+  Future<String?> uploadAvatarToCloudinary(File file) async {
+    if (_cloudinaryCloudName.isEmpty || _cloudinaryUploadPreset.isEmpty) {
+      return null; // Not configured yet
+    }
+    try {
+      final uploadDio = Dio();
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path),
+        'upload_preset': _cloudinaryUploadPreset,
+        'folder': 'avatars',
+      });
+      final res = await uploadDio.post(
+        'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload',
+        data: formData,
+      );
+      return (res.data as Map<String, dynamic>)['secure_url'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
 
   // ── Polls ──────────────────────────────────────────────────────────────────
 
