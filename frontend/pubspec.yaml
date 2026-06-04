@@ -49,6 +49,8 @@ dependencies:
   device_calendar: ^4.0.0
   timezone: ^0.9.4
   flutter_local_notifications: ^18.0.1
+  emoji_picker_flutter: ^4.3.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1

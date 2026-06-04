@@ -1,7 +1,21 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/poll.dart';
 import '../models/reaction.dart';
+
+// ── Cloudinary config ──────────────────────────────────────────────────────
+// Fill these in once you've created your Cloudinary account:
+//   1. Cloud name: your Cloudinary dashboard → top-left
+//   2. Upload preset: Settings → Upload → Upload presets → Add preset (Unsigned)
+const _cloudinaryCloudName = String.fromEnvironment(
+  'CLOUDINARY_CLOUD_NAME',
+  defaultValue: '', // Set via flutter run --dart-define=CLOUDINARY_CLOUD_NAME=xxx
+);
+const _cloudinaryUploadPreset = String.fromEnvironment(
+  'CLOUDINARY_UPLOAD_PRESET',
+  defaultValue: '', // Set via flutter run --dart-define=CLOUDINARY_UPLOAD_PRESET=xxx
+);
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
@@ -58,6 +72,34 @@ class ApiService {
 
   Future<Response<T>> delete<T>(String path, {dynamic data}) =>
       _dio.delete<T>(path, data: data);
+
+  Future<Response<T>> patch<T>(String path, {dynamic data}) =>
+      _dio.patch<T>(path, data: data);
+
+  // ── Cloudinary avatar upload ───────────────────────────────────────────────
+
+  /// Uploads [file] directly to Cloudinary and returns the secure CDN URL.
+  /// Returns null if Cloudinary is not configured or the upload fails.
+  Future<String?> uploadAvatarToCloudinary(File file) async {
+    if (_cloudinaryCloudName.isEmpty || _cloudinaryUploadPreset.isEmpty) {
+      return null; // Not configured yet
+    }
+    try {
+      final uploadDio = Dio();
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path),
+        'upload_preset': _cloudinaryUploadPreset,
+        'folder': 'avatars',
+      });
+      final res = await uploadDio.post(
+        'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload',
+        data: formData,
+      );
+      return (res.data as Map<String, dynamic>)['secure_url'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
 
   // ── Polls ──────────────────────────────────────────────────────────────────
 

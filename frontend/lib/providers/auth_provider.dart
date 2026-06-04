@@ -126,6 +126,39 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Updates name, color, and/or avatar_url. Optimistically updates local state.
+  Future<bool> updateProfile({
+    String? name,
+    String? color,
+    String? avatarUrl,
+    bool clearAvatar = false,
+  }) async {
+    final previous = state.user;
+    // Optimistic update
+    if (previous != null) {
+      state = state.copyWith(
+        user: previous.copyWith(
+          name: name,
+          color: color,
+          avatarUrl: clearAvatar ? null : (avatarUrl ?? previous.avatarUrl),
+        ),
+      );
+    }
+    try {
+      final user = await _authService.updateProfile(
+        name: name,
+        color: color,
+        avatarUrl: avatarUrl,
+        clearAvatar: clearAvatar,
+      );
+      state = state.copyWith(user: user);
+      return true;
+    } catch (_) {
+      if (previous != null) state = state.copyWith(user: previous);
+      return false;
+    }
+  }
+
   Future<bool> resendVerification() async {
     try {
       await _authService.resendVerification();

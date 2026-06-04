@@ -1,3 +1,4 @@
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,13 @@ import '../widgets/app_image.dart';
 
 // Common emoji options for quick reactions
 const _quickEmojis = ['❤️', '🎉', '👍', '😂', '🔥', '😮', '👏', '🙌'];
+
+// Premade event icon options
+const _premadeIcons = [
+  '📅', '🎂', '✈️', '🏋️', '🎮', '🎵', '🎓', '💼',
+  '🏖️', '🍕', '🎉', '⚽', '🏥', '🛒', '📚', '🎨',
+  '🤝', '💡', '🎤', '🌿',
+];
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String calendarId;
@@ -39,6 +47,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   bool _isLoading = false;
   RecurrenceRule _recurrenceRule = RecurrenceRule.none;
   DateTime? _recurrenceEnd;
+  String? _selectedIcon;
 
   List<EventReaction> _reactions = [];
   bool _reactionsLoading = false;
@@ -57,6 +66,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _endTime = _existingEvent!.endTime;
       _recurrenceRule = _existingEvent!.recurrenceRule;
       _recurrenceEnd = _existingEvent!.recurrenceEnd;
+      _selectedIcon = _existingEvent!.icon;
       _loadReactions();
     } else if (widget.extra is DateTime) {
       final d = widget.extra as DateTime;
@@ -166,6 +176,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
+        icon: _selectedIcon,
         recurrenceRule: _recurrenceRule,
         recurrenceEnd: _recurrenceEnd,
       );
@@ -191,6 +202,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
+        icon: _selectedIcon,
         recurrenceRule: _recurrenceRule,
         clearRecurrence: _recurrenceRule == RecurrenceRule.none,
         recurrenceEnd: _recurrenceEnd,
@@ -354,60 +366,36 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: context.appColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.line,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'React',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: context.appColors.ink,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _quickEmojis.map((e) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _addReaction(e);
-                  },
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: context.appColors.surfaceSoft,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: context.appColors.line, width: 1.5),
-                    ),
-                    child: Center(
-                      child: Text(e,
-                          style: const TextStyle(fontSize: 26)),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      builder: (_) => _ReactionPickerSheet(
+        onEmojiSelected: (emoji) {
+          Navigator.pop(context);
+          _addReaction(emoji);
+        },
+        surfaceColor: context.appColors.surface,
+        lineColor: context.appColors.line,
+        inkColor: context.appColors.ink,
+        surfaceSoftColor: context.appColors.surfaceSoft,
+      ),
+    );
+  }
+
+  void _showIconPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _IconPickerSheet(
+        current: _selectedIcon,
+        onSelected: (icon) {
+          Navigator.pop(context);
+          setState(() => _selectedIcon = icon);
+        },
+        surfaceColor: context.appColors.surface,
+        lineColor: context.appColors.line,
+        inkColor: context.appColors.ink,
+        inkMutedColor: context.appColors.inkMuted,
+        surfaceSoftColor: context.appColors.surfaceSoft,
       ),
     );
   }
@@ -534,6 +522,58 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               validator: (v) =>
                   v != null && v.trim().isNotEmpty ? null : 'Title required',
+            ),
+
+            const SizedBox(height: 16),
+
+            // Icon picker row
+            GestureDetector(
+              onTap: _showIconPicker,
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: context.appColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: context.appColors.line, width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _selectedIcon ?? '＋',
+                        style: TextStyle(
+                          fontSize: _selectedIcon != null ? 22 : 18,
+                          color: _selectedIcon != null ? null : context.appColors.inkMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _selectedIcon != null ? 'Change icon' : 'Add icon',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: context.appColors.inkSoft,
+                    ),
+                  ),
+                  if (_selectedIcon != null) ...[
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedIcon = null),
+                      child: Text(
+                        'Remove',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.inkMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -750,15 +790,26 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(
-            event.title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-              color: context.appColors.ink,
-              letterSpacing: -0.8,
-            ),
+          // Title (with optional icon)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (event.icon != null) ...[
+                Text(event.icon!, style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  event.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.ink,
+                    letterSpacing: -0.8,
+                  ),
+                ),
+              ),
+            ],
           ),
 
           if (event.creatorName != null) ...[
@@ -1144,6 +1195,239 @@ class _Divider extends StatelessWidget {
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       color: context.appColors.line,
+    );
+  }
+}
+
+// ── Reaction picker sheet ─────────────────────────────────────────────────────
+// Shows 8 quick emojis + a "More" button that opens the full emoji keyboard.
+
+class _ReactionPickerSheet extends StatefulWidget {
+  const _ReactionPickerSheet({
+    required this.onEmojiSelected,
+    required this.surfaceColor,
+    required this.lineColor,
+    required this.inkColor,
+    required this.surfaceSoftColor,
+  });
+
+  final void Function(String emoji) onEmojiSelected;
+  final Color surfaceColor;
+  final Color lineColor;
+  final Color inkColor;
+  final Color surfaceSoftColor;
+
+  @override
+  State<_ReactionPickerSheet> createState() => _ReactionPickerSheetState();
+}
+
+class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
+  bool _showFull = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: _showFull ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: widget.lineColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'React',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17, fontWeight: FontWeight.w700, color: widget.inkColor),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _showFull = !_showFull),
+                child: Text(
+                  _showFull ? 'Quick picks' : 'All emojis',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13, fontWeight: FontWeight.w600,
+                    color: widget.inkColor.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!_showFull)
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: _quickEmojis.map((e) => GestureDetector(
+                onTap: () => widget.onEmojiSelected(e),
+                child: Container(
+                  width: 52, height: 52,
+                  decoration: BoxDecoration(
+                    color: widget.surfaceSoftColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: widget.lineColor, width: 1.5),
+                  ),
+                  child: Center(child: Text(e, style: const TextStyle(fontSize: 26))),
+                ),
+              )).toList(),
+            )
+          else
+            Expanded(
+              child: epf.EmojiPicker(
+                onEmojiSelected: (_, emoji) => widget.onEmojiSelected(emoji.emoji),
+                config: epf.Config(
+                  emojiViewConfig: epf.EmojiViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    emojiSizeMax: 28,
+                  ),
+                  searchViewConfig: epf.SearchViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    buttonIconColor: widget.inkColor,
+                  ),
+                  categoryViewConfig: epf.CategoryViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    iconColor: widget.inkColor.withOpacity(0.4),
+                    iconColorSelected: widget.inkColor,
+                    indicatorColor: widget.inkColor,
+                  ),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Icon picker sheet ─────────────────────────────────────────────────────────
+// Premade emoji grid + "Custom" button → full emoji picker.
+
+class _IconPickerSheet extends StatefulWidget {
+  const _IconPickerSheet({
+    required this.current,
+    required this.onSelected,
+    required this.surfaceColor,
+    required this.lineColor,
+    required this.inkColor,
+    required this.inkMutedColor,
+    required this.surfaceSoftColor,
+  });
+
+  final String? current;
+  final void Function(String icon) onSelected;
+  final Color surfaceColor;
+  final Color lineColor;
+  final Color inkColor;
+  final Color inkMutedColor;
+  final Color surfaceSoftColor;
+
+  @override
+  State<_IconPickerSheet> createState() => _IconPickerSheetState();
+}
+
+class _IconPickerSheetState extends State<_IconPickerSheet> {
+  bool _showFull = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: _showFull ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: widget.lineColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Event icon',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17, fontWeight: FontWeight.w700, color: widget.inkColor),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _showFull = !_showFull),
+                child: Text(
+                  _showFull ? 'Presets' : 'Any emoji',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13, fontWeight: FontWeight.w600,
+                    color: widget.inkColor.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!_showFull)
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: _premadeIcons.map((e) {
+                final selected = e == widget.current;
+                return GestureDetector(
+                  onTap: () => widget.onSelected(e),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? widget.inkColor.withOpacity(0.1)
+                          : widget.surfaceSoftColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected ? widget.inkColor.withOpacity(0.5) : widget.lineColor,
+                        width: selected ? 2 : 1.5,
+                      ),
+                    ),
+                    child: Center(child: Text(e, style: const TextStyle(fontSize: 26))),
+                  ),
+                );
+              }).toList(),
+            )
+          else
+            Expanded(
+              child: epf.EmojiPicker(
+                onEmojiSelected: (_, emoji) => widget.onSelected(emoji.emoji),
+                config: epf.Config(
+                  emojiViewConfig: epf.EmojiViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    emojiSizeMax: 28,
+                  ),
+                  searchViewConfig: epf.SearchViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    buttonIconColor: widget.inkColor,
+                  ),
+                  categoryViewConfig: epf.CategoryViewConfig(
+                    backgroundColor: widget.surfaceColor,
+                    iconColor: widget.inkColor.withOpacity(0.4),
+                    iconColorSelected: widget.inkColor,
+                    indicatorColor: widget.inkColor,
+                  ),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

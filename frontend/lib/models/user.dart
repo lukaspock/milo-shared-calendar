@@ -21,6 +21,8 @@ class AppUser {
   final bool emailVerified;
   final bool hasGoogleCalendar;
   final NotificationType notificationType;
+  /// Cloudinary (or any CDN) URL for the user's profile picture. Null = show initials.
+  final String? avatarUrl;
 
   const AppUser({
     required this.id,
@@ -30,6 +32,7 @@ class AppUser {
     this.emailVerified = false,
     this.hasGoogleCalendar = false,
     this.notificationType = NotificationType.email,
+    this.avatarUrl,
   });
 
   AppUser copyWith({
@@ -40,6 +43,8 @@ class AppUser {
     bool? emailVerified,
     bool? hasGoogleCalendar,
     NotificationType? notificationType,
+    // Use a sentinel to allow explicitly setting avatarUrl to null
+    Object? avatarUrl = _sentinel,
   }) =>
       AppUser(
         id: id ?? this.id,
@@ -49,6 +54,7 @@ class AppUser {
         emailVerified: emailVerified ?? this.emailVerified,
         hasGoogleCalendar: hasGoogleCalendar ?? this.hasGoogleCalendar,
         notificationType: notificationType ?? this.notificationType,
+        avatarUrl: avatarUrl == _sentinel ? this.avatarUrl : avatarUrl as String?,
       );
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
@@ -60,6 +66,7 @@ class AppUser {
         hasGoogleCalendar: json['has_google_calendar'] as bool? ?? false,
         notificationType:
             NotificationType.fromApi(json['notification_type'] as String?),
+        avatarUrl: json['avatar_url'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -70,5 +77,9 @@ class AppUser {
         'email_verified': emailVerified,
         'has_google_calendar': hasGoogleCalendar,
         'notification_type': notificationType.apiValue,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
       };
 }
+
+// Sentinel object used by AppUser.copyWith to distinguish "not provided" from null.
+const Object _sentinel = Object();

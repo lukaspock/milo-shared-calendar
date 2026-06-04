@@ -67,6 +67,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     start_time?: string;
     end_time?: string;
     color?: string;
+    icon?: string;
     recurrence_rule?: string;
     recurrence_end?: string;
   };
@@ -76,7 +77,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
     return error("Invalid JSON body");
   }
 
-  const { calendar_id, title, start_time, end_time, description, color, recurrence_rule, recurrence_end } = body;
+  const { calendar_id, title, start_time, end_time, description, color, icon, recurrence_rule, recurrence_end } = body;
   if (!calendar_id || !title || !start_time || !end_time) {
     return error("calendar_id, title, start_time and end_time are required");
   }
@@ -99,9 +100,9 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
   }
 
   const events = await db`
-    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color, recurrence_rule, recurrence_end)
+    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color, icon, recurrence_rule, recurrence_end)
     VALUES (${calendar_id}, ${userId}, ${title}, ${description ?? null}, ${start_time}, ${end_time}, ${eventColor},
-            ${recurrence_rule ?? null}, ${recurrence_end ?? null})
+            ${icon ?? null}, ${recurrence_rule ?? null}, ${recurrence_end ?? null})
     RETURNING *
   `;
 
@@ -164,6 +165,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     start_time?: string;
     end_time?: string;
     color?: string;
+    icon?: string | null;
     recurrence_rule?: string | null;
     recurrence_end?: string | null;
     edit_all?: boolean;
@@ -198,11 +200,13 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     const newEnd         = 'recurrence_end'  in body ? (body.recurrence_end  ?? null) : (event.recurrence_end  as string | null);
     const fromTime       = event.start_time as string;
 
+    const newIcon = 'icon' in body ? (body.icon ?? null) : (event.icon as string | null);
     await db`
       UPDATE events SET
         title           = ${newTitle},
         description     = ${newDescription},
         color           = ${newColor},
+        icon            = ${newIcon},
         recurrence_rule = ${newRule},
         recurrence_end  = ${newEnd}
       WHERE (id = ${rootId} OR parent_event_id = ${rootId})
@@ -227,6 +231,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
       start_time = ${body.start_time ?? event.start_time},
       end_time = ${body.end_time ?? event.end_time},
       color = ${body.color ?? event.color},
+      icon = ${'icon' in body ? (body.icon ?? null) : event.icon},
       recurrence_rule = ${'recurrence_rule' in body ? (body.recurrence_rule ?? null) : event.recurrence_rule},
       recurrence_end  = ${'recurrence_end'  in body ? (body.recurrence_end  ?? null) : event.recurrence_end}
     WHERE id = ${id}

@@ -153,7 +153,7 @@ export async function resendVerification(ctx: RequestContext): Promise<Response>
 export async function getMe(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const users = await db`
-    SELECT id, email, name, color, notification_type, email_verified FROM users WHERE id = ${userId}
+    SELECT id, email, name, color, notification_type, email_verified, avatar_url FROM users WHERE id = ${userId}
   `;
   if (users.length === 0) return error("User not found", 404);
   const user = users[0];
@@ -163,6 +163,58 @@ export async function getMe(ctx: RequestContext): Promise<Response> {
     color: user.color, notification_type: user.notification_type ?? "email",
     email_verified: user.email_verified ?? false,
     has_google_calendar: gcal.length > 0,
+    avatar_url: user.avatar_url ?? null,
+  });
+}
+
+export async function updateProfile(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  let body: { name?: string; color?: string; avatar_url?: string | null };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { name, color, avatar_url } = body;
+  if (!name && !color && avatar_url === undefined) {
+    return error("Provide at least one of: name, color, avatar_url");
+  }
+  if (name !== undefined && name.trim().length === 0) {
+    return error("Name cannot be empty");
+  }
+
+  const users = await db`SELECT id FROM users WHERE id = ${userId}`;
+  if (users.length === 0) return error("User not found", 404);
+
+  // Build the update dynamically — only set fields that were provided
+  if (name && color && avatar_url !== undefined) {
+    await db`UPDATE users SET name = ${name.trim()}, color = ${color}, avatar_url = ${avatar_url ?? null} WHERE id = ${userId}`;
+  } else if (name && color) {
+    await db`UPDATE users SET name = ${name.trim()}, color = ${color} WHERE id = ${userId}`;
+  } else if (name && avatar_url !== undefined) {
+    await db`UPDATE users SET name = ${name.trim()}, avatar_url = ${avatar_url ?? null} WHERE id = ${userId}`;
+  } else if (color && avatar_url !== undefined) {
+    await db`UPDATE users SET color = ${color}, avatar_url = ${avatar_url ?? null} WHERE id = ${userId}`;
+  } else if (name) {
+    await db`UPDATE users SET name = ${name.trim()} WHERE id = ${userId}`;
+  } else if (color) {
+    await db`UPDATE users SET color = ${color} WHERE id = ${userId}`;
+  } else {
+    await db`UPDATE users SET avatar_url = ${avatar_url ?? null} WHERE id = ${userId}`;
+  }
+
+  const updated = await db`
+    SELECT id, email, name, color, notification_type, email_verified, avatar_url FROM users WHERE id = ${userId}
+  `;
+  const u = updated[0];
+  const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${userId}`;
+  return json({
+    id: u.id, email: u.email, name: u.name,
+    color: u.color, notification_type: u.notification_type ?? "email",
+    email_verified: u.email_verified ?? false,
+    has_google_calendar: gcal.length > 0,
+    avatar_url: u.avatar_url ?? null,
   });
 }
 

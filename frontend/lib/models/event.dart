@@ -33,6 +33,8 @@ class CalendarEvent {
   final DateTime? recurrenceEnd;
   /// Non-null for instances generated from a recurring root event.
   final String? parentEventId;
+  /// Optional emoji or short label chosen by the creator (e.g. "🎂", "✈️").
+  final String? icon;
 
   const CalendarEvent({
     required this.id,
@@ -50,6 +52,7 @@ class CalendarEvent {
     this.recurrenceRule = RecurrenceRule.none,
     this.recurrenceEnd,
     this.parentEventId,
+    this.icon,
   });
 
   bool get isRecurring => recurrenceRule != RecurrenceRule.none;
@@ -74,6 +77,7 @@ class CalendarEvent {
       recurrenceRule: RecurrenceRule.fromApi(json['recurrence_rule'] as String?),
       recurrenceEnd: recEndRaw != null ? DateTime.parse(recEndRaw) : null,
       parentEventId: json['parent_event_id'] as String?,
+      icon: json['icon'] as String?,
     );
   }
 
@@ -103,6 +107,7 @@ class CalendarEvent {
     DateTime? startTime,
     DateTime? endTime,
     Color? color,
+    String? icon,
     RecurrenceRule? recurrenceRule,
     DateTime? recurrenceEnd,
   }) {
@@ -115,6 +120,7 @@ class CalendarEvent {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       color: color ?? this.color,
+      icon: icon ?? this.icon,
       creatorName: creatorName,
       creatorColor: creatorColor,
       createdAt: createdAt,
