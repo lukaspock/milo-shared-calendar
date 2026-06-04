@@ -149,6 +149,58 @@ export async function sendEventNotification(params: {
   }
 }
 
+export async function sendEventStartingEmail(params: {
+  memberEmails: string[];
+  eventTitle: string;
+  calendarName: string;
+}): Promise<void> {
+  const { memberEmails, eventTitle, calendarName } = params;
+  if (memberEmails.length === 0) return;
+
+  const html = base(`
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">📸 Vergiss nicht, ein Foto zu machen!</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
+      <tr><td style="padding:20px;">
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+      </td></tr>
+    </table>
+    <p style="color:#6B6357;font-size:14px;line-height:1.6;margin:16px 0 0;">
+      Dein Event hat gerade begonnen — mach ein Foto und teile es mit allen im Kalender!
+    </p>
+  `);
+
+  for (const email of memberEmails) {
+    await send(email, `📸 ${eventTitle} hat begonnen – mach ein Foto!`, html);
+  }
+}
+
+export async function sendEventEndedEmail(params: {
+  memberEmails: string[];
+  eventTitle: string;
+  calendarName: string;
+}): Promise<void> {
+  const { memberEmails, eventTitle, calendarName } = params;
+  if (memberEmails.length === 0) return;
+
+  const html = base(`
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">🖼 Heb dir eine Erinnerung auf!</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
+      <tr><td style="padding:20px;">
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+      </td></tr>
+    </table>
+    <p style="color:#6B6357;font-size:14px;line-height:1.6;margin:16px 0 0;">
+      Dein Event ist vorbei — lade ein Foto hoch und bewahre die Erinnerung für alle!
+    </p>
+  `);
+
+  for (const email of memberEmails) {
+    await send(email, `🖼 ${eventTitle} ist vorbei – lade ein Foto hoch!`, html);
+  }
+}
+
 export async function sendPollConfirmedNotification(params: {
   memberEmails: string[];
   eventTitle: string;

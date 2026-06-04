@@ -246,7 +246,8 @@ describe("deleteCalendar", () => {
   test("deletes calendar when caller is owner", async () => {
     mockDb
       .mockResolvedValueOnce([{ role: "owner" }]) // membership
-      .mockResolvedValueOnce([]);                  // DELETE
+      .mockResolvedValueOnce([])                  // SELECT icon FROM events
+      .mockResolvedValueOnce([]);                 // SELECT photo_url FROM event_photos
     const ctx = makeCtx({}, USER_ID, { id: CAL_ID });
     const res = await deleteCalendar(ctx);
     expect(res.status).toBe(200);

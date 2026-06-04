@@ -6,6 +6,7 @@ class CalendarModel {
   final String role;
   final int memberCount;
   final DateTime createdAt;
+  final bool photoMode;
 
   const CalendarModel({
     required this.id,
@@ -15,6 +16,7 @@ class CalendarModel {
     required this.role,
     required this.memberCount,
     required this.createdAt,
+    this.photoMode = false,
   });
 
   factory CalendarModel.fromJson(Map<String, dynamic> json) => CalendarModel(
@@ -25,6 +27,7 @@ class CalendarModel {
         role: json['role'] as String? ?? 'member',
         memberCount: int.tryParse(json['member_count']?.toString() ?? '1') ?? 1,
         createdAt: DateTime.parse(json['created_at'] as String),
+        photoMode: json['photo_mode'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,6 +38,7 @@ class CalendarModel {
     'role': role,
     'member_count': memberCount,
     'created_at': createdAt.toIso8601String(),
+    'photo_mode': photoMode,
   };
 
   bool get isOwner => role == 'owner';
@@ -47,5 +51,6 @@ class CalendarModel {
         role: role,
         memberCount: count,
         createdAt: createdAt,
+        photoMode: photoMode,
       );
 }

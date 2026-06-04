@@ -1,12 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/event.dart';
+import '../models/event_photo.dart';
 import '../models/poll.dart';
+import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
+import '../providers/photos_provider.dart';
 import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
@@ -52,6 +57,112 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  void _showUploadSheet(BuildContext context, String eventId, String eventTitle) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PhotoUploadSheet(
+        calendarId: widget.calendarId,
+        eventId: eventId,
+        eventTitle: eventTitle,
+      ),
+    );
+  }
+
+  void _showSelectEventSheet(BuildContext ctx, List<CalendarEvent> events) {
+    final pastEvents = events
+        .where((e) => e.endTime.isBefore(DateTime.now()))
+        .toList()
+      ..sort((a, b) => b.endTime.compareTo(a.endTime));
+
+    if (pastEvents.isEmpty) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Noch keine vergangenen Events vorhanden')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        decoration: BoxDecoration(
+          color: ctx.appColors.surface,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: ctx.appColors.line, width: 1.5),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Text(
+                'Für welches Event?',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: ctx.appColors.ink,
+                ),
+              ),
+            ),
+            Container(height: 1, color: ctx.appColors.line),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: pastEvents.length,
+                separatorBuilder: (_, __) => Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  color: ctx.appColors.line,
+                ),
+                itemBuilder: (lCtx, i) {
+                  final ev = pastEvents[i];
+                  return ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    title: Text(
+                      ev.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w600,
+                        color: ctx.appColors.ink,
+                      ),
+                    ),
+                    subtitle: Text(
+                      DateFormat('d. MMM yyyy').format(ev.startTime),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: ctx.appColors.inkMuted,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(lCtx);
+                      _showUploadSheet(ctx, ev.id, ev.title);
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenPhoto(BuildContext ctx, EventPhoto photo) {
+    Navigator.of(ctx).push(
+      MaterialPageRoute(
+        builder: (_) => _FullScreenPhotoView(photo: photo),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
@@ -63,6 +174,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ?.where((c) => c.id == widget.calendarId)
         .firstOrNull;
     final calHue = calendar != null ? hueFor(calendar) : stickerHues[0];
+
+    final photos = calendar?.photoMode == true
+        ? ref.watch(photosProvider(widget.calendarId)).valueOrNull ?? []
+        : <EventPhoto>[];
+    final currentUserId =
+        ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
 
     return Scaffold(
       backgroundColor: context.appColors.bg,
@@ -225,8 +342,68 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ? <CalendarEvent>[]
                       : (eventsByDay[selKey] ?? []);
 
+                  // Check for photo banners (only for photo-mode calendars)
+                  final now = DateTime.now();
+                  CalendarEvent? activeEvent;
+                  List<CalendarEvent> recentlyEndedEvents = [];
+                  if (calendar?.photoMode == true) {
+                    for (final e in events) {
+                      if (e.startTime.isBefore(now) && e.endTime.isAfter(now)) {
+                        activeEvent = e;
+                        break;
+                      }
+                    }
+                    recentlyEndedEvents = events.where((e) {
+                      final age = now.difference(e.endTime);
+                      return age.inHours >= 0 &&
+                          age.inHours < 48 &&
+                          e.endTime.isBefore(now) &&
+                          !photos.any((p) =>
+                              p.eventId == e.id &&
+                              p.uploadedBy == currentUserId);
+                    }).toList();
+                  }
+
                   return Column(
                     children: [
+                      // ── Photo memory banners ───────────────────────────────
+                      if (activeEvent != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: _PhotoBanner(
+                            icon: '📸',
+                            color: const Color(0xFFFFF3E0),
+                            borderColor: const Color(0xFFE8A020),
+                            iconColor: const Color(0xFFB07000),
+                            message: 'Vergiss nicht, ein Foto zu machen!',
+                            eventTitle: activeEvent.title,
+                            actionLabel: 'Foto hinzufügen',
+                            onAction: () => _showUploadSheet(
+                              context,
+                              activeEvent!.id,
+                              activeEvent.title,
+                            ),
+                          ),
+                        ),
+                      if (activeEvent == null && recentlyEndedEvents.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: _PhotoBanner(
+                            icon: '🖼',
+                            color: const Color(0xFFE8F4FD),
+                            borderColor: const Color(0xFF2196F3),
+                            iconColor: const Color(0xFF1565C0),
+                            message: 'Heb dir eine Erinnerung auf!',
+                            eventTitle: recentlyEndedEvents.first.title,
+                            actionLabel: 'Foto hochladen',
+                            onAction: () => _showUploadSheet(
+                              context,
+                              recentlyEndedEvents.first.id,
+                              recentlyEndedEvents.first.title,
+                            ),
+                          ),
+                        ),
+
                       // ── Calendar card ──────────────────────────────────────
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -402,6 +579,81 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                 );
                               }),
+                            ],
+
+                            // ── Memories gallery ──────────────────────────
+                            if (calendar?.photoMode == true) ...[
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  Text(
+                                    'MEMORIES',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: context.appColors.inkMuted,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () => _showSelectEventSheet(context, events),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: context.appColors.surfaceSoft,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: context.appColors.line, width: 1.5),
+                                      ),
+                                      child: Text(
+                                        '+ Foto',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.appColors.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              if (photos.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Noch keine Fotos – macht Erinnerungen!',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: context.appColors.inkMuted,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                )
+                              else
+                                ...photos.asMap().entries.map((entry) {
+                                  final photo = entry.value;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: entry.key < photos.length - 1 ? 10 : 0,
+                                    ),
+                                    child: _PhotoCard(
+                                      photo: photo,
+                                      currentUserId: currentUserId,
+                                      onDelete: () async {
+                                        final ok = await ref
+                                            .read(photosProvider(widget.calendarId).notifier)
+                                            .deletePhoto(photo.eventId, photo.id);
+                                        if (!ok && context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Fehler beim Löschen')),
+                                          );
+                                        }
+                                      },
+                                      onTap: () => _showFullScreenPhoto(context, photo),
+                                    ),
+                                  );
+                                }),
                             ],
                           ],
                         ),
@@ -1165,6 +1417,458 @@ class _EventRowIcon extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Photo banner (event starting / event ended) ───────────────────────────────
+
+class _PhotoBanner extends StatelessWidget {
+  const _PhotoBanner({
+    required this.icon,
+    required this.color,
+    required this.borderColor,
+    required this.iconColor,
+    required this.message,
+    required this.eventTitle,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final String icon;
+  final Color color;
+  final Color borderColor;
+  final Color iconColor;
+  final String message;
+  final String eventTitle;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: iconColor,
+                  ),
+                ),
+                Text(
+                  eventTitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: iconColor.withOpacity(0.7),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onAction,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: borderColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Photo card (in memories feed) ────────────────────────────────────────────
+
+class _PhotoCard extends StatelessWidget {
+  const _PhotoCard({
+    required this.photo,
+    required this.currentUserId,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  final EventPhoto photo;
+  final String currentUserId;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final canDelete = photo.uploadedBy == currentUserId;
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: canDelete
+          ? () => showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: Text(
+                    'Foto löschen?',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                  ),
+                  content: Text(
+                    'Dieses Foto wird für alle Mitglieder gelöscht.',
+                    style: GoogleFonts.plusJakartaSans(),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Abbrechen'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onDelete();
+                      },
+                      child: Text(
+                        'Löschen',
+                        style: TextStyle(color: AppTheme.danger),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+          : null,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.appColors.line, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: context.appColors.line.withOpacity(0.5),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: 4 / 3,
+              child: Image.network(
+                photo.photoUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: context.appColors.surfaceSoft,
+                  child: Icon(Icons.broken_image_rounded,
+                      color: context.appColors.inkMuted, size: 40),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (photo.eventTitle != null)
+                      Text(
+                        photo.eventTitle!,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    Text(
+                      '${photo.uploadedByName ?? 'Jemand'} · ${DateFormat('d. MMM').format(photo.createdAt)}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Photo upload bottom sheet ─────────────────────────────────────────────────
+
+class _PhotoUploadSheet extends ConsumerStatefulWidget {
+  const _PhotoUploadSheet({
+    required this.calendarId,
+    required this.eventId,
+    required this.eventTitle,
+  });
+
+  final String calendarId;
+  final String eventId;
+  final String eventTitle;
+
+  @override
+  ConsumerState<_PhotoUploadSheet> createState() => _PhotoUploadSheetState();
+}
+
+class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
+  File? _selectedFile;
+  bool _uploading = false;
+  String? _error;
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: source, imageQuality: 85);
+    if (picked == null) return;
+    setState(() {
+      _selectedFile = File(picked.path);
+      _error = null;
+    });
+  }
+
+  Future<void> _upload() async {
+    if (_selectedFile == null) return;
+    setState(() {
+      _uploading = true;
+      _error = null;
+    });
+    final ok = await ref
+        .read(photosProvider(widget.calendarId).notifier)
+        .addPhoto(widget.eventId, _selectedFile!);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto hochgeladen!')),
+      );
+    } else {
+      setState(() {
+        _uploading = false;
+        _error = 'Upload fehlgeschlagen. Bitte erneut versuchen.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                '📸 Erinnerungsfoto',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.ink,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+              ),
+            ],
+          ),
+          Text(
+            widget.eventTitle,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: context.appColors.inkMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          if (_selectedFile != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                _selectedFile!,
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (_error != null) ...[
+            Text(
+              _error!,
+              style: TextStyle(color: AppTheme.danger, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _uploading ? null : () => _pickImage(ImageSource.gallery),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: context.appColors.line, width: 1.5),
+                    foregroundColor: context.appColors.ink,
+                  ),
+                  icon: const Icon(Icons.photo_library_rounded, size: 18),
+                  label: Text(
+                    'Galerie',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _uploading ? null : () => _pickImage(ImageSource.camera),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: context.appColors.line, width: 1.5),
+                    foregroundColor: context.appColors.ink,
+                  ),
+                  icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                  label: Text(
+                    'Kamera',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (_selectedFile != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _uploading ? null : _upload,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 52),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28)),
+                ),
+                child: _uploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'Foto hochladen',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Full-screen photo viewer ───────────────────────────────────────────────────
+
+class _FullScreenPhotoView extends StatelessWidget {
+  const _FullScreenPhotoView({required this.photo});
+  final EventPhoto photo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(
+          photo.eventTitle ?? '',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(
+            photo.photoUrl,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.broken_image_rounded,
+              color: Colors.white54,
+              size: 60,
+            ),
+          ),
+        ),
       ),
     );
   }

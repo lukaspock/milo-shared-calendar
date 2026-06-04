@@ -864,6 +864,7 @@ class _CreateCalendarSheet extends StatefulWidget {
 class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
   int _selectedHue = 0;
   String? _selectedIcon;
+  bool _photoMode = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1104,6 +1105,52 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          // Photo memories toggle
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.appColors.line, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                const Text('📸', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Photo Memories',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.ink,
+                        ),
+                      ),
+                      Text(
+                        'Share event photos with all members',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: context.appColors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _photoMode,
+                  onChanged: (v) => setState(() => _photoMode = v),
+                  activeColor: context.appColors.ink,
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 24),
 
           Row(
@@ -1134,10 +1181,11 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     final name = widget.ctrl.text.trim();
                     final chosenHue = _selectedHue;
                     final chosenIcon = _selectedIcon;
+                    final chosenPhotoMode = _photoMode;
                     Navigator.pop(context);
                     final cal = await widget.ref
                         .read(calendarProvider.notifier)
-                        .createCalendar(name);
+                        .createCalendar(name, photoMode: chosenPhotoMode);
                     if (cal != null) {
                       await persistCalendarHue(cal.id, chosenHue);
                       if (chosenIcon != null) {

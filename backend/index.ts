@@ -6,6 +6,7 @@ import { runMigrations } from "./src/db/migrate";
 import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
+import { addEventPhoto, listCalendarPhotos, deleteEventPhoto } from "./src/routes/photos";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { deleteAsset } from "./src/routes/assets";
@@ -73,6 +74,11 @@ router.post("/events/:id/notify", notifyMembers, [authMiddleware]);
 router.get("/events/:id/reactions", getReactions, [authMiddleware]);
 router.post("/events/:id/reactions", addReaction, [authMiddleware]);
 router.delete("/events/:id/reactions/:emoji", removeReaction, [authMiddleware]);
+
+// --- Photo memories (protected) ---
+router.post("/events/:eventId/photos", addEventPhoto, [authMiddleware]);
+router.get("/calendars/:calendarId/photos", listCalendarPhotos, [authMiddleware]);
+router.delete("/events/:eventId/photos/:photoId", deleteEventPhoto, [authMiddleware]);
 
 // --- Polls (protected) ---
 router.post("/calendars/:calendarId/polls", createPoll, [authMiddleware]);

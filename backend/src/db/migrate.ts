@@ -105,5 +105,20 @@ export async function runMigrations(): Promise<void> {
   await db`ALTER TABLE event_polls ADD COLUMN IF NOT EXISTS icon TEXT`;
   await db`ALTER TABLE event_polls ADD COLUMN IF NOT EXISTS color TEXT`;
 
+  // Photo memories: opt-in per calendar (toggle at creation time)
+  await db`ALTER TABLE calendars ADD COLUMN IF NOT EXISTS photo_mode BOOLEAN NOT NULL DEFAULT FALSE`;
+
+  // Photos uploaded by members for events in photo-mode calendars
+  await db`
+    CREATE TABLE IF NOT EXISTS event_photos (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id    UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
+      uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      photo_url   TEXT NOT NULL,
+      created_at  TIMESTAMP DEFAULT now()
+    )
+  `;
+
   console.log("[db] migrations applied");
 }

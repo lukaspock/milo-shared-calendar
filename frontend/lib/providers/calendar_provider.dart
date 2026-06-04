@@ -74,9 +74,12 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     }
   }
 
-  Future<CalendarModel?> createCalendar(String name) async {
+  Future<CalendarModel?> createCalendar(String name, {bool photoMode = false}) async {
     try {
-      final res = await _api.post('/calendars', data: {'name': name});
+      final res = await _api.post('/calendars', data: {
+        'name': name,
+        if (photoMode) 'photo_mode': true,
+      });
       final calendar =
           CalendarModel.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
