@@ -79,7 +79,7 @@ class ApiService {
   /// Asks the backend to delete a Cloudinary asset. Fire-and-forget safe.
   Future<void> deleteAsset(String url) async {
     try {
-      await delete('/assets', data: {'url': url});
+      await post('/assets/delete', data: {'url': url});
     } catch (_) {
       // Best-effort — never block the caller
     }
