@@ -14,6 +14,9 @@ import { startReminderScheduler } from "./src/services/reminder.service";
 
 const router = new Router();
 
+// --- Health check (keeps Render free tier awake) ---
+router.get("/healthz", async () => new Response("OK", { status: 200 }));
+
 // --- Google Search Console verification ---
 router.get("/googleab6029f8803fe017.html", async () => new Response("google-site-verification: googleab6029f8803fe017.html", { headers: { "Content-Type": "text/html" } }));
 
