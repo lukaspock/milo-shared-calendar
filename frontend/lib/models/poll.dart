@@ -104,6 +104,8 @@ class EventPoll {
   final String? creatorName;
   final String title;
   final String? description;
+  final String? icon;
+  final String? color;
   final bool closed;
   final String? confirmedOptionId;
   final List<PollOption> options;
@@ -117,6 +119,8 @@ class EventPoll {
     this.creatorName,
     required this.title,
     this.description,
+    this.icon,
+    this.color,
     required this.closed,
     this.confirmedOptionId,
     required this.options,
@@ -143,6 +147,8 @@ class EventPoll {
         creatorName: json['creator_name'] as String?,
         title: json['title'] as String,
         description: json['description'] as String?,
+        icon: json['icon'] as String?,
+        color: json['color'] as String?,
         closed: json['closed'] as bool? ?? false,
         confirmedOptionId: json['confirmed_option_id'] as String?,
         options: (json['options'] as List? ?? [])

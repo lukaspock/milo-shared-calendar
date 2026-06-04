@@ -59,6 +59,8 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
     description?: string;
     options?: { start_time: string; end_time: string }[];
     vote_options?: { label: string; color: string }[];
+    icon?: string | null;
+    color?: string | null;
   };
   try {
     body = await ctx.req.json();
@@ -66,7 +68,7 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
     return error("Invalid JSON body");
   }
 
-  const { title, description, options, vote_options } = body;
+  const { title, description, options, vote_options, icon, color } = body;
   if (!title) return error("title is required");
   if (!options || options.length === 0)
     return error("At least one option is required");
@@ -79,8 +81,8 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
     return error("Not a member of this calendar", 403);
 
   const polls = await db`
-    INSERT INTO event_polls (calendar_id, created_by, title, description)
-    VALUES (${calendarId}, ${userId}, ${title}, ${description ?? null})
+    INSERT INTO event_polls (calendar_id, created_by, title, description, icon, color)
+    VALUES (${calendarId}, ${userId}, ${title}, ${description ?? null}, ${icon ?? null}, ${color ?? null})
     RETURNING *
   `;
   const poll = polls[0];
@@ -238,13 +240,15 @@ export async function confirmPoll(ctx: RequestContext): Promise<Response> {
   const option = options[0];
 
   const users = await db`SELECT color FROM users WHERE id = ${userId}`;
-  const eventColor = users[0]?.color ?? "#6C63FF";
+  // Poll color overrides user color; fall back to user color then default
+  const eventColor = (poll.color as string | null) ?? users[0]?.color ?? "#6C63FF";
+  const eventIcon = poll.icon as string | null ?? null;
 
   const events = await db`
-    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color)
+    INSERT INTO events (calendar_id, created_by, title, description, start_time, end_time, color, icon)
     VALUES (
       ${poll.calendar_id}, ${userId}, ${poll.title}, ${poll.description ?? null},
-      ${option.start_time}, ${option.end_time}, ${eventColor}
+      ${option.start_time}, ${option.end_time}, ${eventColor}, ${eventIcon}
     )
     RETURNING *
   `;
@@ -259,10 +263,24 @@ export async function confirmPoll(ctx: RequestContext): Promise<Response> {
 
   const full = await assemblePoll(updated[0]);
 
+  // Fetch event with creator info for the broadcast payload
+  const eventWithCreator = await db`
+    SELECT e.*, u.name AS creator_name, u.color AS creator_color
+    FROM events e LEFT JOIN users u ON u.id = e.created_by
+    WHERE e.id = ${event.id as string}
+  `;
+
   broadcastToCalendar(poll.calendar_id, {
     type: "poll_update",
     poll_id: id,
     calendar_id: poll.calendar_id,
+  });
+
+  // Broadcast event_created directly — the NOTIFY/DB-trigger path also fires,
+  // but can be delayed or dropped on free-tier Postgres; this ensures immediate delivery.
+  broadcastToCalendar(poll.calendar_id, {
+    type: "event_created",
+    event: eventWithCreator[0],
   });
 
   // Fire-and-forget Google Calendar sync + email

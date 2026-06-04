@@ -118,10 +118,14 @@ class ApiService {
     String? description,
     required List<PollOptionInput> options,
     List<PollVoteOptionInput>? voteOptions,
+    String? icon,
+    String? color,
   }) async {
     final res = await post('/calendars/$calendarId/polls', data: {
       'title': title,
       if (description != null && description.isNotEmpty) 'description': description,
+      if (icon != null) 'icon': icon,
+      if (color != null) 'color': color,
       'options': options
           .map((o) => {
                 'start_time': o.start.toUtc().toIso8601String(),

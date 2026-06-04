@@ -4,14 +4,16 @@ import '../models/poll.dart';
 import '../services/api_service.dart';
 import '../services/device_calendar_service.dart';
 import '../services/websocket_service.dart';
+import 'events_provider.dart';
 
 class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
-  PollsNotifier(this.calendarId) : super(const AsyncValue.loading()) {
+  PollsNotifier(this.ref, this.calendarId) : super(const AsyncValue.loading()) {
     fetch();
     _ws.addListener(_onWsMessage);
     _ws.subscribeToCalendar(calendarId);
   }
 
+  final Ref ref;
   final String calendarId;
   final _api = ApiService();
   final _ws = WebSocketService();
@@ -37,6 +39,8 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
     String? description,
     required List<PollOptionInput> options,
     List<PollVoteOptionInput>? voteOptions,
+    String? icon,
+    String? color,
   }) async {
     try {
       final poll = await _api.createPoll(
@@ -45,6 +49,8 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
         description: description,
         options: options,
         voteOptions: voteOptions,
+        icon: icon,
+        color: color,
       );
       state.whenData(
           (list) => state = AsyncValue.data([poll, ...list]));
@@ -90,12 +96,12 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
             list.map((p) => p.id == pollId ? updated : p).toList());
       });
 
-      // Sync the newly created event to device calendar.
-      // Google Calendar is already handled server-side via syncEventCreated.
+      // Inject the new event directly into eventsProvider (reliable regardless
+      // of whether the NOTIFY/WebSocket path delivers event_created in time).
       final eventJson = data['event'];
       if (eventJson != null) {
-        final event =
-            CalendarEvent.fromJson(eventJson as Map<String, dynamic>);
+        final event = CalendarEvent.fromJson(eventJson as Map<String, dynamic>);
+        ref.read(eventsProvider(calendarId).notifier).injectEvent(event);
         DeviceCalendarService().syncEvent(event);
       }
 
@@ -127,5 +133,5 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
 
 final pollsProvider = StateNotifierProvider.family<PollsNotifier,
     AsyncValue<List<EventPoll>>, String>(
-  (_, calendarId) => PollsNotifier(calendarId),
+  (ref, calendarId) => PollsNotifier(ref, calendarId),
 );
