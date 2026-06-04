@@ -106,11 +106,11 @@ The production Render DB was migrated manually via psql — those tables already
 
 - **Auth:** Register / login with JWT (email+password). Google Sign-In is implemented in code but currently non-functional (iOS native OAuth client ID not configured — see Known issues). Token stored in SharedPreferences.
 - **Email verification:** Verification email sent on register via Gmail API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
-- **Calendars:** Create, join via invite code, view members, kick members (owner only). Owner can delete calendar (cascades all data), members can leave.
+- **Calendars:** Create, join via invite code, view members, kick members (owner only). Members sheet shows each member's profile photo (falls back to colour initial). Owner can delete calendar (cascades all data), members can leave.
 - **Account deletion:** Users can delete their own account from the home screen.
-- **Events:** Create / edit / delete events. Optional emoji icon per event (20 presets or any emoji via full keyboard). Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
+- **Events:** Create / edit / delete events. Optional icon per event — 20 preset emojis, any emoji via full keyboard, or a custom photo (uploaded to Cloudinary `event_icons/`). The icon is shown in the calendar grid day cell and in the event row (left box) instead of the date. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
 - **Emoji reactions:** React to any event with any emoji. Quick-pick 8 common emojis or open the full emoji keyboard. One row per user+emoji+event. Broadcast in real-time via WebSocket `reaction_update`.
-- **Profile editing:** `PATCH /auth/me` — update name, colour, and avatar URL. Profile photos upload directly from device to Cloudinary (unsigned preset, cloud `dvlvgosxk`) and are stored as a CDN URL on the user record.
+- **Profile editing:** `PATCH /auth/me` — update name, colour, and avatar URL. Profile photos upload directly from device to Cloudinary (unsigned preset, cloud `dvlvgosxk`, folder `avatars`) and are stored as a CDN URL on the user record.
 - **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
 - **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`, `reaction_update`.
 - **Google Calendar sync**: Events are mirrored to the user's personal Google Calendar automatically. Available to all users via a web OAuth connect flow.
@@ -160,4 +160,4 @@ Callback URL must be registered: `https://api.milocalendar.tech/auth/google-cale
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
 - Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).
-- Cloudinary avatar upload uses an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app.
+- Cloudinary uploads use an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app. Avatar photos go to the `avatars/` folder; event icon photos go to `event_icons/`. Both use the same preset.
