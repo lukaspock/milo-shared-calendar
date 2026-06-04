@@ -5,11 +5,9 @@ import '../models/poll.dart';
 import '../models/reaction.dart';
 
 // ── Cloudinary config ──────────────────────────────────────────────────────
-// Values are injected at build time via dart_defines.json (gitignored).
-// Run with: flutter run --dart-define-from-file=dart_defines.json
-// Both values are non-secret (unsigned preset — safe to pass via CI env vars).
-const _cloudinaryCloudName = String.fromEnvironment('CLOUDINARY_CLOUD_NAME');
-const _cloudinaryUploadPreset = String.fromEnvironment('CLOUDINARY_UPLOAD_PRESET');
+// Unsigned preset — cloud name and preset name are safe to commit.
+const _cloudinaryCloudName = 'dvlvgosxk';
+const _cloudinaryUploadPreset = 'avatars';
 
 const _apiHost = String.fromEnvironment(
   'API_HOST',
