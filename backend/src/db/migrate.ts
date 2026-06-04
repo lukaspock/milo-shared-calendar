@@ -101,5 +101,9 @@ export async function runMigrations(): Promise<void> {
   // Event icons: a single emoji or short string chosen at creation/edit time
   await db`ALTER TABLE events ADD COLUMN IF NOT EXISTS icon TEXT`;
 
+  // Poll icon + color carried through to the confirmed event
+  await db`ALTER TABLE event_polls ADD COLUMN IF NOT EXISTS icon TEXT`;
+  await db`ALTER TABLE event_polls ADD COLUMN IF NOT EXISTS color TEXT`;
+
   console.log("[db] migrations applied");
 }

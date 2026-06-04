@@ -1,10 +1,14 @@
+import 'dart:io';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/poll.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/polls_provider.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 
@@ -13,6 +17,12 @@ class _Slot {
   DateTime end;
   _Slot(this.start, this.end);
 }
+
+// Event appearance colors (carried through to the confirmed event)
+const _eventColorPalette = [
+  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
+  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+];
 
 // Predefined palette for vote option colors
 const _colorPalette = [
@@ -39,6 +49,8 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   bool _isLoading = false;
+  String? _selectedIcon;
+  String? _selectedColor;
 
   final List<_Slot> _slots = [];
   final List<PollVoteOptionInput> _voteOptions = [
@@ -138,6 +150,8 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
               .map((s) => PollOptionInput(start: s.start, end: s.end))
               .toList(),
           voteOptions: _voteOptions,
+          icon: _selectedIcon,
+          color: _selectedColor,
         );
 
     if (!mounted) return;
@@ -378,6 +392,175 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                                 minWidth: 0, minHeight: 0),
                           ),
                         ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Event appearance ───────────────────────────────────
+                      Text(
+                        'EVENT APPEARANCE',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: context.appColors.inkMuted,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Icon and colour carried to the event when confirmed',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: context.appColors.inkMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Icon picker row
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showModalBottomSheet<String>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => _PollIconPickerSheet(
+                              current: _selectedIcon,
+                              surfaceColor: context.appColors.surface,
+                              lineColor: context.appColors.line,
+                              inkColor: context.appColors.ink,
+                              inkMutedColor: context.appColors.inkMuted,
+                              surfaceSoftColor: context.appColors.surfaceSoft,
+                            ),
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _selectedIcon = picked);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: context.appColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: context.appColors.line, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.appColors.line.withOpacity(0.5),
+                                offset: const Offset(0, 4),
+                                blurRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: context.appColors.surfaceSoft,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: context.appColors.line,
+                                      width: 1.5),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: _selectedIcon != null &&
+                                          (_selectedIcon!.startsWith('http'))
+                                      ? Image.network(_selectedIcon!,
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover)
+                                      : Center(
+                                          child: Text(
+                                            _selectedIcon ?? '＋',
+                                            style: TextStyle(
+                                              fontSize: _selectedIcon != null
+                                                  ? 22
+                                                  : 18,
+                                              color: _selectedIcon != null
+                                                  ? null
+                                                  : context.appColors.inkMuted,
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _selectedIcon != null
+                                      ? 'Change icon'
+                                      : 'Add an icon',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _selectedIcon != null
+                                        ? context.appColors.ink
+                                        : context.appColors.inkMuted,
+                                  ),
+                                ),
+                              ),
+                              if (_selectedIcon != null)
+                                GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _selectedIcon = null),
+                                  child: Icon(Icons.close_rounded,
+                                      size: 18,
+                                      color: context.appColors.inkMuted),
+                                ),
+                              if (_selectedIcon == null)
+                                Icon(Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: context.appColors.inkMuted),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Color swatches
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: _eventColorPalette.map((hex) {
+                          final c = _hexToColor(hex);
+                          final selected = hex == _selectedColor;
+                          return GestureDetector(
+                            onTap: () => setState(() =>
+                                _selectedColor =
+                                    _selectedColor == hex ? null : hex),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selected
+                                      ? context.appColors.ink
+                                      : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                                boxShadow: selected
+                                    ? [
+                                        BoxShadow(
+                                            color: c.withOpacity(0.4),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2))
+                                      ]
+                                    : [],
+                              ),
+                              child: selected
+                                  ? const Icon(Icons.check_rounded,
+                                      size: 18, color: Colors.white)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
                       ),
 
                       const SizedBox(height: 24),
@@ -682,6 +865,225 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
     );
   }
 }
+
+// ── Poll icon picker ──────────────────────────────────────────────────────────
+
+const _pollPresetIcons = [
+  '📅', '🗓️', '🏠', '💼', '🎓', '🏋️', '✈️', '🎵',
+  '👨‍👩‍👧', '🎉', '⚽', '🍕', '🌿', '📚', '🤝', '🏖️',
+  '🎨', '💡', '🎤', '🌟', '🎮', '🐾', '🍳', '❤️',
+];
+
+class _PollModeTab extends StatelessWidget {
+  const _PollModeTab(
+      {required this.label,
+      required this.active,
+      required this.inkColor,
+      required this.onTap});
+  final String label;
+  final bool active;
+  final Color inkColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+            color: active ? inkColor : inkColor.withOpacity(0.4),
+          ),
+        ),
+      );
+}
+
+class _PollIconPickerSheet extends StatefulWidget {
+  const _PollIconPickerSheet({
+    required this.current,
+    required this.surfaceColor,
+    required this.lineColor,
+    required this.inkColor,
+    required this.inkMutedColor,
+    required this.surfaceSoftColor,
+  });
+  final String? current;
+  final Color surfaceColor;
+  final Color lineColor;
+  final Color inkColor;
+  final Color inkMutedColor;
+  final Color surfaceSoftColor;
+
+  @override
+  State<_PollIconPickerSheet> createState() => _PollIconPickerSheetState();
+}
+
+class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
+  String _mode = 'presets';
+  bool _uploading = false;
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 85);
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final url =
+          await ApiService().uploadEventIconToCloudinary(File(picked.path));
+      if (mounted) {
+        setState(() => _uploading = false);
+        Navigator.pop(context, url);
+      }
+    } on CloudinaryUploadException catch (e) {
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload failed: ${e.message}')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final expanded = _mode == 'emoji';
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+                color: widget.lineColor,
+                borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Text('Event icon',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: widget.inkColor)),
+            const Spacer(),
+            _PollModeTab(
+                label: 'Presets',
+                active: _mode == 'presets',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'presets')),
+            const SizedBox(width: 10),
+            _PollModeTab(
+                label: 'Emoji',
+                active: _mode == 'emoji',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'emoji')),
+            const SizedBox(width: 10),
+            _PollModeTab(
+                label: 'Photo',
+                active: _mode == 'photo',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'photo')),
+          ]),
+          const SizedBox(height: 16),
+          if (_mode == 'presets')
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _pollPresetIcons.map((e) {
+                final selected = e == widget.current;
+                return GestureDetector(
+                  onTap: () => Navigator.pop(context, e),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? widget.inkColor.withOpacity(0.1)
+                          : widget.surfaceSoftColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected
+                            ? widget.inkColor.withOpacity(0.5)
+                            : widget.lineColor,
+                        width: selected ? 2 : 1.5,
+                      ),
+                    ),
+                    child: Center(
+                        child:
+                            Text(e, style: const TextStyle(fontSize: 26))),
+                  ),
+                );
+              }).toList(),
+            )
+          else if (_mode == 'emoji')
+            Expanded(
+              child: epf.EmojiPicker(
+                onEmojiSelected: (_, emoji) =>
+                    Navigator.pop(context, emoji.emoji),
+                config: epf.Config(
+                  emojiViewConfig: epf.EmojiViewConfig(
+                      backgroundColor: widget.surfaceColor, emojiSizeMax: 28),
+                  searchViewConfig: epf.SearchViewConfig(
+                      backgroundColor: widget.surfaceColor,
+                      buttonIconColor: widget.inkColor),
+                  categoryViewConfig: epf.CategoryViewConfig(
+                      backgroundColor: widget.surfaceColor,
+                      iconColor: widget.inkColor.withOpacity(0.4),
+                      iconColorSelected: widget.inkColor,
+                      indicatorColor: widget.inkColor),
+                  bottomActionBarConfig:
+                      const epf.BottomActionBarConfig(enabled: false),
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _uploading ? null : _pickPhoto,
+              child: Container(
+                width: double.infinity,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: widget.surfaceSoftColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: widget.lineColor, width: 1.5),
+                ),
+                child: _uploading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            color: widget.inkColor, strokeWidth: 2))
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_photo_alternate_outlined,
+                              size: 32, color: widget.inkMutedColor),
+                          const SizedBox(height: 8),
+                          Text('Pick from gallery',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.inkMutedColor)),
+                        ],
+                      ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SlotCard extends StatelessWidget {
   const _SlotCard({

@@ -50,7 +50,7 @@ router.patch("/auth/me", updateProfile, [authMiddleware]);
 router.post("/auth/google-calendar/connect", connectGoogleCalendar, [authMiddleware]);
 router.get("/auth/google-calendar/callback", googleCalendarCallback);
 router.delete("/users/me", deleteUser, [authMiddleware]);
-router.delete("/assets", deleteAsset, [authMiddleware]);
+router.post("/assets/delete", deleteAsset, [authMiddleware]);
 
 // --- Calendars (protected) ---
 router.get("/calendars", listCalendars, [authMiddleware]);

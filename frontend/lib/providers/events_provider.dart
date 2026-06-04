@@ -73,6 +73,17 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     }
   }
 
+  /// Adds an event that arrived via a non-WebSocket path (e.g. poll confirmation
+  /// response) directly into state. Deduplicates and updates the cache.
+  void injectEvent(CalendarEvent event) {
+    state.whenData((list) {
+      if (list.any((e) => e.id == event.id)) return;
+      final updated = [...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime));
+      state = AsyncValue.data(updated);
+      _cache.saveEvents(calendarId, updated);
+    });
+  }
+
   Future<CalendarEvent?> createEvent({
     required String title,
     String? description,
