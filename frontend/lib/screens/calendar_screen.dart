@@ -698,55 +698,46 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
               ),
             ),
-            // ── Bottom tab bar ───────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: context.appColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.appColors.line, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _tabIndex = 0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          margin: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: _tabIndex == 0 ? calHue.bg : Colors.transparent,
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Icon(
-                            Icons.calendar_today_rounded,
-                            size: 20,
-                            color: _tabIndex == 0 ? calHue.ink : context.appColors.inkMuted,
-                          ),
-                        ),
+            // ── Bottom tab bar (left-aligned island) ────────────────────
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.appColors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.appColors.line, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.appColors.ink.withOpacity(0.06),
+                        offset: const Offset(0, 2),
+                        blurRadius: 8,
                       ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _tabIndex = 1),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          margin: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: _tabIndex == 1 ? calHue.bg : Colors.transparent,
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Icon(
-                            Icons.photo_library_rounded,
-                            size: 20,
-                            color: _tabIndex == 1 ? calHue.ink : context.appColors.inkMuted,
-                          ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTabItem(
+                          context: context,
+                          icon: Icons.calendar_today_rounded,
+                          label: 'Calendar',
+                          selected: _tabIndex == 0,
+                          onTap: () => setState(() => _tabIndex = 0),
                         ),
-                      ),
+                        _buildTabItem(
+                          context: context,
+                          icon: Icons.photo_library_rounded,
+                          label: 'Photos',
+                          selected: _tabIndex == 1,
+                          onTap: () => setState(() => _tabIndex = 1),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -783,6 +774,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             )
           : null,
+    );
+  }
+
+  Widget _buildTabItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    const softOrange = Color(0xFFFF8C4B);
+    const softOrangeBg = Color(0xFFFFF0E6);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? softOrangeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected ? softOrange : context.appColors.inkMuted,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? softOrange : context.appColors.inkMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
