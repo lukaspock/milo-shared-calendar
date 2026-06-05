@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1792,7 +1792,8 @@ class _PhotoUploadSheet extends ConsumerStatefulWidget {
 }
 
 class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
-  File? _selectedFile;
+  XFile? _selectedFile;
+  Uint8List? _imageBytes;
   bool _uploading = false;
   String? _error;
 
@@ -1800,8 +1801,10 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, imageQuality: 85);
     if (picked == null) return;
+    final bytes = await picked.readAsBytes();
     setState(() {
-      _selectedFile = File(picked.path);
+      _selectedFile = picked;
+      _imageBytes = bytes;
       _error = null;
     });
   }
@@ -1880,11 +1883,11 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
           ),
           const SizedBox(height: 20),
 
-          if (_selectedFile != null) ...[
+          if (_imageBytes != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.file(
-                _selectedFile!,
+              child: Image.memory(
+                _imageBytes!,
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,

@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -885,7 +885,7 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
     setState(() => _uploading = true);
     try {
       final url =
-          await ApiService().uploadEventIconToCloudinary(File(picked.path));
+          await ApiService().uploadEventIconToCloudinary(picked);
       if (mounted) {
         setState(() => _uploading = false);
         Navigator.pop(context, url);

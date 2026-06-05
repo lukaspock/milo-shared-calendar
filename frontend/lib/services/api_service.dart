@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event_photo.dart';
@@ -71,13 +71,13 @@ class ApiService {
 
   // ── Cloudinary avatar upload ───────────────────────────────────────────────
 
-  Future<String> uploadAvatarToCloudinary(File file) =>
+  Future<String> uploadAvatarToCloudinary(XFile file) =>
       _uploadToCloudinary(file, folder: 'avatars');
 
-  Future<String> uploadEventIconToCloudinary(File file) =>
+  Future<String> uploadEventIconToCloudinary(XFile file) =>
       _uploadToCloudinary(file, folder: 'event_icons');
 
-  Future<String> uploadEventPhotoToCloudinary(File file) =>
+  Future<String> uploadEventPhotoToCloudinary(XFile file) =>
       _uploadToCloudinary(file, folder: 'event_photos');
 
   /// Asks the backend to delete a Cloudinary asset. Fire-and-forget safe.
@@ -89,11 +89,12 @@ class ApiService {
     }
   }
 
-  Future<String> _uploadToCloudinary(File file, {required String folder}) async {
+  Future<String> _uploadToCloudinary(XFile file, {required String folder}) async {
     try {
       final uploadDio = Dio();
+      final bytes = await file.readAsBytes();
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path),
+        'file': MultipartFile.fromBytes(bytes, filename: file.name),
         'upload_preset': _cloudinaryUploadPreset,
         'folder': folder,
       });

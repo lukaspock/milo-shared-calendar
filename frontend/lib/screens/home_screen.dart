@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -1379,7 +1379,7 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
     if (picked == null || !mounted) return;
     setState(() => _uploading = true);
     try {
-      final url = await ApiService().uploadEventIconToCloudinary(File(picked.path));
+      final url = await ApiService().uploadEventIconToCloudinary(picked);
       if (mounted) {
         setState(() => _uploading = false);
         Navigator.pop(context, url);
@@ -2579,7 +2579,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
     setState(() => _uploading = true);
     try {
-      final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
+      final url = await ApiService().uploadAvatarToCloudinary(picked);
       if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
     } on CloudinaryUploadException catch (e) {
       if (mounted) {

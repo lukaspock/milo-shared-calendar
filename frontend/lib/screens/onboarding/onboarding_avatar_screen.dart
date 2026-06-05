@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,7 +63,7 @@ class _OnboardingAvatarScreenState
 
     setState(() => _uploading = true);
     try {
-      final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
+      final url = await ApiService().uploadAvatarToCloudinary(picked);
       if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
