@@ -157,6 +157,7 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                     final m = members[i];
                     final hueIndex = m.name.hashCode.abs() % stickerHues.length;
                     final hue = stickerHues[hueIndex];
+                    final memberColor = _parseHexColor(m.color);
 
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -177,10 +178,10 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                     height: 40,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => _MemberInitialsAvatar(
-                                      name: m.name, hue: hue,
+                                      name: m.name, color: memberColor,
                                     ),
                                   )
-                                : _MemberInitialsAvatar(name: m.name, hue: hue),
+                                : _MemberInitialsAvatar(name: m.name, color: memberColor),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -273,20 +274,28 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
   }
 }
 
+Color _parseHexColor(String hex) {
+  try {
+    return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+  } catch (_) {
+    return AppTheme.accent;
+  }
+}
+
 class _MemberInitialsAvatar extends StatelessWidget {
   final String name;
-  final CalHue hue;
-  const _MemberInitialsAvatar({required this.name, required this.hue});
+  final Color color;
+  const _MemberInitialsAvatar({required this.name, required this.color});
 
   @override
   Widget build(BuildContext context) => Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: hue.bg,
+          color: color.withOpacity(0.15),
           boxShadow: [
             BoxShadow(
-              color: hue.deep.withOpacity(0.13),
+              color: color.withOpacity(0.15),
               offset: const Offset(0, 3),
               blurRadius: 0,
             ),
@@ -298,7 +307,7 @@ class _MemberInitialsAvatar extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w800,
-            color: hue.ink,
+            color: color,
           ),
         ),
       );
