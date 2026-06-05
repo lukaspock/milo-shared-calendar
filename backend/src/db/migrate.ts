@@ -108,6 +108,10 @@ export async function runMigrations(): Promise<void> {
   // Photo memories: opt-in per calendar (toggle at creation time)
   await db`ALTER TABLE calendars ADD COLUMN IF NOT EXISTS photo_mode BOOLEAN NOT NULL DEFAULT FALSE`;
 
+  // Calendar appearance: hue color index (0-7) and optional icon emoji/URL
+  await db`ALTER TABLE calendars ADD COLUMN IF NOT EXISTS hue_index INTEGER NOT NULL DEFAULT 0`;
+  await db`ALTER TABLE calendars ADD COLUMN IF NOT EXISTS icon TEXT`;
+
   // Photos uploaded by members for events in photo-mode calendars
   await db`
     CREATE TABLE IF NOT EXISTS event_photos (

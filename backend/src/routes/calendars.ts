@@ -14,6 +14,7 @@ export async function listCalendars(ctx: RequestContext): Promise<Response> {
 
   const calendars = await db`
     SELECT c.id, c.name, c.owner_id, c.invite_code, c.created_at, c.photo_mode,
+           c.hue_index, c.icon,
            cm.role,
            (SELECT COUNT(*)::integer FROM calendar_members WHERE calendar_id = c.id) AS member_count
     FROM calendars c
@@ -26,7 +27,7 @@ export async function listCalendars(ctx: RequestContext): Promise<Response> {
 
 export async function createCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
-  let body: { name?: string; photo_mode?: boolean };
+  let body: { name?: string; photo_mode?: boolean; hue_index?: number; icon?: string };
   try {
     body = await ctx.req.json();
   } catch {
@@ -35,6 +36,8 @@ export async function createCalendar(ctx: RequestContext): Promise<Response> {
 
   if (!body.name?.trim()) return error("name is required");
   const photoMode = body.photo_mode === true;
+  const hueIndex = typeof body.hue_index === 'number' ? Math.max(0, Math.min(7, Math.round(body.hue_index))) : 0;
+  const icon = typeof body.icon === 'string' ? body.icon : null;
 
   let inviteCode: string;
   // Ensure unique invite code
@@ -45,8 +48,8 @@ export async function createCalendar(ctx: RequestContext): Promise<Response> {
   }
 
   const calendars = await db`
-    INSERT INTO calendars (name, owner_id, invite_code, photo_mode)
-    VALUES (${body.name.trim()}, ${userId}, ${inviteCode}, ${photoMode})
+    INSERT INTO calendars (name, owner_id, invite_code, photo_mode, hue_index, icon)
+    VALUES (${body.name.trim()}, ${userId}, ${inviteCode}, ${photoMode}, ${hueIndex}, ${icon})
     RETURNING *
   `;
   const calendar = calendars[0];
@@ -205,4 +208,31 @@ export async function leaveCalendar(ctx: RequestContext): Promise<Response> {
 
   await db`DELETE FROM calendar_members WHERE calendar_id = ${id} AND user_id = ${userId}`;
   return json({ message: "Left calendar" });
+}
+
+export async function patchCalendar(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const membership = await db`SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}`;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  let body: { hue_index?: number; icon?: string | null };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  if (body.hue_index !== undefined) {
+    const idx = Math.max(0, Math.min(7, Math.round(body.hue_index)));
+    await db`UPDATE calendars SET hue_index = ${idx} WHERE id = ${id}`;
+  }
+  if ('icon' in body) {
+    const iconVal = typeof body.icon === 'string' ? body.icon : null;
+    await db`UPDATE calendars SET icon = ${iconVal} WHERE id = ${id}`;
+  }
+
+  const rows = await db`SELECT * FROM calendars WHERE id = ${id}`;
+  return json(rows[0]);
 }

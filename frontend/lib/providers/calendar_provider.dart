@@ -74,11 +74,13 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     }
   }
 
-  Future<CalendarModel?> createCalendar(String name, {bool photoMode = false}) async {
+  Future<CalendarModel?> createCalendar(String name, {bool photoMode = false, int hueIndex = 0, String? icon}) async {
     try {
       final res = await _api.post('/calendars', data: {
         'name': name,
         if (photoMode) 'photo_mode': true,
+        'hue_index': hueIndex,
+        if (icon != null) 'icon': icon,
       });
       final calendar =
           CalendarModel.fromJson(res.data as Map<String, dynamic>);
@@ -103,6 +105,27 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> updateCalendarAppearance(String calendarId, {int? hueIndex, String? icon, bool clearIcon = false}) async {
+    // Optimistic local update
+    if (hueIndex != null) setCalendarHue(calendarId, hueIndex);
+    if (icon != null) setCalendarIcon(calendarId, icon);
+    if (clearIcon) clearCalendarIconOverride(calendarId);
+    state.whenData((list) {
+      state = AsyncValue.data(list.map((c) {
+        if (c.id != calendarId) return c;
+        return c.copyWith(hueIndex: hueIndex, icon: icon, clearIcon: clearIcon);
+      }).toList());
+    });
+
+    try {
+      final body = <String, dynamic>{};
+      if (hueIndex != null) body['hue_index'] = hueIndex;
+      if (icon != null) body['icon'] = icon;
+      if (clearIcon) body['icon'] = null;
+      if (body.isNotEmpty) await _api.patch('/calendars/$calendarId', data: body);
+    } catch (_) {}
   }
 
   Future<List<CalendarMember>> getMembers(String calendarId) async {
