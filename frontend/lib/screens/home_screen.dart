@@ -9,9 +9,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../models/calendar.dart';
+import '../models/event.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
+import '../providers/events_provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
@@ -125,21 +127,22 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // ── Up Next card ──────────────────────────────────────────
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                      child: _UpNextCard(
-                        calendars: calendars,
-                        calendarId: calendars.isNotEmpty ? calendars.first.id : null,
-                        onTap: calendars.isNotEmpty
-                            ? () => _openCalendar(context, ref, calendars.first)
-                            : null,
+                  // ── Upcoming events ───────────────────────────────────────
+                  if (calendars.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                        child: _SectionHeader(title: 'Upcoming events'),
                       ),
                     ),
-                  ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                    SliverToBoxAdapter(
+                      child: _UpcomingEventsRow(
+                        calendars: calendars,
+                        onTapCalendar: (cal) => _openCalendar(context, ref, cal),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                  ],
 
                   // ── My calendars ──────────────────────────────────────────
                   if (myCalendars.isNotEmpty) ...[
@@ -240,24 +243,26 @@ class HomeScreen extends ConsumerWidget {
           },
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _PillFAB(
-            heroTag: 'join',
-            label: 'Join calendar',
-            isSecondary: true,
-            onTap: () => _showJoinSheet(context, ref),
-          ),
-          const SizedBox(height: 10),
-          _PillFAB(
-            heroTag: 'create',
-            label: '+ New calendar',
-            isSecondary: false,
-            onTap: () => _showCreateSheet(context, ref),
-          ),
-        ],
+      floatingActionButton: IntrinsicWidth(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _PillFAB(
+              heroTag: 'join',
+              label: 'Join calendar',
+              isSecondary: true,
+              onTap: () => _showJoinSheet(context, ref),
+            ),
+            const SizedBox(height: 10),
+            _PillFAB(
+              heroTag: 'create',
+              label: '+ New calendar',
+              isSecondary: false,
+              onTap: () => _showCreateSheet(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -344,97 +349,191 @@ class HomeScreen extends ConsumerWidget {
 
 // ── Up Next card ──────────────────────────────────────────────────────────────
 
-class _UpNextCard extends StatelessWidget {
-  const _UpNextCard({required this.calendars, this.calendarId, this.onTap});
+// ── Upcoming events row ───────────────────────────────────────────────────────
+
+class _UpcomingEventsRow extends ConsumerWidget {
+  const _UpcomingEventsRow({
+    required this.calendars,
+    required this.onTapCalendar,
+  });
   final List<CalendarModel> calendars;
-  final String? calendarId;
-  final VoidCallback? onTap;
+  final void Function(CalendarModel) onTapCalendar;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final weekEnd = now.add(const Duration(days: 7));
+
+    final upcoming = <(CalendarEvent, CalendarModel)>[];
+    for (final cal in calendars) {
+      final events = ref.watch(eventsProvider(cal.id)).valueOrNull ?? [];
+      for (final e in events) {
+        if (e.endTime.isAfter(now) && e.startTime.isBefore(weekEnd)) {
+          upcoming.add((e, cal));
+        }
+      }
+    }
+    upcoming.sort((a, b) => a.$1.startTime.compareTo(b.$1.startTime));
+
+    if (upcoming.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.appColors.line, width: 1.5),
+          ),
+          child: Text(
+            'No events in the next 7 days',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.inkMuted,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 130,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: upcoming.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, i) {
+          final (event, cal) = upcoming[i];
+          return _UpcomingEventCard(
+            event: event,
+            calendar: cal,
+            onTap: () => onTapCalendar(cal),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _UpcomingEventCard extends StatelessWidget {
+  const _UpcomingEventCard({
+    required this.event,
+    required this.calendar,
+    required this.onTap,
+  });
+  final CalendarEvent event;
+  final CalendarModel calendar;
+  final VoidCallback onTap;
+
+  String _dayLabel(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(dt.year, dt.month, dt.day);
+    if (day == today) return 'Today';
+    if (day == today.add(const Duration(days: 1))) return 'Tomorrow';
+    const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}';
+  }
+
+  String _fmt(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
-    final hue = calendars.isNotEmpty ? hueFor(calendars.first) : stickerHues[0];
+    final hue = hueFor(calendar);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? hue.darkBg : hue.bg;
-    final textColor = isDark ? context.appColors.ink : hue.ink;
-    final subColor = isDark ? context.appColors.inkSoft : hue.dot;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        width: 178,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isDark ? Border.all(color: context.appColors.line, width: 1.5) : null,
+          color: context.appColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.appColors.line, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: hue.deep.withOpacity(isDark ? 0.0 : 0.13),
+              color: context.appColors.line.withOpacity(0.5),
               offset: const Offset(0, 4),
               blurRadius: 0,
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: context.appColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: hue.deep.withOpacity(isDark ? 0.0 : 0.08),
-                    offset: const Offset(0, 3),
-                    blurRadius: 0,
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: event.color,
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: AppImages.calendar(size: 22),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _dayLabel(event.startTime),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: event.color,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
+            const SizedBox(height: 6),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'UP NEXT · TODAY',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    calendars.isEmpty ? 'No calendars yet' : 'Open ${calendars.first.name}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    calendars.isEmpty
-                        ? 'Create a calendar to get started'
-                        : '${calendars.first.memberCount} members · ${calendars.first.inviteCode}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: subColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                event.title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.ink,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: textColor, size: 20),
+            const SizedBox(height: 6),
+            Text(
+              '${_fmt(event.startTime)} – ${_fmt(event.endTime)}',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: context.appColors.inkMuted,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: isDark ? hue.darkBg : hue.bg,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                calendar.name,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: hue.ink,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
@@ -445,9 +544,9 @@ class _UpNextCard extends StatelessWidget {
 // ── Section header ────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.count});
+  const _SectionHeader({required this.title, this.count});
   final String title;
-  final int count;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
@@ -462,23 +561,25 @@ class _SectionHeader extends StatelessWidget {
             letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: context.appColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: context.appColors.line, width: 1),
-          ),
-          child: Text(
-            count.toString(),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: context.appColors.inkMuted,
+        if (count != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.appColors.line, width: 1),
+            ),
+            child: Text(
+              count.toString(),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.inkMuted,
+              ),
             ),
           ),
-        ),
+        ],
         const SizedBox(width: 12),
         Expanded(child: Divider(color: context.appColors.line, thickness: 1)),
       ],

@@ -18,28 +18,31 @@ class NotificationTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _Option(
-            icon: Icons.notifications_active_rounded,
-            title: 'On my phone',
-            subtitle: 'Pop-up alerts on this device',
-            selected: value == NotificationType.push,
-            onTap: () => onChanged(NotificationType.push),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _Option(
+              icon: Icons.notifications_active_rounded,
+              title: 'On my phone',
+              subtitle: 'Pop-up alerts on this device',
+              selected: value == NotificationType.push,
+              onTap: () => onChanged(NotificationType.push),
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _Option(
-            icon: Icons.mail_outline_rounded,
-            title: 'Email',
-            subtitle: 'Get an email each time',
-            selected: value == NotificationType.email,
-            onTap: () => onChanged(NotificationType.email),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _Option(
+              icon: Icons.mail_outline_rounded,
+              title: 'Email',
+              subtitle: 'Get an email each time',
+              selected: value == NotificationType.email,
+              onTap: () => onChanged(NotificationType.email),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

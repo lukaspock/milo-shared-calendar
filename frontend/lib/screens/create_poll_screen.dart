@@ -18,12 +18,6 @@ class _Slot {
   _Slot(this.start, this.end);
 }
 
-// Event appearance colors (carried through to the confirmed event)
-const _eventColorPalette = [
-  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
-  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
-];
-
 // Predefined palette for vote option colors
 const _colorPalette = [
   '#28A745', // green
@@ -50,7 +44,6 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
   final _descCtrl = TextEditingController();
   bool _isLoading = false;
   String? _selectedIcon;
-  String? _selectedColor;
 
   final List<_Slot> _slots = [];
   final List<PollVoteOptionInput> _voteOptions = [
@@ -151,7 +144,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
               .toList(),
           voteOptions: _voteOptions,
           icon: _selectedIcon,
-          color: _selectedColor,
+          color: null,
         );
 
     if (!mounted) return;
@@ -408,7 +401,7 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Icon and colour carried to the event when confirmed',
+                        'Icon carried to the event when confirmed',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           color: context.appColors.inkMuted,
@@ -520,48 +513,6 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 10),
-
-                      // Color swatches
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _eventColorPalette.map((hex) {
-                          final c = _hexToColor(hex);
-                          final selected = hex == _selectedColor;
-                          return GestureDetector(
-                            onTap: () => setState(() =>
-                                _selectedColor =
-                                    _selectedColor == hex ? null : hex),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: c,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selected
-                                      ? context.appColors.ink
-                                      : Colors.transparent,
-                                  width: 2.5,
-                                ),
-                                boxShadow: selected
-                                    ? [
-                                        BoxShadow(
-                                            color: c.withOpacity(0.4),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, 2))
-                                      ]
-                                    : [],
-                              ),
-                              child: selected
-                                  ? const Icon(Icons.check_rounded,
-                                      size: 18, color: Colors.white)
-                                  : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
 
                       const SizedBox(height: 24),
 

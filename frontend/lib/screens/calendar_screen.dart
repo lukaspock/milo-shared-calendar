@@ -38,6 +38,8 @@ class CalendarScreen extends ConsumerStatefulWidget {
   ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
+const double _kTabW = 96.0;
+
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _selectedDay;
@@ -377,9 +379,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             color: const Color(0xFFFFF3E0),
                             borderColor: const Color(0xFFE8A020),
                             iconColor: const Color(0xFFB07000),
-                            message: 'Vergiss nicht, ein Foto zu machen!',
+                            message: 'Don\'t forget to take a photo!',
                             eventTitle: activeEvent.title,
-                            actionLabel: 'Foto hinzufügen',
+                            actionLabel: 'Add photo',
                             onAction: () => _showUploadSheet(
                               context,
                               activeEvent!.id,
@@ -591,8 +593,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         const SizedBox(height: 12),
                         Text(
                           calendar?.photoMode == true
-                              ? 'Noch keine Fotos – macht Erinnerungen!'
-                              : 'Photo mode ist für diesen Calendar nicht aktiv.',
+                              ? 'No photos yet – create some memories!'
+                              : 'Photo mode is not enabled for this calendar.',
                           style: GoogleFonts.plusJakartaSans(
                             color: context.appColors.inkMuted,
                             fontSize: 14,
@@ -631,7 +633,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   border: Border.all(color: context.appColors.line, width: 1.5),
                                 ),
                                 child: Text(
-                                  '+ Foto',
+                                  '+ Photo',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -698,15 +700,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
               ),
             ),
-            // ── Bottom tab bar (left-aligned island) ────────────────────
-            Align(
+            // ── Bottom tab bar (only when photo memories is enabled) ─────
+            if (calendar?.photoMode == true) Align(
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
                 child: Container(
+                  width: 2 * _kTabW + 8,
                   decoration: BoxDecoration(
                     color: context.appColors.surface,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(26),
                     border: Border.all(color: context.appColors.line, width: 1.5),
                     boxShadow: [
                       BoxShadow(
@@ -716,27 +719,51 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildTabItem(
-                          context: context,
-                          icon: Icons.calendar_today_rounded,
-                          label: 'Calendar',
-                          selected: _tabIndex == 0,
-                          onTap: () => setState(() => _tabIndex = 0),
+                  child: Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeInOut,
+                        left: 4.0 + _tabIndex * _kTabW,
+                        top: 4,
+                        width: _kTabW,
+                        bottom: 4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0E6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
-                        _buildTabItem(
-                          context: context,
-                          icon: Icons.photo_library_rounded,
-                          label: 'Photos',
-                          selected: _tabIndex == 1,
-                          onTap: () => setState(() => _tabIndex = 1),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: _kTabW,
+                              child: _buildTabItem(
+                                context: context,
+                                icon: Icons.calendar_today_rounded,
+                                label: 'Calendar',
+                                selected: _tabIndex == 0,
+                                onTap: () => setState(() => _tabIndex = 0),
+                              ),
+                            ),
+                            SizedBox(
+                              width: _kTabW,
+                              child: _buildTabItem(
+                                context: context,
+                                icon: Icons.photo_library_rounded,
+                                label: 'Photos',
+                                selected: _tabIndex == 1,
+                                onTap: () => setState(() => _tabIndex = 1),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -785,16 +812,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required VoidCallback onTap,
   }) {
     const softOrange = Color(0xFFFF8C4B);
-    const softOrangeBg = Color(0xFFFFF0E6);
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? softOrangeBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
