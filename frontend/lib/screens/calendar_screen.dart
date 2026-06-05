@@ -38,7 +38,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
   ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-const double _kTabW = 90.0;
+const double _kTabW = 96.0;
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
@@ -700,8 +700,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
               ),
             ),
-            // ── Bottom tab bar (left-aligned island, sliding pill) ───────
-            Align(
+            // ── Bottom tab bar (only when photo memories is enabled) ─────
+            if (calendar?.photoMode == true) Align(
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
