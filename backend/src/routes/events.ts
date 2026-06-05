@@ -201,7 +201,8 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     const newEnd         = 'recurrence_end'  in body ? (body.recurrence_end  ?? null) : (event.recurrence_end  as string | null);
     const fromTime       = event.start_time as string;
 
-    const newIcon = 'icon' in body ? (body.icon ?? null) : (event.icon as string | null);
+    const oldIcon = event.icon as string | null;
+    const newIcon = 'icon' in body ? (body.icon ?? null) : oldIcon;
     await db`
       UPDATE events SET
         title           = ${newTitle},
@@ -213,6 +214,8 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
       WHERE (id = ${rootId} OR parent_event_id = ${rootId})
         AND start_time >= ${fromTime}
     `;
+    // Delete old Cloudinary icon if it was replaced
+    if ('icon' in body && oldIcon !== newIcon) cleanupAssets([oldIcon]);
     const updatedRows = await db`SELECT * FROM events WHERE id = ${id}`;
     const ue = updatedRows[0];
     syncEventUpdated({
@@ -225,6 +228,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     return json(ue);
   }
 
+  const oldIcon = event.icon as string | null;
   const updated = await db`
     UPDATE events SET
       title = ${body.title ?? event.title},
@@ -238,6 +242,9 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     WHERE id = ${id}
     RETURNING *
   `;
+
+  // Delete old Cloudinary icon if it was replaced
+  if ('icon' in body && oldIcon !== (body.icon ?? null)) cleanupAssets([oldIcon]);
 
   const u = updated[0];
   syncEventUpdated({
