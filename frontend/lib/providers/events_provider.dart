@@ -70,6 +70,11 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       state.whenData((list) {
         state = AsyncValue.data(list.where((e) => e.id != eventId).toList());
       });
+    } else if (type == 'event_starting' || type == 'event_ended') {
+      final cal = msg['calendar_id'] as String?;
+      if (cal != calendarId) return;
+      // Force a state update so CalendarScreen rebuilds and recomputes photo banners
+      state.whenData((list) => state = AsyncValue.data([...list]));
     }
   }
 

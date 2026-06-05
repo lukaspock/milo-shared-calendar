@@ -53,6 +53,8 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<EventPhoto>>> {
     try {
       final url = await _api.uploadEventPhotoToCloudinary(imageFile);
       await _api.addEventPhoto(eventId, url);
+      // Immediately refresh so the uploader sees their photo without waiting for WS
+      await fetch();
       return true;
     } catch (_) {
       return false;

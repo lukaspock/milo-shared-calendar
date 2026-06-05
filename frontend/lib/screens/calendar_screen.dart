@@ -158,7 +158,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _showFullScreenPhoto(BuildContext ctx, EventPhoto photo) {
-    Navigator.of(ctx).push(
+    // rootNavigator: true ensures we push above GoRouter's navigator so
+    // the AppBar back button pops only the photo overlay, not the calendar
+    Navigator.of(ctx, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => _FullScreenPhotoView(photo: photo),
         fullscreenDialog: true,
@@ -278,9 +280,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => ref
-                        .read(eventsProvider(widget.calendarId).notifier)
-                        .fetch(),
+                    onTap: () {
+                      ref.read(eventsProvider(widget.calendarId).notifier).fetch();
+                      if (calendar?.photoMode == true) {
+                        ref.read(photosProvider(widget.calendarId).notifier).fetch();
+                      }
+                    },
                     child: Container(
                       width: 40,
                       height: 40,
