@@ -13,6 +13,10 @@ function getGmailClient() {
   return google.gmail({ version: "v1", auth });
 }
 
+function encodeSubject(subject: string): string {
+  return `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
+}
+
 async function send(to: string, subject: string, html: string): Promise<void> {
   const gmail = getGmailClient();
   if (!gmail) {
@@ -20,7 +24,7 @@ async function send(to: string, subject: string, html: string): Promise<void> {
     return;
   }
   const raw = Buffer.from(
-    `From: SharedCal <${FROM}>\r\nTo: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`
+    `From: SharedCal <${FROM}>\r\nTo: ${to}\r\nSubject: ${encodeSubject(subject)}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`
   ).toString("base64url");
   try {
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
