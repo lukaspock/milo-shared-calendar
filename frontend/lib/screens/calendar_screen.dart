@@ -364,134 +364,137 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     }).toList();
                   }
 
-                  return Column(
-                    children: [
+                  return CustomScrollView(
+                    slivers: [
                       // ── Photo memory banners ───────────────────────────────
                       if (activeEvent != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: _PhotoBanner(
-                            icon: '📸',
-                            color: const Color(0xFFFFF3E0),
-                            borderColor: const Color(0xFFE8A020),
-                            iconColor: const Color(0xFFB07000),
-                            message: 'Vergiss nicht, ein Foto zu machen!',
-                            eventTitle: activeEvent.title,
-                            actionLabel: 'Foto hinzufügen',
-                            onAction: () => _showUploadSheet(
-                              context,
-                              activeEvent!.id,
-                              activeEvent.title,
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _PhotoBanner(
+                              icon: '📸',
+                              color: const Color(0xFFFFF3E0),
+                              borderColor: const Color(0xFFE8A020),
+                              iconColor: const Color(0xFFB07000),
+                              message: 'Vergiss nicht, ein Foto zu machen!',
+                              eventTitle: activeEvent.title,
+                              actionLabel: 'Foto hinzufügen',
+                              onAction: () => _showUploadSheet(
+                                context,
+                                activeEvent!.id,
+                                activeEvent.title,
+                              ),
                             ),
                           ),
                         ),
                       if (activeEvent == null && recentlyEndedEvents.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: _PhotoBanner(
-                            icon: '🖼',
-                            color: const Color(0xFFE8F4FD),
-                            borderColor: const Color(0xFF2196F3),
-                            iconColor: const Color(0xFF1565C0),
-                            message: 'Heb dir eine Erinnerung auf!',
-                            eventTitle: recentlyEndedEvents.first.title,
-                            actionLabel: 'Foto hochladen',
-                            onAction: () => _showUploadSheet(
-                              context,
-                              recentlyEndedEvents.first.id,
-                              recentlyEndedEvents.first.title,
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _PhotoBanner(
+                              icon: '🖼',
+                              color: const Color(0xFFE8F4FD),
+                              borderColor: const Color(0xFF2196F3),
+                              iconColor: const Color(0xFF1565C0),
+                              message: 'Heb dir eine Erinnerung auf!',
+                              eventTitle: recentlyEndedEvents.first.title,
+                              actionLabel: 'Foto hochladen',
+                              onAction: () => _showUploadSheet(
+                                context,
+                                recentlyEndedEvents.first.id,
+                                recentlyEndedEvents.first.title,
+                              ),
                             ),
                           ),
                         ),
 
-                      // ── Calendar card ──────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: context.appColors.surface,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: context.appColors.line,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.appColors.line.withOpacity(0.5),
-                                offset: const Offset(0, 4),
-                                blurRadius: 0,
+                      // ── Calendar card – sticky pinned header ───────────────
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _CalendarSliverDelegate(
+                          height: _calCardHeight(_focusedMonth),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: context.appColors.surface,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: context.appColors.line,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.appColors.line.withOpacity(0.5),
+                                    offset: const Offset(0, 4),
+                                    blurRadius: 0,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(18),
-                          child: _CalendarGrid(
-                            month: _focusedMonth,
-                            selectedDay: _selectedDay,
-                            eventsByDay: eventsByDay,
-                            calHue: calHue,
-                            onMonthChanged: (m) =>
-                                setState(() => _focusedMonth = m),
-                            onDaySelected: (d) =>
-                                setState(() => _selectedDay = d),
+                              padding: const EdgeInsets.all(18),
+                              child: _CalendarGrid(
+                                month: _focusedMonth,
+                                selectedDay: _selectedDay,
+                                eventsByDay: eventsByDay,
+                                calHue: calHue,
+                                onMonthChanged: (m) =>
+                                    setState(() => _focusedMonth = m),
+                                onDaySelected: (d) =>
+                                    setState(() => _selectedDay = d),
+                              ),
+                            ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 16),
-
-                      // ── Day header ─────────────────────────────────────
-                      if (_selectedDay != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              Text(
-                                DateFormat('EEE, MMM d')
-                                    .format(_selectedDay!)
-                                    .toUpperCase(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: context.appColors.inkMuted,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (_isSameDay(_selectedDay!, DateTime.now()))
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: calHue.bg,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'today',
+                      // ── Day header + Events + Polls + Memories ─────────────
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            // Day header
+                            if (_selectedDay != null) ...[
+                              Row(
+                                children: [
+                                  Text(
+                                    DateFormat('EEE, MMM d')
+                                        .format(_selectedDay!)
+                                        .toUpperCase(),
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: calHue.ink,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: context.appColors.inkMuted,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
-                                ),
-                              const Expanded(child: SizedBox()),
+                                  const SizedBox(width: 8),
+                                  if (_isSameDay(_selectedDay!, DateTime.now()))
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: calHue.bg,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'today',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: calHue.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  const Expanded(child: SizedBox()),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
                             ],
-                          ),
-                        ),
 
-                      const SizedBox(height: 8),
-
-                      // ── Events + Polls ─────────────────────────────────
-                      Expanded(
-                        child: ListView(
-                          padding:
-                              const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                          children: [
                             // Events for selected day
                             if (selectedEvents.isEmpty)
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                                 child: Text(
                                   _selectedDay == null
                                       ? 'Tap a date to see events'
@@ -508,8 +511,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 final ev = e.value;
                                 return Padding(
                                   padding: EdgeInsets.only(
-                                      bottom: e.key <
-                                              selectedEvents.length - 1
+                                      bottom: e.key < selectedEvents.length - 1
                                           ? 10
                                           : 0),
                                   child: _EventRow(
@@ -544,8 +546,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     height: 20,
                                     decoration: BoxDecoration(
                                       color: calHue.bg,
-                                      borderRadius:
-                                          BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Center(
                                       child: Text(
@@ -565,10 +566,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 final poll = e.value;
                                 return Padding(
                                   padding: EdgeInsets.only(
-                                      bottom:
-                                          e.key < openPolls.length - 1
-                                              ? 10
-                                              : 0),
+                                      bottom: e.key < openPolls.length - 1
+                                          ? 10
+                                          : 0),
                                   child: _PollCard(
                                     poll: poll,
                                     calHue: calHue,
@@ -655,7 +655,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   );
                                 }),
                             ],
-                          ],
+                          ]),
                         ),
                       ),
                     ],
@@ -699,6 +699,41 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+// ── Calendar sliver delegate – makes the grid a sticky pinned header ─────────
+
+/// Computes the pixel height of the calendar card for the given month.
+/// Used by [_CalendarSliverDelegate] so the pinned header has the right size.
+double _calCardHeight(DateTime month) {
+  final first = DateTime(month.year, month.month, 1);
+  final offset = (first.weekday - 1) % 7; // 0 = Mon
+  final days = DateUtils.getDaysInMonth(month.year, month.month);
+  final weeks = ((offset + days) / 7).ceil();
+  // container padding (36) + month-nav row (32) + gap (12)
+  // + weekday-label row (14) + gap (6) + grid rows + border (3) + buffer (3)
+  const overhead = 36.0 + 32.0 + 12.0 + 14.0 + 6.0 + 6.0;
+  return overhead + weeks * 58.0 + (weeks - 1) * 4.0;
+}
+
+class _CalendarSliverDelegate extends SliverPersistentHeaderDelegate {
+  const _CalendarSliverDelegate({required this.child, required this.height});
+
+  final Widget child;
+  final double height;
+
+  @override
+  double get minExtent => height;
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return ColoredBox(color: context.appColors.bg, child: child);
+  }
+
+  @override
+  bool shouldRebuild(_CalendarSliverDelegate old) => old.height != height;
 }
 
 // ── Create-choice bottom sheet ────────────────────────────────────────────────
