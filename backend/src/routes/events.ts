@@ -191,6 +191,7 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
   const isOwner = membership[0].role === "owner";
   if (!isCreator && !isOwner) return error("Only the event creator or calendar owner can edit this event", 403);
 
+
   if (body.edit_all) {
     // Update this event and all future instances in the series
     const rootId = (event.parent_event_id ?? event.id) as string;
