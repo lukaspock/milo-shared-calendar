@@ -32,17 +32,20 @@ export function extractPublicId(url: string): string | null {
 
 /**
  * Deletes a single Cloudinary asset by public_id.
- * No-ops silently when API credentials are not configured.
+ * No-ops (with a warning) when API credentials are not configured.
  */
 export async function deleteCloudinaryAsset(publicId: string): Promise<void> {
-  if (!API_KEY || !API_SECRET) return;
+  if (!API_KEY || !API_SECRET) {
+    console.warn(`[cloudinary] Skipping delete of "${publicId}" — CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET not set`);
+    return;
+  }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const signature = createHash('sha1')
     .update(`public_id=${publicId}&timestamp=${timestamp}${API_SECRET}`)
     .digest('hex');
 
-  await fetch(
+  const res = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/destroy`,
     {
       method: 'POST',
@@ -50,6 +53,11 @@ export async function deleteCloudinaryAsset(publicId: string): Promise<void> {
       body: JSON.stringify({ public_id: publicId, api_key: API_KEY, timestamp, signature }),
     },
   );
+  const body = await res.json() as { result?: string; error?: { message: string } };
+  if (body.error) {
+    throw new Error(`Cloudinary delete failed for "${publicId}": ${body.error.message}`);
+  }
+  console.log(`[cloudinary] Deleted "${publicId}": ${body.result}`);
 }
 
 /**
