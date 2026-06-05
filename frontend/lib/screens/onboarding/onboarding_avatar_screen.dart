@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/app_image.dart';
 import 'onboarding_shell.dart';
 
 const _avatarColors = [
@@ -96,12 +95,84 @@ class _OnboardingAvatarScreenState
     final initials = _initials(user?.name ?? '');
     final profileColor = _toColor(_selectedColor);
 
+    final avatarHeader = GestureDetector(
+      onTap: _uploading ? null : _pickPhoto,
+      child: Stack(
+        children: [
+          Container(
+            width: 108,
+            height: 108,
+            decoration: BoxDecoration(
+              color: _avatarUrl != null
+                  ? Colors.transparent
+                  : profileColor.withOpacity(0.12),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: profileColor.withOpacity(0.30),
+                width: 2.5,
+              ),
+            ),
+            child: _avatarUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      _avatarUrl!,
+                      width: 108,
+                      height: 108,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                          initials,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w700,
+                            color: profileColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : _uploading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            color: profileColor, strokeWidth: 2.5))
+                    : Center(
+                        child: Text(
+                          initials,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w700,
+                            color: profileColor,
+                          ),
+                        ),
+                      ),
+          ),
+          Positioned(
+            bottom: 2,
+            right: 2,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.accent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: context.appColors.bg,
+                  width: 2,
+                ),
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  size: 16, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return OnboardingShell(
       step: 6,
       totalSteps: 7,
       onBack: () => context.go('/onboarding/notifications'),
-      illustration: AppImages.people(size: 72),
-      illustrationHue: stickerHues[5],
+      customHeader: avatarHeader,
       title: 'Make it yours',
       subtitle:
           'Pick a colour and add a photo so your friends know it\'s you. You can always change it later.',
@@ -112,84 +183,6 @@ class _OnboardingAvatarScreenState
       onContinue: (_saving || _uploading) ? null : _continue,
       child: Column(
         children: [
-          // Avatar circle
-          Center(
-            child: GestureDetector(
-              onTap: _uploading ? null : _pickPhoto,
-              child: Stack(
-                children: [
-                  Container(
-                    width: 108,
-                    height: 108,
-                    decoration: BoxDecoration(
-                      color: _avatarUrl != null
-                          ? Colors.transparent
-                          : profileColor.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: profileColor.withOpacity(0.30),
-                        width: 2.5,
-                      ),
-                    ),
-                    child: _avatarUrl != null
-                        ? ClipOval(
-                            child: Image.network(
-                              _avatarUrl!,
-                              width: 108,
-                              height: 108,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(
-                                child: Text(
-                                  initials,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 38,
-                                    fontWeight: FontWeight.w700,
-                                    color: profileColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        : _uploading
-                            ? Center(
-                                child: CircularProgressIndicator(
-                                    color: profileColor, strokeWidth: 2.5))
-                            : Center(
-                                child: Text(
-                                  initials,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 38,
-                                    fontWeight: FontWeight.w700,
-                                    color: profileColor,
-                                  ),
-                                ),
-                              ),
-                  ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: context.appColors.bg,
-                          width: 2,
-                        ),
-                      ),
-                      child: const Icon(Icons.camera_alt_rounded,
-                          size: 16, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
           // Photo hint / remove
           Text(
             _uploading

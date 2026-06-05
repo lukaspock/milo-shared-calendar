@@ -13,8 +13,9 @@ class OnboardingShell extends StatelessWidget {
     required this.step,
     required this.totalSteps,
     required this.onBack,
-    required this.illustration,
-    required this.illustrationHue,
+    this.illustration,
+    this.illustrationHue,
+    this.customHeader,
     required this.title,
     required this.subtitle,
     required this.buttonLabel,
@@ -28,8 +29,9 @@ class OnboardingShell extends StatelessWidget {
   final int step;
   final int totalSteps;
   final VoidCallback? onBack;
-  final Widget illustration;
-  final CalHue illustrationHue;
+  final Widget? illustration;
+  final CalHue? illustrationHue;
+  final Widget? customHeader;
   final String title;
   final String subtitle;
   final String buttonLabel;
@@ -80,17 +82,21 @@ class OnboardingShell extends StatelessWidget {
                   children: [
                     const SizedBox(height: 36),
 
-                    // Illustration
-                    Center(
-                      child: StickerTile(
-                        hue: illustrationHue,
-                        size: 140,
-                        radius: 36,
-                        child: illustration,
+                    // Illustration or custom header
+                    if (customHeader != null) ...[
+                      Center(child: customHeader!),
+                      const SizedBox(height: 36),
+                    ] else if (illustration != null && illustrationHue != null) ...[
+                      Center(
+                        child: StickerTile(
+                          hue: illustrationHue!,
+                          size: 140,
+                          radius: 36,
+                          child: illustration!,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 36),
+                      const SizedBox(height: 36),
+                    ],
 
                     // Title
                     Text(
