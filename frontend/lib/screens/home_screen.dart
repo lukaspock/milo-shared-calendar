@@ -240,24 +240,26 @@ class HomeScreen extends ConsumerWidget {
           },
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _PillFAB(
-            heroTag: 'join',
-            label: 'Join calendar',
-            isSecondary: true,
-            onTap: () => _showJoinSheet(context, ref),
-          ),
-          const SizedBox(height: 10),
-          _PillFAB(
-            heroTag: 'create',
-            label: '+ New calendar',
-            isSecondary: false,
-            onTap: () => _showCreateSheet(context, ref),
-          ),
-        ],
+      floatingActionButton: IntrinsicWidth(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _PillFAB(
+              heroTag: 'join',
+              label: 'Join calendar',
+              isSecondary: true,
+              onTap: () => _showJoinSheet(context, ref),
+            ),
+            const SizedBox(height: 10),
+            _PillFAB(
+              heroTag: 'create',
+              label: '+ New calendar',
+              isSecondary: false,
+              onTap: () => _showCreateSheet(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }
