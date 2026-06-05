@@ -384,9 +384,9 @@ const List<CalHue> stickerHues = [
 final Map<String, int> _calendarHueOverrides = {};
 
 CalHue hueFor(CalendarModel c) {
+  // Local override takes priority (optimistic UI during editing), then server value
   final override = _calendarHueOverrides[c.id];
-  if (override != null) return stickerHues[override.clamp(0, stickerHues.length - 1)];
-  return stickerHues[c.id.hashCode.abs() % stickerHues.length];
+  return stickerHues[(override ?? c.hueIndex).clamp(0, stickerHues.length - 1)];
 }
 
 void setCalendarHue(String calendarId, int hueIndex) {
@@ -414,10 +414,15 @@ Future<void> persistCalendarHue(String calendarId, int hueIndex) async {
 final Map<String, String> _calendarIconOverrides = {};
 
 /// Returns the custom icon (emoji or URL) for [c], or null to use the default.
-String? calendarIcon(CalendarModel c) => _calendarIconOverrides[c.id];
+/// Local override takes priority (optimistic UI), then server value.
+String? calendarIcon(CalendarModel c) => _calendarIconOverrides[c.id] ?? c.icon;
 
 void setCalendarIcon(String calendarId, String icon) {
   _calendarIconOverrides[calendarId] = icon;
+}
+
+void clearCalendarIconOverride(String calendarId) {
+  _calendarIconOverrides.remove(calendarId);
 }
 
 /// Call once at startup to restore saved icon choices.

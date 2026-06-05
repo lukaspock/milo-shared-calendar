@@ -257,7 +257,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             _PillFAB(
               heroTag: 'create',
-              label: '+ New calendar',
+              label: 'New calendar',
               isSecondary: false,
               onTap: () => _showCreateSheet(context, ref),
             ),
@@ -589,18 +589,43 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Calendar card ─────────────────────────────────────────────────────────────
 
-class _CalendarCard extends StatefulWidget {
+class _CalendarCard extends ConsumerStatefulWidget {
   const _CalendarCard({required this.calendar, required this.onTap, this.onDelete});
   final CalendarModel calendar;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
 
   @override
-  State<_CalendarCard> createState() => _CalendarCardState();
+  ConsumerState<_CalendarCard> createState() => _CalendarCardState();
 }
 
-class _CalendarCardState extends State<_CalendarCard> {
+class _CalendarCardState extends ConsumerState<_CalendarCard> {
   bool _pressed = false;
+
+  Future<void> _editAppearance(BuildContext context) async {
+    final result = await showModalBottomSheet<({int hue, String? icon})>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CalendarAppearancePickerSheet(
+        currentHue: widget.calendar.hueIndex,
+        currentIcon: calendarIcon(widget.calendar),
+        surfaceColor: context.appColors.surface,
+        lineColor: context.appColors.line,
+        inkColor: context.appColors.ink,
+        inkMutedColor: context.appColors.inkMuted,
+        surfaceSoftColor: context.appColors.surfaceSoft,
+      ),
+    );
+    if (result != null) {
+      await ref.read(calendarProvider.notifier).updateCalendarAppearance(
+        widget.calendar.id,
+        hueIndex: result.hue,
+        icon: result.icon,
+        clearIcon: result.icon == null,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -628,15 +653,18 @@ class _CalendarCardState extends State<_CalendarCard> {
         ),
         child: Row(
           children: [
-            // Sticker tile
-            StickerTile(
-              hue: hue,
-              size: 48,
-              radius: 14,
-              child: _calendarIconChild(
-                calendarIcon(widget.calendar),
-                tileSize: 48,
-                fallbackColor: context.appColors.inkMuted,
+            // Sticker tile — tap to edit icon/color
+            GestureDetector(
+              onTap: () => _editAppearance(context),
+              child: StickerTile(
+                hue: hue,
+                size: 48,
+                radius: 14,
+                child: _calendarIconChild(
+                  calendarIcon(widget.calendar),
+                  tileSize: 48,
+                  fallbackColor: context.appColors.inkMuted,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -1286,12 +1314,8 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     Navigator.pop(context);
                     final cal = await widget.ref
                         .read(calendarProvider.notifier)
-                        .createCalendar(name, photoMode: chosenPhotoMode);
+                        .createCalendar(name, photoMode: chosenPhotoMode, hueIndex: chosenHue, icon: chosenIcon);
                     if (cal != null) {
-                      await persistCalendarHue(cal.id, chosenHue);
-                      if (chosenIcon != null) {
-                        await persistCalendarIcon(cal.id, chosenIcon);
-                      }
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Created! Code: ${cal.inviteCode}')),
@@ -1532,6 +1556,183 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
                       ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Calendar appearance picker (edit existing calendar icon + hue) ─────────────
+
+class _CalendarAppearancePickerSheet extends StatefulWidget {
+  const _CalendarAppearancePickerSheet({
+    required this.currentHue,
+    required this.currentIcon,
+    required this.surfaceColor,
+    required this.lineColor,
+    required this.inkColor,
+    required this.inkMutedColor,
+    required this.surfaceSoftColor,
+  });
+  final int currentHue;
+  final String? currentIcon;
+  final Color surfaceColor;
+  final Color lineColor;
+  final Color inkColor;
+  final Color inkMutedColor;
+  final Color surfaceSoftColor;
+
+  @override
+  State<_CalendarAppearancePickerSheet> createState() => _CalendarAppearancePickerSheetState();
+}
+
+class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePickerSheet> {
+  late int _selectedHue;
+  late String? _selectedIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedHue = widget.currentHue;
+    _selectedIcon = widget.currentIcon;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text('Appearance', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: widget.inkColor, letterSpacing: -0.5)),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(Icons.close_rounded, color: widget.inkMutedColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Preview
+          Center(
+            child: StickerTile(
+              hue: stickerHues[_selectedHue],
+              size: 80,
+              radius: 22,
+              child: _calendarIconChild(_selectedIcon, tileSize: 80, fallbackColor: widget.inkMutedColor),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Icon row
+          Text('ICON', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: widget.inkMutedColor, letterSpacing: 0.9)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ..._calendarQuickIcons.map((e) {
+                  final selected = e == _selectedIcon;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedIcon = e),
+                    child: Container(
+                      width: 44, height: 44,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: selected ? widget.inkColor.withOpacity(0.1) : widget.surfaceSoftColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: selected ? widget.inkColor.withOpacity(0.5) : widget.lineColor, width: selected ? 2 : 1.5),
+                      ),
+                      child: Center(child: Text(e, style: const TextStyle(fontSize: 22))),
+                    ),
+                  );
+                }),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showModalBottomSheet<String>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => _CalendarIconPickerSheet(
+                        current: _selectedIcon,
+                        surfaceColor: widget.surfaceColor,
+                        lineColor: widget.lineColor,
+                        inkColor: widget.inkColor,
+                        inkMutedColor: widget.inkMutedColor,
+                        surfaceSoftColor: widget.surfaceSoftColor,
+                      ),
+                    );
+                    if (picked != null && mounted) setState(() => _selectedIcon = picked);
+                  },
+                  child: Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: widget.surfaceSoftColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: widget.lineColor, width: 1.5),
+                    ),
+                    child: Icon(Icons.more_horiz_rounded, size: 20, color: widget.inkMutedColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Color swatches
+          Text('COLOR', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: widget.inkMutedColor, letterSpacing: 0.9)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: stickerHues.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final selected = i == _selectedHue;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedHue = i),
+                  child: Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: stickerHues[i].bg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: selected ? widget.inkColor : Colors.transparent, width: 2.5),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context, (hue: _selectedHue, icon: _selectedIcon)),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 52),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              ),
+              child: Text('Save', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+            ),
+          ),
         ],
       ),
     );
