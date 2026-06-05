@@ -885,7 +885,7 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
     setState(() => _uploading = true);
     try {
       final url =
-          await ApiService().uploadEventIconToCloudinary(File(picked.path));
+          await ApiService().uploadEventIconToCloudinary(picked);
       if (mounted) {
         setState(() => _uploading = false);
         Navigator.pop(context, url);

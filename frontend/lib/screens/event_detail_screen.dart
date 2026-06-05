@@ -1366,7 +1366,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
     if (picked == null || !mounted) return;
     setState(() => _uploading = true);
     try {
-      final url = await ApiService().uploadEventIconToCloudinary(File(picked.path));
+      final url = await ApiService().uploadEventIconToCloudinary(picked);
       if (mounted) {
         setState(() => _uploading = false);
         widget.onSelected(url);

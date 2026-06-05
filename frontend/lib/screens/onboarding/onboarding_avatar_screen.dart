@@ -63,7 +63,7 @@ class _OnboardingAvatarScreenState
 
     setState(() => _uploading = true);
     try {
-      final url = await ApiService().uploadAvatarToCloudinary(File(picked.path));
+      final url = await ApiService().uploadAvatarToCloudinary(picked);
       if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
     } on CloudinaryUploadException catch (e) {
       if (mounted) {

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event_photo.dart';
 import '../services/api_service.dart';
@@ -49,7 +49,7 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<EventPhoto>>> {
     }
   }
 
-  Future<bool> addPhoto(String eventId, File imageFile) async {
+  Future<bool> addPhoto(String eventId, XFile imageFile) async {
     try {
       final url = await _api.uploadEventPhotoToCloudinary(imageFile);
       await _api.addEventPhoto(eventId, url);
