@@ -133,21 +133,34 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     ? new Date(ctx.query.end)
     : new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
 
-  // Fire-and-forget background refresh when cache is stale (>5 min) or empty.
-  // Scope the staleness check to the current window so out-of-range archived
-  // rows don't permanently keep needsRefresh true.
-  const staleness = await db`
-    SELECT MIN(last_synced_at) AS oldest
-    FROM imported_gcal_events
-    WHERE calendar_id = ${id}
-      AND start_time >= ${startDate}
-      AND start_time < ${endDate}
+  // Only run the Google Calendar import pipeline when at least one calendar member
+  // has connected their Google Calendar. Avoids an infinite needsRefresh=true loop
+  // (imported_gcal_events stays empty → MIN(last_synced_at) is always NULL →
+  // background refresh fires on every request → memberRows=0 → no gcal_synced).
+  const gcalMembers = await db`
+    SELECT 1 FROM calendar_members cm
+    INNER JOIN google_calendar_tokens gct ON gct.user_id = cm.user_id
+    WHERE cm.calendar_id = ${id}
+    LIMIT 1
   `;
-  const oldest = staleness[0]?.oldest as Date | null;
-  const needsRefresh = !oldest || Date.now() - new Date(oldest).getTime() > 5 * 60 * 1000;
-  if (needsRefresh) {
-    fetchAndCacheGoogleEventsForCalendar({ calendarId: id, startDate, endDate })
-      .catch((e: unknown) => console.error("[gcal import] background refresh failed:", e));
+
+  if (gcalMembers.length > 0) {
+    // Fire-and-forget background refresh when cache is stale (>5 min) or empty.
+    // Scope the staleness check to the current window so out-of-range archived
+    // rows don't permanently keep needsRefresh true.
+    const staleness = await db`
+      SELECT MIN(last_synced_at) AS oldest
+      FROM imported_gcal_events
+      WHERE calendar_id = ${id}
+        AND start_time >= ${startDate}
+        AND start_time < ${endDate}
+    `;
+    const oldest = staleness[0]?.oldest as Date | null;
+    const needsRefresh = !oldest || Date.now() - new Date(oldest).getTime() > 5 * 60 * 1000;
+    if (needsRefresh) {
+      fetchAndCacheGoogleEventsForCalendar({ calendarId: id, startDate, endDate })
+        .catch((e: unknown) => console.error("[gcal import] background refresh failed:", e));
+    }
   }
 
   // Read cached imported Google Calendar events for this calendar and date window

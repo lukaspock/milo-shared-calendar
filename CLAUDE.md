@@ -70,6 +70,7 @@ Backend config is in `backend/.env` for local dev and overridden by `docker-comp
 | `GOOGLE_REFRESH_TOKEN`  | Refresh token for the Gmail sending account          | same                                             |
 | `GOOGLE_IOS_CLIENT_ID`  | iOS OAuth client ID (for verifying iOS ID tokens)    | same                                             |
 | `FROM_EMAIL`            | omit — defaults to `lukaspock.dev@gmail.com`         | omit                                             |
+| `ENCRYPTION_KEY`        | Exactly 32 ASCII chars — encrypts Google tokens in DB | `local-dev-encryption-key-32ch` (via `$ENCRYPTION_KEY` fallback) |
 
 Keep `JWT_SECRET` identical between `.env` and docker-compose — a mismatch causes silent 401s.
 
@@ -158,6 +159,7 @@ Callback URL must be registered: `https://api.milocalendar.tech/auth/google-cale
 - Render Free Tier cold starts take 30–60 s. Always test performance with `flutter run --release`.
 - `.claude/worktrees/` is in `.gitignore` — these are temporary Claude Code working directories.
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
+- **`ENCRYPTION_KEY` must be set on Render** (exactly 32 ASCII chars). If missing, `encrypt()` throws inside `handleCalendarCallback`, which is swallowed by the catch and returns `false` → users see "Invalid or expired session" on Google Calendar connect. Set it once in the Render dashboard under Environment Variables.
 - Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).
 - Cloudinary uploads use an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app. Avatar photos go to the `avatars/` folder; event icon photos go to `event_icons/`. Both use the same preset.

@@ -450,7 +450,7 @@ export async function disconnectGoogleCalendar(ctx: RequestContext): Promise<Res
 export async function connectGoogleCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   try {
-    const url = generateCalendarConnectUrl(userId);
+    const url = await generateCalendarConnectUrl(userId);
     return json({ url });
   } catch {
     return error("Google Calendar not configured", 503);

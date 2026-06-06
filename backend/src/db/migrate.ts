@@ -142,5 +142,15 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // Pending Google Calendar OAuth states — persisted so they survive backend restarts
+  // (Render Free Tier wipes in-memory state on cold start).
+  await db`
+    CREATE TABLE IF NOT EXISTS pending_calendar_connects (
+      state      TEXT PRIMARY KEY,
+      user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL
+    )
+  `;
+
   console.log("[db] migrations applied");
 }
