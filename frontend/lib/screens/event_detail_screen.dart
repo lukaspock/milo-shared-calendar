@@ -1383,7 +1383,6 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final expanded = _mode == 'emoji';
     return Container(
       decoration: BoxDecoration(
         color: widget.surfaceColor,
@@ -1391,7 +1390,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
-        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Grabber
           Container(
@@ -1446,7 +1445,8 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
               }).toList(),
             )
           else if (_mode == 'emoji')
-            Expanded(
+            SizedBox(
+              height: 320,
               child: epf.EmojiPicker(
                 onEmojiSelected: (_, emoji) => widget.onSelected(emoji.emoji),
                 config: epf.Config(
