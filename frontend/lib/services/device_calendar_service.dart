@@ -181,11 +181,10 @@ class DeviceCalendarService {
     try {
       if (!await isEnabled()) return [];
 
-      final prefs = await SharedPreferences.getInstance();
-      final calId = prefs.getString(_calendarIdKey);
-      if (calId == null) return [];
-
-      // Values in this map are device event IDs written by SharedCal — skip them
+      // Values in this map are device event IDs written by SharedCal — skip those events.
+      // We no longer skip entire calendars by calId because the fallback path in connect()
+      // may have stored the user's default iCloud calendar as calId, which would hide all
+      // personal events. Filtering per-event by device ID is precise enough.
       final map = await _loadMap();
       final sharedCalDeviceIds = map.values.toSet();
 
@@ -195,9 +194,6 @@ class DeviceCalendarService {
       final results = <sc.CalendarEvent>[];
 
       for (final cal in calendars) {
-        // Skip the SharedCal-managed calendar (we wrote those events)
-        if (cal.id == calId) continue;
-
         final eventsResult = await _plugin.retrieveEvents(
           cal.id!,
           RetrieveEventsParams(

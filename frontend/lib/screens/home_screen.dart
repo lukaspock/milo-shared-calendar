@@ -2267,6 +2267,13 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                         _connectingDevice = false;
                                         _deviceCalendarConnected = ok;
                                       });
+                                      if (ok) {
+                                        // Re-fetch device events for all active calendars
+                                        final cals = ref.read(calendarProvider).valueOrNull ?? [];
+                                        for (final cal in cals) {
+                                          ref.read(eventsProvider(cal.id).notifier).fetch();
+                                        }
+                                      }
                                       if (!ok) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
