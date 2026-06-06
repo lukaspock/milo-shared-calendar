@@ -3,9 +3,9 @@
 # Pipeline overview:
 #   lint   → type-check backend (Bun/TS) + format-check & analyze Flutter frontend
 #   test   → run backend & Flutter tests (with JUnit reports + coverage)
+#            + SAST (secret detection, semgrep) runs here in parallel with tests
 #   deploy → publish Flutter web to GitLab Pages + trigger Render backend deploy
 #            + create GitLab Release on semver tags
-#   sast   → GitLab Basic SAST (secret detection, semgrep)
 #
 # Required CI/CD variable (Settings → CI/CD → Variables):
 #   RENDER_DEPLOY_HOOK   The Render service "Deploy Hook" URL. Mark it Masked.
@@ -13,18 +13,15 @@
 #
 # GitLab Pages URL (available after first successful main pipeline):
 #   https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/
+#
+# Runner note: all jobs are tagged "local" so they only run on the registered
+# MacBook shell runner — GitLab's shared runners (paid compute) are never used.
 
 stages:
   - lint
   - test
-  - sast
   - deploy
   - release
-
-# GitLab's built-in Security/SAST and Security/Secret-Detection templates require
-# images from registry.gitlab.com/security-products/ which need GitLab Ultimate or
-# a specially configured runner — not available on the school's Shell runner.
-# We replace them with equivalent open-source tools from Docker Hub instead.
 
 # Avoid duplicate pipelines: run for merge requests, and for branch pushes that
 # don't already have an open MR (prevents the "detached + branch" double pipeline).
@@ -41,6 +38,7 @@ workflow:
 
 .bun:
   image: oven/bun:1
+  tags: [local]
   variables:
     # Throwaway secrets used only by unit tests — not real production values.
     JWT_SECRET: "ci-test-jwt-secret-not-used-in-prod"
@@ -57,6 +55,7 @@ workflow:
 
 .flutter:
   image: ghcr.io/cirruslabs/flutter:stable
+  tags: [local]
   variables:
     PUB_CACHE: "$CI_PROJECT_DIR/frontend/.pub-cache"
   cache:
@@ -67,7 +66,6 @@ workflow:
       - frontend/.pub-cache/
   before_script:
     - cd frontend
-    - flutter --version
     - flutter pub get
 
 # ---------------------------------------------------------------------------
@@ -90,15 +88,14 @@ frontend:analyze:
     - flutter analyze
 
 # ---------------------------------------------------------------------------
-# Tests
+# Tests + SAST (all run in the same stage — SAST in parallel with tests,
+# saving one full pipeline stage of waiting time)
 # ---------------------------------------------------------------------------
 
 backend:test:
   extends: .bun
   stage: test
   script:
-    # `bun test` exits 0 when there are no test files yet, so this is safe today
-    # and starts enforcing automatically once you add *.test.ts files.
     - bun test
 
 frontend:test:
@@ -107,11 +104,10 @@ frontend:test:
   coverage: '/lines\s*\.*:\s*(\d+\.\d+)%/'
   script:
     - dart pub global activate junitreport
-    # Write json output to file first to avoid broken-pipe when piping with --coverage
-    - flutter test --coverage --reporter json > test-output.json || true
+    # Single test run: capture the exit code so we don't run the suite twice.
+    # --reporter json is written to a file first (avoids broken-pipe with --coverage).
+    - flutter test --coverage --reporter json > test-output.json; TEST_EXIT=$?
     - $PUB_CACHE/bin/tojunit < test-output.json > junit-report.xml
-    # Re-run without --coverage to get a clean exit code (fails the job if tests fail)
-    - flutter test
     # Print coverage summary for the GitLab coverage regex to parse
     - |
       total=$(grep -c "^DA:" coverage/lcov.info || echo 0)
@@ -120,12 +116,34 @@ frontend:test:
         pct=$(echo "scale=2; $hit * 100 / $total" | bc)
         echo "lines...: $pct%"
       fi
+    - exit $TEST_EXIT
   artifacts:
     when: always
     reports:
       junit: frontend/junit-report.xml
     paths:
       - frontend/coverage/
+
+secret_detection:
+  stage: test
+  tags: [local]
+  dependencies: []
+  image:
+    name: zricethezav/gitleaks:v8.18.4
+    entrypoint: [""]
+  script:
+    - gitleaks detect --source . --verbose --no-git --config .gitleaks.toml
+  allow_failure: false
+
+semgrep-sast:
+  stage: test
+  tags: [local]
+  dependencies: []
+  image: semgrep/semgrep:latest
+  script:
+    # Scan only the TypeScript backend — Dart is not supported by semgrep
+    - semgrep scan --config=auto --error backend/src/
+  allow_failure: true
 
 # ---------------------------------------------------------------------------
 # Deploy — GitLab Pages + Render backend (main only)
@@ -145,6 +163,7 @@ pages:
 
 deploy:render:
   stage: deploy
+  tags: [local]
   image: curlimages/curl:latest
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -163,6 +182,7 @@ deploy:render:
 
 release:create:
   stage: release
+  tags: [local]
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
@@ -184,24 +204,3 @@ release:create:
           url: "https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/"
         - name: "Backend API"
           url: "https://api.milocalendar.tech"
-
-# ---------------------------------------------------------------------------
-# SAST — secret detection (gitleaks) + static analysis (semgrep)
-# ---------------------------------------------------------------------------
-
-secret_detection:
-  stage: sast
-  image:
-    name: zricethezav/gitleaks:v8.18.4
-    entrypoint: [""]
-  script:
-    - gitleaks detect --source . --verbose --no-git --config .gitleaks.toml
-  allow_failure: false
-
-semgrep-sast:
-  stage: sast
-  image: semgrep/semgrep:latest
-  script:
-    # Scan only the TypeScript backend — Dart is not supported by semgrep
-    - semgrep scan --config=auto --error backend/src/
-  allow_failure: true
