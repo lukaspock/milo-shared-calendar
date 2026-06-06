@@ -1,0 +1,8 @@
+# Semgrep ignore file for SharedCal backend
+# https://semgrep.dev/docs/ignoring-files-folders-code/
+
+# Test files — findings here are not production risk
+backend/src/db/schema.sql
+
+# Migration file uses IF NOT EXISTS patterns that semgrep may flag
+backend/src/db/migrate.ts

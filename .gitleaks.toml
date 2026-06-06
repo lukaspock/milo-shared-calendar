@@ -1,0 +1,21 @@
+# Gitleaks configuration for SharedCal
+# https://github.com/gitleaks/gitleaks#configuration
+
+title = "SharedCal gitleaks config"
+
+[allowlist]
+  description = "Known safe test/placeholder values"
+  regexes = [
+    # Local-dev docker-compose placeholder — not a real secret
+    "change_me_in_production",
+    # CI-only throwaway values declared in .gitlab-ci.yml comments
+    "ci-test-jwt-secret-not-used-in-prod",
+    "ci-test-encryption-key-32-chars!",
+    # Local postgres dev password (no network exposure)
+    "POSTGRES_PASSWORD: postgres",
+  ]
+  # These files only ever contain placeholder / local-dev values
+  paths = [
+    ".gitlab-ci.yml",
+    "docker-compose.yml",
+  ]

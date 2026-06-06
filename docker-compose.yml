@@ -22,7 +22,7 @@ services:
       JWT_SECRET: change_me_in_production
       APP_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: 583283682704-ru7t2guho8bd8p42gmi1u6c8ruq9mq3a.apps.googleusercontent.com
-      GOOGLE_CLIENT_SECRET: REDACTED_GOOGLE_CLIENT_SECRET
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_IOS_CLIENT_ID: 583283682704-ethnu73r7o8rblkvra89qsibo0tlq7pp.apps.googleusercontent.com
       FROM_EMAIL: lukaspock.dev@gmail.com
     ports:

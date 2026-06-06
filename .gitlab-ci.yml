@@ -193,8 +193,8 @@ secret_detection:
   stage: sast
   image: zricethezav/gitleaks:v8.18.4
   script:
-    - gitleaks detect --source . --verbose --no-git
-  allow_failure: true
+    - gitleaks detect --source . --verbose --no-git --config .gitleaks.toml
+  allow_failure: false
 
 semgrep-sast:
   stage: sast
