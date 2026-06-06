@@ -24,9 +24,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
               const Spacer(flex: 2),
 
               // ── Illustration ─────────────────────────────────────────────
-              Center(
-                child: _ReadyIllustration(),
-              ),
+              Center(child: _ReadyIllustration()),
 
               const SizedBox(height: 48),
 
@@ -45,7 +43,7 @@ class OnboardingReadyScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Shared Calendar is ready to help you plan with the people that matter.',
+                'Milo is ready to help you plan and connect with the people that matter.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   color: context.appColors.inkSoft,
@@ -77,14 +75,17 @@ class OnboardingReadyScreen extends ConsumerWidget {
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 58),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28)),
+                        borderRadius: BorderRadius.circular(28),
+                      ),
                       elevation: 0,
                       shadowColor: Colors.transparent,
                     ),
                     child: Text(
                       'Start planning →',
                       style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w700, fontSize: 16),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
