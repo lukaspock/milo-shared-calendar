@@ -7,10 +7,21 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const APP_URL = process.env.APP_URL ?? "https://api.milocalendar.tech";
 
 
-function makeAuth(accessToken?: string | null, refreshToken?: string | null) {
+function makeAuth(
+  accessToken?: string | null,
+  refreshToken?: string | null,
+  expiryDate?: Date | null,
+) {
   const auth = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
   if (accessToken || refreshToken) {
-    auth.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
+    auth.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      // Telling the library the expiry date lets it proactively refresh the
+      // access token before it expires, instead of sending a stale token and
+      // waiting for a 401.
+      expiry_date: expiryDate?.getTime() ?? undefined,
+    });
   }
   return auth;
 }
@@ -190,7 +201,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
 
   // Members who have connected Google Calendar, joined with user profile
   const memberRows = await db`
-    SELECT cm.user_id, u.name, u.color, gct.access_token, gct.refresh_token
+    SELECT cm.user_id, u.name, u.color, gct.access_token, gct.refresh_token, gct.expiry
     FROM calendar_members cm
     INNER JOIN google_calendar_tokens gct ON gct.user_id = cm.user_id
     INNER JOIN users u ON u.id = cm.user_id
@@ -220,7 +231,35 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
     try {
       const access = await decrypt(member.access_token as string);
       const refresh = await decrypt(member.refresh_token as string);
-      const cal = google.calendar({ version: "v3", auth: makeAuth(access, refresh) });
+      const expiry = member.expiry ? new Date(member.expiry as string) : null;
+      const auth = makeAuth(access, refresh, expiry);
+
+      // When the library auto-refreshes the access token, persist the new token
+      // so subsequent imports don't have to refresh again from scratch.
+      auth.on("tokens", async (newTokens) => {
+        try {
+          const updates: Record<string, unknown> = {};
+          if (newTokens.access_token) {
+            updates.access_token = await encrypt(newTokens.access_token);
+          }
+          if (newTokens.refresh_token) {
+            updates.refresh_token = await encrypt(newTokens.refresh_token);
+          }
+          const newExpiry = newTokens.expiry_date
+            ? new Date(newTokens.expiry_date)
+            : new Date(Date.now() + 3_600_000);
+          if (updates.access_token && updates.refresh_token) {
+            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, refresh_token = ${updates.refresh_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id}`;
+          } else if (updates.access_token) {
+            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id}`;
+          }
+          console.log(`[gcal import] refreshed token persisted for user ${member.user_id}`);
+        } catch (e) {
+          console.error(`[gcal import] failed to persist refreshed token for user ${member.user_id}:`, e);
+        }
+      });
+
+      const cal = google.calendar({ version: "v3", auth });
 
       const res = await cal.events.list({
         calendarId: "primary",
