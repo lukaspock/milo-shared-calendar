@@ -199,6 +199,23 @@ export async function listMembers(ctx: RequestContext): Promise<Response> {
   return json(members);
 }
 
+async function cleanupImportedGcalEvents(calendarId: string, departedUserId: string): Promise<void> {
+  await db`
+    UPDATE imported_gcal_events
+    SET imported_by = (
+      SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
+      FROM jsonb_array_elements(imported_by) AS elem
+      WHERE elem->>'user_id' != ${departedUserId}
+    )
+    WHERE calendar_id = ${calendarId}
+  `;
+  await db`
+    DELETE FROM imported_gcal_events
+    WHERE calendar_id = ${calendarId}
+      AND jsonb_array_length(imported_by) = 0
+  `;
+}
+
 export async function removeMember(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const { id, userId: targetUserId } = ctx.params;
@@ -219,6 +236,8 @@ export async function removeMember(ctx: RequestContext): Promise<Response> {
     DELETE FROM calendar_members
     WHERE calendar_id = ${id} AND user_id = ${targetUserId}
   `;
+
+  await cleanupImportedGcalEvents(id, targetUserId);
 
   return json({ message: "Member removed" });
 }
@@ -259,6 +278,9 @@ export async function leaveCalendar(ctx: RequestContext): Promise<Response> {
   }
 
   await db`DELETE FROM calendar_members WHERE calendar_id = ${id} AND user_id = ${userId}`;
+
+  await cleanupImportedGcalEvents(id, userId);
+
   return json({ message: "Left calendar" });
 }
 
