@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import db from "../db/client";
 import { encrypt, decrypt } from "./crypto";
+import { broadcastToCalendar } from "../ws/websocket";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -74,6 +75,24 @@ export async function handleCalendarCallback(code: string, state: string): Promi
         refresh_token = ${encRefresh},
         expiry = ${expiry}
     `;
+
+    // Pre-populate the cache for all calendars this user belongs to so the
+    // first app load shows events immediately (no manual double-refresh needed).
+    const now = new Date();
+    const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+    db`SELECT calendar_id FROM calendar_members WHERE user_id = ${pending.userId}`
+      .then(async (rows) => {
+        for (const row of rows as Record<string, unknown>[]) {
+          await fetchAndCacheGoogleEventsForCalendar({
+            calendarId: row.calendar_id as string,
+            startDate,
+            endDate,
+          });
+        }
+      })
+      .catch((e: unknown) => console.error("[gcal] post-connect pre-fetch failed:", e));
+
     return true;
   } catch (err) {
     console.error("[gcal] handleCalendarCallback failed:", err);
@@ -337,6 +356,10 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
       }
     }
   }
+
+  // Notify all connected clients that the Google Calendar cache was updated
+  // so the Flutter app refreshes automatically without a manual pull.
+  broadcastToCalendar(calendarId, { type: "gcal_synced", calendar_id: calendarId });
 }
 
 export async function syncEventDeleted(eventId: string): Promise<void> {

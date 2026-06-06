@@ -87,6 +87,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       if (cal != calendarId) return;
       _apiEvents = _apiEvents.where((e) => e.id != eventId).toList();
       _setMergedState();
+    } else if (type == 'gcal_synced') {
+      final cal = msg['calendar_id'] as String?;
+      if (cal != calendarId) return;
+      // Backend finished importing Google Calendar events — re-fetch so they
+      // appear immediately without the user having to tap refresh manually.
+      fetch();
     } else if (type == 'event_starting' || type == 'event_ended') {
       final cal = msg['calendar_id'] as String?;
       if (cal != calendarId) return;
