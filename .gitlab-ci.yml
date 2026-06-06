@@ -17,12 +17,14 @@
 stages:
   - lint
   - test
+  - sast
   - deploy
   - release
 
-include:
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Security/Secret-Detection.gitlab-ci.yml
+# GitLab's built-in Security/SAST and Security/Secret-Detection templates require
+# images from registry.gitlab.com/security-products/ which need GitLab Ultimate or
+# a specially configured runner — not available on the school's Shell runner.
+# We replace them with equivalent open-source tools from Docker Hub instead.
 
 # Avoid duplicate pipelines: run for merge requests, and for branch pushes that
 # don't already have an open MR (prevents the "detached + branch" double pipeline).
@@ -182,3 +184,22 @@ release:create:
           url: "https://htlpinkafeld.gitlab.io/informatik/2025-26-4bhif/wmc/shared-calendar/flutterprojectvibecoding/"
         - name: "Backend API"
           url: "https://api.milocalendar.tech"
+
+# ---------------------------------------------------------------------------
+# SAST — secret detection (gitleaks) + static analysis (semgrep)
+# ---------------------------------------------------------------------------
+
+secret_detection:
+  stage: sast
+  image: zricethezav/gitleaks:v8.18.4
+  script:
+    - gitleaks detect --source . --verbose --no-git
+  allow_failure: true
+
+semgrep-sast:
+  stage: sast
+  image: semgrep/semgrep:latest
+  script:
+    # Scan only the TypeScript backend — Dart is not supported by semgrep
+    - semgrep scan --config=auto --error backend/src/
+  allow_failure: true
