@@ -192,6 +192,10 @@ class DeviceCalendarService {
       final calendars = calendarsResult.data ?? [];
 
       final results = <sc.CalendarEvent>[];
+      // Dedup key: title + UTC date — prevents the same holiday from appearing
+      // twice when it exists in multiple iOS calendar sources (e.g. a subscribed
+      // Austrian holidays calendar AND the iCloud calendar both carry Fronleichnam).
+      final seenKeys = <String>{};
 
       for (final cal in calendars) {
         final eventsResult = await _plugin.retrieveEvents(
@@ -207,6 +211,11 @@ class DeviceCalendarService {
           if (e.eventId == null) continue;
           if (sharedCalDeviceIds.contains(e.eventId)) continue;
           if (e.title == null || e.start == null || e.end == null) continue;
+
+          final utc = e.start!.toUtc();
+          final dedupKey = '${e.title}|${utc.year}-${utc.month}-${utc.day}';
+          if (seenKeys.contains(dedupKey)) continue;
+          seenKeys.add(dedupKey);
 
           results.add(_toCalendarEvent(e, sharedCalendarId));
         }
