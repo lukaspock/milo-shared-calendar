@@ -191,7 +191,9 @@ release:create:
 
 secret_detection:
   stage: sast
-  image: zricethezav/gitleaks:v8.18.4
+  image:
+    name: zricethezav/gitleaks:v8.18.4
+    entrypoint: [""]
   script:
     - gitleaks detect --source . --verbose --no-git --config .gitleaks.toml
   allow_failure: false
