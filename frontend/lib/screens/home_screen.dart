@@ -1420,7 +1420,6 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final expanded = _mode == 'emoji';
     return Container(
       decoration: BoxDecoration(
         color: widget.surfaceColor,
@@ -1429,7 +1428,7 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
-        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 36, height: 4,
@@ -1499,7 +1498,8 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
               }).toList(),
             )
           else if (_mode == 'emoji')
-            Expanded(
+            SizedBox(
+              height: 320,
               child: epf.EmojiPicker(
                 onEmojiSelected: (_, emoji) =>
                     Navigator.pop(context, emoji.emoji),
@@ -2851,27 +2851,27 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           ),
           const SizedBox(height: 24),
 
-          // Avatar preview + change photo
+          // Avatar preview + change photo — tap anywhere on avatar
           Center(
-            child: Stack(
-              children: [
-                ClipOval(
-                  child: _uploading
-                      ? Container(
-                          width: 80, height: 80,
-                          color: context.appColors.surfaceSoft,
-                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                        )
-                      : (_avatarUrl != null
-                          ? Image.network(_avatarUrl!, width: 80, height: 80, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _InitialsAvatar(initials: initials, color: previewColor, size: 80))
-                          : _InitialsAvatar(initials: initials, color: previewColor, size: 80)),
-                ),
-                Positioned(
-                  right: 0, bottom: 0,
-                  child: GestureDetector(
-                    onTap: _uploading ? null : _pickPhoto,
+            child: GestureDetector(
+              onTap: _uploading ? null : _pickPhoto,
+              child: Stack(
+                children: [
+                  ClipOval(
+                    child: _uploading
+                        ? Container(
+                            width: 80, height: 80,
+                            color: context.appColors.surfaceSoft,
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : (_avatarUrl != null
+                            ? Image.network(_avatarUrl!, width: 80, height: 80, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _InitialsAvatar(initials: initials, color: previewColor, size: 80))
+                            : _InitialsAvatar(initials: initials, color: previewColor, size: 80)),
+                  ),
+                  Positioned(
+                    right: 0, bottom: 0,
                     child: Container(
                       width: 26, height: 26,
                       decoration: BoxDecoration(
@@ -2882,8 +2882,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       child: Icon(Icons.camera_alt_rounded, size: 13, color: context.appColors.surface),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 

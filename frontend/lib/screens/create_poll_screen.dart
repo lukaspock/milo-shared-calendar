@@ -901,7 +901,6 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final expanded = _mode == 'emoji';
     return Container(
       decoration: BoxDecoration(
         color: widget.surfaceColor,
@@ -910,7 +909,7 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
-        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 36,
@@ -978,7 +977,8 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
               }).toList(),
             )
           else if (_mode == 'emoji')
-            Expanded(
+            SizedBox(
+              height: 320,
               child: epf.EmojiPicker(
                 onEmojiSelected: (_, emoji) =>
                     Navigator.pop(context, emoji.emoji),

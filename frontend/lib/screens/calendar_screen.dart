@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -189,6 +190,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Scaffold(
       backgroundColor: context.appColors.bg,
       body: SafeArea(
+        bottom: !kIsWeb,
         child: Column(
           children: [
             // ── Header ──────────────────────────────────────────────────────
@@ -432,7 +434,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(18),
+                          padding: EdgeInsets.all(kIsWeb ? 18 : 12),
                           child: _CalendarGrid(
                             month: _focusedMonth,
                             selectedDay: _selectedDay,
@@ -650,12 +652,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ],
                         ),
                       ),
-                      // 2-column photo grid
+                      // Photo grid — 2 cols on mobile, more on web/wide screens
                       Expanded(
-                        child: GridView.builder(
+                        child: LayoutBuilder(
+                          builder: (ctx, constraints) {
+                            final cols = kIsWeb
+                                ? (constraints.maxWidth ~/ 220).clamp(2, 6)
+                                : 2;
+                            return GridView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 16,
                             childAspectRatio: 0.72,
@@ -698,6 +705,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ],
                             );
                           },
+                        );
+                          },
                         ),
                       ),
                     ],
@@ -709,7 +718,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             if (calendar?.photoMode == true) Align(
               alignment: Alignment.centerLeft,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 6 : 10),
                 child: Container(
                   width: 2 * _kTabW + 8,
                   decoration: BoxDecoration(
@@ -820,7 +829,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: kIsWeb ? 8 : 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1212,11 +1221,11 @@ class _CalendarGrid extends StatelessWidget {
         GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            mainAxisExtent: 58,
+            mainAxisSpacing: kIsWeb ? 4 : 2,
+            crossAxisSpacing: kIsWeb ? 4 : 2,
+            mainAxisExtent: kIsWeb ? 58 : 46,
           ),
           itemCount: startOffset + daysInMonth,
           itemBuilder: (_, index) {
@@ -1284,11 +1293,11 @@ class _DayCell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 6),
+          SizedBox(height: kIsWeb ? 6 : 4),
           Text(
             '$day',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
+              fontSize: kIsWeb ? 12 : 11,
               fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
               color: isSelected
                   ? calHue.ink
