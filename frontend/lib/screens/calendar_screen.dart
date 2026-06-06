@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../models/event.dart';
+import '../models/event.dart' show CalendarEvent, EventSource;
 import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../providers/auth_provider.dart';
@@ -1410,6 +1410,15 @@ class _EventRowState extends State<_EventRow> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      if (widget.event.source == EventSource.googleImport) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.calendar_month_rounded,
+                            size: 12, color: context.appColors.inkMuted),
+                      ] else if (widget.event.source == EventSource.deviceImport) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.phone_iphone_rounded,
+                            size: 12, color: context.appColors.inkMuted),
+                      ],
                     ],
                   ),
                 ],

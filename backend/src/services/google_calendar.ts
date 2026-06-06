@@ -97,6 +97,9 @@ async function createGoogleEvent(params: {
         description: params.description ?? undefined,
         start: { dateTime: params.startTime.toISOString() },
         end: { dateTime: params.endTime.toISOString() },
+        extendedProperties: {
+          private: { sharedcal_origin: "true" },
+        },
       },
     });
     const googleEventId = res.data.id;
@@ -161,6 +164,134 @@ export async function syncEventUpdated(params: {
       });
     } catch (err) {
       console.error(`[gcal] syncEventUpdated failed for user ${row.user_id}:`, err);
+    }
+  }
+}
+
+type ImportedByEntry = { user_id: string; name: string; color: string };
+
+function mergeImportedBy(
+  existing: ImportedByEntry[],
+  toAdd: ImportedByEntry[]
+): ImportedByEntry[] {
+  const result = [...existing];
+  for (const entry of toAdd) {
+    if (!result.some((e) => e.user_id === entry.user_id)) result.push(entry);
+  }
+  return result;
+}
+
+export async function fetchAndCacheGoogleEventsForCalendar(params: {
+  calendarId: string;
+  startDate: Date;
+  endDate: Date;
+}): Promise<void> {
+  const { calendarId, startDate, endDate } = params;
+
+  // Members who have connected Google Calendar, joined with user profile
+  const memberRows = await db`
+    SELECT cm.user_id, u.name, u.color, gct.access_token, gct.refresh_token
+    FROM calendar_members cm
+    INNER JOIN google_calendar_tokens gct ON gct.user_id = cm.user_id
+    INNER JOIN users u ON u.id = cm.user_id
+    WHERE cm.calendar_id = ${calendarId}
+  `;
+  if (memberRows.length === 0) return;
+
+  // Build set of Google event IDs already written by SharedCal (layer B filter)
+  const ownedGoogleIds = await db`
+    SELECT gei.google_event_id
+    FROM google_event_ids gei
+    INNER JOIN events e ON e.id = gei.event_id
+    WHERE e.calendar_id = ${calendarId}
+  `;
+  const ownedIdSet = new Set(ownedGoogleIds.map((r: Record<string, unknown>) => r.google_event_id as string));
+
+  // Preload existing imported_by values to enable in-memory merging
+  const existingRows = await db`
+    SELECT ical_uid, imported_by FROM imported_gcal_events WHERE calendar_id = ${calendarId}
+  `;
+  const importedByMap = new Map<string, ImportedByEntry[]>();
+  for (const row of existingRows as Record<string, unknown>[]) {
+    importedByMap.set(row.ical_uid as string, row.imported_by as ImportedByEntry[]);
+  }
+
+  for (const member of memberRows as Record<string, unknown>[]) {
+    try {
+      const access = await decrypt(member.access_token as string);
+      const refresh = await decrypt(member.refresh_token as string);
+      const cal = google.calendar({ version: "v3", auth: makeAuth(access, refresh) });
+
+      const res = await cal.events.list({
+        calendarId: "primary",
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        singleEvents: true,
+        maxResults: 250,
+        // TODO: implement pagination for users with >250 events in range
+      });
+
+      const memberEntry: ImportedByEntry = {
+        user_id: member.user_id as string,
+        name: member.name as string,
+        color: member.color as string,
+      };
+
+      for (const event of res.data.items ?? []) {
+        // Layer A: skip events SharedCal created (tagged via extendedProperties)
+        if (event.extendedProperties?.private?.sharedcal_origin === "true") continue;
+        // Layer B: skip events whose Google ID is in our google_event_ids table
+        if (event.id && ownedIdSet.has(event.id)) continue;
+        if (event.status === "cancelled") continue;
+        if (!event.start?.dateTime && !event.start?.date) continue;
+        // Both iCalUID and id must be present to construct a stable dedup key
+        if (!event.iCalUID && !event.id) continue;
+
+        const icalUid = event.iCalUID || event.id!;
+
+        // Normalize all-day events (start.date = "2025-06-15", no dateTime)
+        let startTime: string;
+        let endTime: string;
+        if (event.start?.dateTime) {
+          startTime = event.start.dateTime;
+          endTime = event.end?.dateTime ?? event.start.dateTime;
+        } else {
+          startTime = `${event.start!.date}T00:00:00Z`;
+          endTime = event.end?.date
+            ? `${event.end.date}T23:59:59Z`
+            : `${event.start!.date}T23:59:59Z`;
+        }
+
+        const existing = importedByMap.get(icalUid) ?? [];
+        const merged = mergeImportedBy(existing, [memberEntry]);
+        importedByMap.set(icalUid, merged);
+
+        await db`
+          INSERT INTO imported_gcal_events
+            (calendar_id, ical_uid, title, start_time, end_time, description, google_event_id, imported_by)
+          VALUES
+            (${calendarId}, ${icalUid}, ${event.summary ?? "(no title)"},
+             ${startTime}, ${endTime}, ${event.description ?? null},
+             ${event.id ?? null}, ${JSON.stringify(merged)})
+          ON CONFLICT (calendar_id, ical_uid) DO UPDATE SET
+            title          = EXCLUDED.title,
+            start_time     = EXCLUDED.start_time,
+            end_time       = EXCLUDED.end_time,
+            description    = EXCLUDED.description,
+            google_event_id = EXCLUDED.google_event_id,
+            imported_by    = EXCLUDED.imported_by,
+            last_synced_at = now()
+        `;
+      }
+    } catch (err: unknown) {
+      const status = (err as { status?: number; code?: number })?.status
+        ?? (err as { status?: number; code?: number })?.code;
+      if (status === 401 || status === 403) {
+        console.warn(`[gcal import] revoking token for user ${member.user_id}: HTTP ${status}`);
+        await db`DELETE FROM google_calendar_tokens WHERE user_id = ${member.user_id}`;
+      } else {
+        console.error(`[gcal import] member ${member.user_id} failed:`, err);
+      }
     }
   }
 }

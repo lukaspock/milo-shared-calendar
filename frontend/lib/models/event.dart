@@ -1,5 +1,31 @@
 import 'package:flutter/material.dart';
 
+enum EventSource { sharedcal, googleImport, deviceImport }
+
+class ImportedByUser {
+  final String userId;
+  final String name;
+  final String color;
+
+  const ImportedByUser({
+    required this.userId,
+    required this.name,
+    required this.color,
+  });
+
+  factory ImportedByUser.fromJson(Map<String, dynamic> json) => ImportedByUser(
+        userId: json['user_id'] as String,
+        name: json['name'] as String,
+        color: json['color'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'name': name,
+        'color': color,
+      };
+}
+
 enum RecurrenceRule { none, daily, weekly, monthly;
   String get label => switch (this) {
     RecurrenceRule.none    => 'Does not repeat',
@@ -35,6 +61,10 @@ class CalendarEvent {
   final String? parentEventId;
   /// Optional emoji or short label chosen by the creator (e.g. "🎂", "✈️").
   final String? icon;
+  /// Where this event came from: SharedCal, a member's Google Calendar, or device calendar.
+  final EventSource source;
+  /// For googleImport events: which members' Google Calendars contributed this event.
+  final List<ImportedByUser> importedBy;
 
   const CalendarEvent({
     required this.id,
@@ -53,6 +83,8 @@ class CalendarEvent {
     this.recurrenceEnd,
     this.parentEventId,
     this.icon,
+    this.source = EventSource.sharedcal,
+    this.importedBy = const [],
   });
 
   bool get isRecurring => recurrenceRule != RecurrenceRule.none;
@@ -61,6 +93,7 @@ class CalendarEvent {
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     final colorHex = json['color'] as String? ?? '#6C63FF';
     final recEndRaw = json['recurrence_end'] as String?;
+    final sourceRaw = json['source'] as String?;
     return CalendarEvent(
       id: json['id'] as String,
       calendarId: json['calendar_id'] as String,
@@ -78,6 +111,15 @@ class CalendarEvent {
       recurrenceEnd: recEndRaw != null ? DateTime.parse(recEndRaw) : null,
       parentEventId: json['parent_event_id'] as String?,
       icon: json['icon'] as String?,
+      source: sourceRaw == 'google_import'
+          ? EventSource.googleImport
+          : sourceRaw == 'device_import'
+              ? EventSource.deviceImport
+              : EventSource.sharedcal,
+      importedBy: (json['imported_by'] as List<dynamic>?)
+              ?.map((e) => ImportedByUser.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -99,6 +141,12 @@ class CalendarEvent {
     if (creatorColor != null) 'creator_color': creatorColor,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
+    'source': source == EventSource.googleImport
+        ? 'google_import'
+        : source == EventSource.deviceImport
+            ? 'device_import'
+            : 'sharedcal',
+    'imported_by': importedBy.map((u) => u.toJson()).toList(),
   };
 
   CalendarEvent copyWith({
@@ -128,6 +176,8 @@ class CalendarEvent {
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       recurrenceEnd: recurrenceEnd ?? this.recurrenceEnd,
       parentEventId: parentEventId,
+      source: source,
+      importedBy: importedBy,
     );
   }
 }

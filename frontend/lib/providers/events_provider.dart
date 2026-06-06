@@ -18,11 +18,21 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   final _ws = WebSocketService();
   final _cache = CacheService();
 
+  // Tracks API events (SharedCal + Google imports) and device events separately.
+  // State is always their union; device events survive WebSocket updates.
+  List<CalendarEvent> _apiEvents = [];
+  List<CalendarEvent> _deviceEvents = [];
+
+  void _setMergedState() {
+    state = AsyncValue.data([..._apiEvents, ..._deviceEvents]);
+  }
+
   Future<void> fetch() async {
     // Load from cache first — instant paint, no spinner on Render cold starts
     final cached = await _cache.loadEvents(calendarId);
     if (cached != null) {
-      state = AsyncValue.data(cached);
+      _apiEvents = cached;
+      _setMergedState();
     } else {
       state = const AsyncValue.loading();
     }
@@ -32,8 +42,17 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       final list = (res.data as List)
           .map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>))
           .toList();
-      state = AsyncValue.data(list);
+      _apiEvents = list;
       _cache.saveEvents(calendarId, list);
+
+      // Load device calendar events (no-op on macOS, no-op if not enabled)
+      _deviceEvents = await DeviceCalendarService().readExternalEvents(
+        sharedCalendarId: calendarId,
+        startDate: DateTime.now().subtract(const Duration(days: 365)),
+        endDate: DateTime.now().add(const Duration(days: 365)),
+      );
+
+      _setMergedState();
     } catch (e, st) {
       if (cached == null) state = AsyncValue.error(e, st);
     }
@@ -49,44 +68,41 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     if (type == 'event_created') {
       final event = CalendarEvent.fromJson(msg['event'] as Map<String, dynamic>);
       if (event.calendarId != calendarId) return;
-      state.whenData((list) {
-        if (list.any((e) => e.id == event.id)) return;
-        state = AsyncValue.data([...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime)));
-      });
-      // Sync to device calendar for ANY new event arriving via WebSocket —
-      // covers poll-confirmed events and events created by other members.
-      // DeviceCalendarService is idempotent so calling it twice is safe.
+      if (!_apiEvents.any((e) => e.id == event.id)) {
+        _apiEvents = [..._apiEvents, event]
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+        _setMergedState();
+      }
+      // Sync to device calendar for ANY new event via WebSocket — covers
+      // poll-confirmed events and events created by other members.
       DeviceCalendarService().syncEvent(event);
     } else if (type == 'event_updated') {
       final event = CalendarEvent.fromJson(msg['event'] as Map<String, dynamic>);
       if (event.calendarId != calendarId) return;
-      state.whenData((list) {
-        state = AsyncValue.data(list.map((e) => e.id == event.id ? event : e).toList());
-      });
+      _apiEvents = _apiEvents.map((e) => e.id == event.id ? event : e).toList();
+      _setMergedState();
     } else if (type == 'event_deleted') {
       final eventId = msg['event_id'] as String;
       final cal = msg['calendar_id'] as String;
       if (cal != calendarId) return;
-      state.whenData((list) {
-        state = AsyncValue.data(list.where((e) => e.id != eventId).toList());
-      });
+      _apiEvents = _apiEvents.where((e) => e.id != eventId).toList();
+      _setMergedState();
     } else if (type == 'event_starting' || type == 'event_ended') {
       final cal = msg['calendar_id'] as String?;
       if (cal != calendarId) return;
-      // Force a state update so CalendarScreen rebuilds and recomputes photo banners
-      state.whenData((list) => state = AsyncValue.data([...list]));
+      _setMergedState();
     }
   }
 
   /// Adds an event that arrived via a non-WebSocket path (e.g. poll confirmation
   /// response) directly into state. Deduplicates and updates the cache.
   void injectEvent(CalendarEvent event) {
-    state.whenData((list) {
-      if (list.any((e) => e.id == event.id)) return;
-      final updated = [...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime));
-      state = AsyncValue.data(updated);
-      _cache.saveEvents(calendarId, updated);
-    });
+    if (!_apiEvents.any((e) => e.id == event.id)) {
+      _apiEvents = [..._apiEvents, event]
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      _cache.saveEvents(calendarId, _apiEvents);
+      _setMergedState();
+    }
   }
 
   Future<CalendarEvent?> createEvent({
@@ -114,13 +130,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
-      state.whenData((list) {
-        if (!list.any((e) => e.id == event.id)) {
-          final updated = [...list, event]..sort((a, b) => a.startTime.compareTo(b.startTime));
-          state = AsyncValue.data(updated);
-          _cache.saveEvents(calendarId, updated);
-        }
-      });
+      if (!_apiEvents.any((e) => e.id == event.id)) {
+        _apiEvents = [..._apiEvents, event]
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+        _cache.saveEvents(calendarId, _apiEvents);
+        _setMergedState();
+      }
       // Fire-and-forget: sync to device calendar + schedule reminder
       DeviceCalendarService().syncEvent(event);
       LocalNotificationService().scheduleEventReminder(event);
@@ -157,15 +172,13 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         if (editAll) 'edit_all': true,
       });
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
-      state.whenData((list) {
-        if (editAll) {
-          fetch();
-        } else {
-          final updated = list.map((e) => e.id == id ? event : e).toList();
-          state = AsyncValue.data(updated);
-          _cache.saveEvents(calendarId, updated);
-        }
-      });
+      if (editAll) {
+        fetch();
+      } else {
+        _apiEvents = _apiEvents.map((e) => e.id == id ? event : e).toList();
+        _cache.saveEvents(calendarId, _apiEvents);
+        _setMergedState();
+      }
       // Fire-and-forget: sync update to device calendar + reschedule reminder
       DeviceCalendarService().syncEvent(event);
       LocalNotificationService().cancelEventReminder(id);
@@ -180,15 +193,13 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     try {
       await _api.delete('/events/$id',
           data: deleteAll ? {'delete_all': true} : null);
-      state.whenData((list) {
-        if (deleteAll) {
-          fetch();
-        } else {
-          final updated = list.where((e) => e.id != id).toList();
-          state = AsyncValue.data(updated);
-          _cache.saveEvents(calendarId, updated);
-        }
-      });
+      if (deleteAll) {
+        fetch();
+      } else {
+        _apiEvents = _apiEvents.where((e) => e.id != id).toList();
+        _cache.saveEvents(calendarId, _apiEvents);
+        _setMergedState();
+      }
       // Fire-and-forget: remove from device calendar + cancel reminder
       DeviceCalendarService().deleteDeviceEvent(id);
       LocalNotificationService().cancelEventReminder(id);

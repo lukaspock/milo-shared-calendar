@@ -124,5 +124,23 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // Cached Google Calendar events imported from members' personal Google Calendars.
+  // Deduplicated by iCalUID per calendar; imported_by tracks which members share the event.
+  await db`
+    CREATE TABLE IF NOT EXISTS imported_gcal_events (
+      id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      calendar_id     UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
+      ical_uid        TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      start_time      TIMESTAMPTZ NOT NULL,
+      end_time        TIMESTAMPTZ NOT NULL,
+      description     TEXT,
+      google_event_id TEXT,
+      imported_by     JSONB NOT NULL DEFAULT '[]',
+      last_synced_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (calendar_id, ical_uid)
+    )
+  `;
+
   console.log("[db] migrations applied");
 }
