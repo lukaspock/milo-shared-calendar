@@ -3,6 +3,7 @@ import { json, error } from "../router";
 import type { RequestContext } from "../types";
 import { broadcastToCalendar } from "../ws/websocket";
 import { cleanupAssets } from "../services/cloudinary";
+import { fetchAndCacheGoogleEventsForCalendar } from "../services/google_calendar";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -123,7 +124,58 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     ORDER BY e.start_time ASC
   `;
 
-  return json(events);
+  // Date window for Google import (defaults to ±1 year when frontend sends no params)
+  const now = new Date();
+  const startDate = ctx.query.start
+    ? new Date(ctx.query.start)
+    : new Date(now.getFullYear() - 1, now.getMonth(), 1);
+  const endDate = ctx.query.end
+    ? new Date(ctx.query.end)
+    : new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+
+  // Fire-and-forget background refresh when cache is stale (>5 min) or empty.
+  // Scope the staleness check to the current window so out-of-range archived
+  // rows don't permanently keep needsRefresh true.
+  const staleness = await db`
+    SELECT MIN(last_synced_at) AS oldest
+    FROM imported_gcal_events
+    WHERE calendar_id = ${id}
+      AND start_time >= ${startDate}
+      AND start_time < ${endDate}
+  `;
+  const oldest = staleness[0]?.oldest as Date | null;
+  const needsRefresh = !oldest || Date.now() - new Date(oldest).getTime() > 5 * 60 * 1000;
+  if (needsRefresh) {
+    fetchAndCacheGoogleEventsForCalendar({ calendarId: id, startDate, endDate })
+      .catch((e: unknown) => console.error("[gcal import] background refresh failed:", e));
+  }
+
+  // Read cached imported Google Calendar events for this calendar and date window
+  const importedRows = await db`
+    SELECT *
+    FROM imported_gcal_events
+    WHERE calendar_id = ${id}
+      AND start_time >= ${startDate}
+      AND start_time < ${endDate}
+    ORDER BY start_time ASC
+  `;
+
+  const importedEvents = (importedRows as Record<string, unknown>[]).map((row) => ({
+    id: row.id,
+    calendar_id: row.calendar_id,
+    created_by: null,
+    title: row.title,
+    description: row.description ?? null,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    color: "#6C63FF",
+    created_at: row.last_synced_at,
+    updated_at: row.last_synced_at,
+    source: "google_import",
+    imported_by: row.imported_by,
+  }));
+
+  return json([...events, ...importedEvents]);
 }
 
 export async function listMembers(ctx: RequestContext): Promise<Response> {

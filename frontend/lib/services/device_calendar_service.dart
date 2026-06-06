@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:device_calendar/device_calendar.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart' show Color;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -159,6 +160,83 @@ class DeviceCalendarService {
     } catch (_) {
       // Never let calendar errors bubble up to the UI
     }
+  }
+
+  /// Reads events from all personal device calendars (not the SharedCal-managed one)
+  /// and returns them as in-memory CalendarEvent objects with source=deviceImport.
+  ///
+  /// Returns [] on macOS (device_calendar package is iOS/Android only), or when
+  /// device calendar sync is not enabled, or on any error.
+  Future<List<sc.CalendarEvent>> readExternalEvents({
+    required String sharedCalendarId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    // Guard: device_calendar only supports iOS and Android
+    if (defaultTargetPlatform != TargetPlatform.iOS &&
+        defaultTargetPlatform != TargetPlatform.android) {
+      return [];
+    }
+
+    try {
+      if (!await isEnabled()) return [];
+
+      final prefs = await SharedPreferences.getInstance();
+      final calId = prefs.getString(_calendarIdKey);
+      if (calId == null) return [];
+
+      // Values in this map are device event IDs written by SharedCal — skip them
+      final map = await _loadMap();
+      final sharedCalDeviceIds = map.values.toSet();
+
+      final calendarsResult = await _plugin.retrieveCalendars();
+      final calendars = calendarsResult.data ?? [];
+
+      final results = <sc.CalendarEvent>[];
+
+      for (final cal in calendars) {
+        // Skip the SharedCal-managed calendar (we wrote those events)
+        if (cal.id == calId) continue;
+
+        final eventsResult = await _plugin.retrieveEvents(
+          cal.id!,
+          RetrieveEventsParams(
+            startDate: tz.TZDateTime.from(startDate, tz.UTC),
+            endDate: tz.TZDateTime.from(endDate, tz.UTC),
+          ),
+        );
+
+        for (final e in eventsResult.data ?? []) {
+          if (e.status == EventStatus.Canceled) continue;
+          if (e.eventId == null) continue;
+          if (sharedCalDeviceIds.contains(e.eventId)) continue;
+          if (e.title == null || e.start == null || e.end == null) continue;
+
+          results.add(_toCalendarEvent(e, sharedCalendarId));
+        }
+      }
+
+      return results;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  sc.CalendarEvent _toCalendarEvent(Event e, String sharedCalendarId) {
+    return sc.CalendarEvent(
+      id: 'device_${e.eventId}',
+      calendarId: sharedCalendarId,
+      createdBy: '',
+      title: e.title ?? '',
+      description: e.description,
+      startTime: e.start!.toLocal(),
+      endTime: e.end!.toLocal(),
+      color: const Color(0xFF6C63FF),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      source: sc.EventSource.deviceImport,
+      importedBy: const [],
+    );
   }
 
   /// Deletes the matching event from the device calendar.

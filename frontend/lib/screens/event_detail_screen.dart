@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/event.dart';
+import '../models/event.dart' show CalendarEvent, EventSource, RecurrenceRule;
 import '../models/reaction.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
@@ -88,6 +88,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _loadReactions() async {
     if (_isNew) return;
+    // Reactions are only supported for native SharedCal events
+    if (_existingEvent?.source != null &&
+        _existingEvent!.source != EventSource.sharedcal) {
+      return;
+    }
     setState(() => _reactionsLoading = true);
     try {
       final list = await ApiService().fetchReactions(widget.eventId);
@@ -415,11 +420,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         .firstOrNull;
     final calHue = calendar != null ? hueFor(calendar) : stickerHues[0];
 
-    // Determine if current user can edit this event
+    // Determine if current user can edit this event.
+    // Imported events (Google Calendar, device) are always read-only.
+    final isImported = !_isNew &&
+        _existingEvent != null &&
+        _existingEvent!.source != EventSource.sharedcal;
     final isCreator = _existingEvent != null &&
         _existingEvent!.createdBy == currentUserId;
     final isOwner = calendar?.isOwner ?? false;
-    final canEdit = _isNew || isCreator || isOwner;
+    final canEdit = _isNew || (!isImported && (isCreator || isOwner));
 
     return Scaffold(
       backgroundColor: context.appColors.bg,
@@ -839,6 +848,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
           ],
 
+          // Attribution for imported events
+          if (event.source == EventSource.googleImport) ...[
+            const SizedBox(height: 4),
+            Text(
+              _importedByText(event),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: context.appColors.inkSoft,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ] else if (event.source == EventSource.deviceImport) ...[
+            const SizedBox(height: 4),
+            Text(
+              'From your device calendar',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: context.appColors.inkSoft,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+
           const SizedBox(height: 20),
 
           // Time info card (read-only)
@@ -921,19 +953,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
           ],
 
-          const SizedBox(height: 24),
-
-          // Reactions
-          _ReactionsSection(
-            reactions: _reactions,
-            loading: _reactionsLoading,
-            currentUserId: currentUserId,
-            onAdd: _showEmojiPicker,
-            onRemove: _removeReaction,
-          ),
+          // Reactions — only for native SharedCal events
+          if (event.source == EventSource.sharedcal) ...[
+            const SizedBox(height: 24),
+            _ReactionsSection(
+              reactions: _reactions,
+              loading: _reactionsLoading,
+              currentUserId: currentUserId,
+              onAdd: _showEmojiPicker,
+              onRemove: _removeReaction,
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _importedByText(CalendarEvent event) {
+    if (event.importedBy.isEmpty) return 'From Google Calendar';
+    if (event.importedBy.length == 1) {
+      return "From ${event.importedBy.first.name}'s Google Calendar";
+    }
+    final names = event.importedBy.take(2).map((u) => u.name).join(' & ');
+    return "From $names's Google Calendars";
   }
 }
 
