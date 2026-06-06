@@ -212,8 +212,10 @@ class DeviceCalendarService {
           if (sharedCalDeviceIds.contains(e.eventId)) continue;
           if (e.title == null || e.start == null || e.end == null) continue;
 
-          final utc = e.start!.toUtc();
-          final dedupKey = '${e.title}|${utc.year}-${utc.month}-${utc.day}';
+          // Use TZDateTime's own year/month/day (device-local timezone) for the
+          // dedup key — toUtc() would give the previous day for all-day events
+          // in UTC+2 (midnight local = 22:00 UTC previous day).
+          final dedupKey = '${e.title}|${e.start!.year}-${e.start!.month}-${e.start!.day}';
           if (seenKeys.contains(dedupKey)) continue;
           seenKeys.add(dedupKey);
 
@@ -228,14 +230,34 @@ class DeviceCalendarService {
   }
 
   sc.CalendarEvent _toCalendarEvent(Event e, String sharedCalendarId) {
+    // All-day events on iOS are stored as midnight in the device's local
+    // timezone. Using .toLocal() on the TZDateTime produces the correct UTC
+    // instant but some plugin versions return the time in an unexpected zone,
+    // causing a -2 h shift (e.g. Jun 14 00:00 CEST → Jun 13 22:00 displayed).
+    // For all-day events we normalise directly from the TZDateTime's own
+    // year/month/day fields (which are already in device-local time).
+    final DateTime startTime;
+    final DateTime endTime;
+    if (e.allDay == true) {
+      startTime = DateTime(e.start!.year, e.start!.month, e.start!.day);
+      final rawEnd = DateTime(e.end!.year, e.end!.month, e.end!.day);
+      // iOS end is midnight of the *next* day (exclusive) — step back 1 s
+      endTime = rawEnd.isAfter(startTime)
+          ? rawEnd.subtract(const Duration(seconds: 1))
+          : startTime.add(const Duration(hours: 23, minutes: 59, seconds: 59));
+    } else {
+      startTime = e.start!.toLocal();
+      endTime = e.end!.toLocal();
+    }
+
     return sc.CalendarEvent(
       id: 'device_${e.eventId}',
       calendarId: sharedCalendarId,
       createdBy: '',
       title: e.title ?? '',
       description: e.description,
-      startTime: e.start!.toLocal(),
-      endTime: e.end!.toLocal(),
+      startTime: startTime,
+      endTime: endTime,
       color: const Color(0xFF6C63FF),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
