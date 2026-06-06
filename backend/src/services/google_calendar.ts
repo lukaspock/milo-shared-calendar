@@ -29,19 +29,16 @@ function makeAuth(
 
 // ── Web OAuth flow for Calendar connection ────────────────────────────────────
 
-const pendingCalendarConnects = new Map<string, { userId: string; expiresAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of pendingCalendarConnects) {
-    if (val.expiresAt < now) pendingCalendarConnects.delete(key);
-  }
-}, 60_000);
-
-export function generateCalendarConnectUrl(userId: string): string {
+export async function generateCalendarConnectUrl(userId: string): Promise<string> {
   if (!CLIENT_ID) throw new Error("Google OAuth not configured");
   const state = crypto.randomUUID();
-  pendingCalendarConnects.set(state, { userId, expiresAt: Date.now() + 15 * 60_000 });
+  const expiresAt = new Date(Date.now() + 15 * 60_000);
+  await db`
+    INSERT INTO pending_calendar_connects (state, user_id, expires_at)
+    VALUES (${state}, ${userId}, ${expiresAt})
+  `;
+  // Clean up expired rows opportunistically
+  db`DELETE FROM pending_calendar_connects WHERE expires_at < now()`.catch(() => {});
   const redirectUri = `${APP_URL}/auth/google-calendar/callback`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", CLIENT_ID);
@@ -55,9 +52,13 @@ export function generateCalendarConnectUrl(userId: string): string {
 }
 
 export async function handleCalendarCallback(code: string, state: string): Promise<boolean> {
-  const pending = pendingCalendarConnects.get(state);
-  if (!pending || pending.expiresAt < Date.now()) return false;
-  pendingCalendarConnects.delete(state);
+  const rows = await db`
+    DELETE FROM pending_calendar_connects
+    WHERE state = ${state} AND expires_at > now()
+    RETURNING user_id
+  `;
+  if (rows.length === 0) return false;
+  const pending = { userId: rows[0].user_id as string };
   if (!CLIENT_ID || !CLIENT_SECRET) return false;
   const redirectUri = `${APP_URL}/auth/google-calendar/callback`;
   try {
