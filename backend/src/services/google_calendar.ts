@@ -257,9 +257,13 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
           endTime = event.end?.dateTime ?? event.start.dateTime;
         } else {
           startTime = `${event.start!.date}T00:00:00Z`;
-          endTime = event.end?.date
-            ? `${event.end.date}T23:59:59Z`
-            : `${event.start!.date}T23:59:59Z`;
+          // Google Calendar's end.date is *exclusive* (next day for single-day events).
+          // Subtract one day to get the inclusive end date so the event only spans
+          // the correct number of calendar days.
+          const rawEnd = event.end?.date ?? event.start!.date;
+          const endDateObj = new Date(rawEnd + "T00:00:00Z");
+          endDateObj.setUTCDate(endDateObj.getUTCDate() - 1);
+          endTime = `${endDateObj.toISOString().substring(0, 10)}T23:59:59Z`;
         }
 
         const existing = importedByMap.get(icalUid) ?? [];
