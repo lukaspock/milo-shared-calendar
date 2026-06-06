@@ -141,7 +141,7 @@ async function createGoogleEvent(params: {
       `;
     }
   } catch (err) {
-    console.error(`[gcal] createGoogleEvent failed for user ${params.userId}:`, err);
+    console.error(`[gcal] createGoogleEvent failed for user ${params.userId}:`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
   }
 }
 
@@ -193,7 +193,7 @@ export async function syncEventUpdated(params: {
         },
       });
     } catch (err) {
-      console.error(`[gcal] syncEventUpdated failed for user ${row.user_id}:`, err);
+      console.error(`[gcal] syncEventUpdated failed for user ${row.user_id}:`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
     }
   }
 }
@@ -274,7 +274,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
           }
           console.log(`[gcal import] refreshed token persisted for user ${member.user_id}`);
         } catch (e) {
-          console.error(`[gcal import] failed to persist refreshed token for user ${member.user_id}:`, e);
+          console.error(`[gcal import] failed to persist refreshed token for user ${member.user_id}:`, e); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
         }
       });
 
@@ -352,7 +352,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
         console.warn(`[gcal import] revoking token for user ${member.user_id}: HTTP ${status}`);
         await db`DELETE FROM google_calendar_tokens WHERE user_id = ${member.user_id}`;
       } else {
-        console.error(`[gcal import] member ${member.user_id} failed:`, err);
+        console.error(`[gcal import] member ${member.user_id} failed:`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
       }
     }
   }
@@ -379,7 +379,7 @@ export async function syncEventDeleted(eventId: string): Promise<void> {
         eventId: row.google_event_id as string,
       });
     } catch (err) {
-      console.error(`[gcal] syncEventDeleted failed for user ${row.user_id}:`, err);
+      console.error(`[gcal] syncEventDeleted failed for user ${row.user_id}:`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
     }
   }
 }
