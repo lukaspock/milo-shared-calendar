@@ -368,6 +368,7 @@ class _UpcomingEventsRow extends ConsumerWidget {
     for (final cal in calendars) {
       final events = ref.watch(eventsProvider(cal.id)).valueOrNull ?? [];
       for (final e in events) {
+        if (e.source != EventSource.sharedcal) continue;
         if (e.endTime.isAfter(now) && e.startTime.isBefore(weekEnd)) {
           upcoming.add((e, cal));
         }
