@@ -109,6 +109,10 @@ class AuthService {
     return (res.data as Map<String, dynamic>)['url'] as String;
   }
 
+  Future<void> disconnectGoogleCalendar() async {
+    await _api.delete('/auth/google-calendar/disconnect');
+  }
+
   /// Persists the user's preferred notification delivery method on the backend
   /// and returns the refreshed user.
   Future<AppUser> updateNotificationType(NotificationType type) async {

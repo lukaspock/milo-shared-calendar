@@ -180,6 +180,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> disconnectGoogleCalendar() async {
+    try {
+      await _authService.disconnectGoogleCalendar();
+      await refreshUser();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String _parseError(Object e) {
     if (e is DioException) {
       final status = e.response?.statusCode;

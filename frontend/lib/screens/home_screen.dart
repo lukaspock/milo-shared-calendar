@@ -2128,12 +2128,37 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                             children: [
                               AppImages.check(size: 15),
                               const SizedBox(width: 10),
-                              Text(
-                                'Google Calendar connected',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1F5C42),
+                              Expanded(
+                                child: Text(
+                                  'Google Calendar connected',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF1F5C42),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  final ok = await ref
+                                      .read(authProvider.notifier)
+                                      .disconnectGoogleCalendar();
+                                  if (!mounted) return;
+                                  if (!ok) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Could not disconnect. Please try again.')),
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  'Disconnect',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.danger,
+                                  ),
                                 ),
                               ),
                             ],

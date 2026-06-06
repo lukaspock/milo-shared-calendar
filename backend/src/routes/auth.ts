@@ -441,6 +441,12 @@ export async function deleteUser(ctx: RequestContext): Promise<Response> {
   return json({ message: "Account deleted" });
 }
 
+export async function disconnectGoogleCalendar(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  await db`DELETE FROM google_calendar_tokens WHERE user_id = ${userId}`;
+  return json({ message: "Google Calendar disconnected" });
+}
+
 export async function connectGoogleCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   try {
