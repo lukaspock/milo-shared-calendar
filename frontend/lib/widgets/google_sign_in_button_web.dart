@@ -109,15 +109,19 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     }
 
     final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
-    return SizedBox(
-      height: 56,
-      child: plugin.renderButton(
-        configuration: GSIButtonConfiguration(
-          type: GSIButtonType.standard,
-          theme: GSIButtonTheme.outline,
-          size: GSIButtonSize.large,
-          text: GSIButtonText.continueWith,
-          shape: GSIButtonShape.pill,
+    return LayoutBuilder(
+      builder: (context, constraints) => SizedBox(
+        height: 56,
+        width: double.infinity,
+        child: plugin.renderButton(
+          configuration: GSIButtonConfiguration(
+            type: GSIButtonType.standard,
+            theme: GSIButtonTheme.outline,
+            size: GSIButtonSize.large,
+            text: GSIButtonText.continueWith,
+            shape: GSIButtonShape.pill,
+            minimumWidth: constraints.maxWidth,
+          ),
         ),
       ),
     );
