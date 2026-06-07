@@ -119,7 +119,8 @@ describe("joinCalendar", () => {
       .mockResolvedValueOnce([fakeCalendar])      // calendar found
       .mockResolvedValueOnce([])                   // not yet a member
       .mockResolvedValueOnce([])                   // INSERT member
-      .mockResolvedValueOnce([{ member_count: 2 }]); // count
+      .mockResolvedValueOnce([{ member_count: 2 }]) // count
+      .mockResolvedValueOnce([]);                  // google_calendar_tokens check
     const ctx = makeCtx({ invite_code: "ABCD1234" }, OTHER_USER_ID);
     const res = await joinCalendar(ctx);
     expect(res.status).toBe(200);
@@ -136,7 +137,8 @@ describe("joinCalendar", () => {
       .mockResolvedValueOnce([fakeCalendar])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ member_count: 2 }]);
+      .mockResolvedValueOnce([{ member_count: 2 }])
+      .mockResolvedValueOnce([]);                  // google_calendar_tokens check
     // lowercase invite code should still work
     const ctx = makeCtx({ invite_code: "abcd1234" }, OTHER_USER_ID);
     const res = await joinCalendar(ctx);
