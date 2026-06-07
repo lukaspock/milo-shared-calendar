@@ -8,7 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/event.dart' as sc;
 
-/// Syncs SharedCal events to the native device calendar (iOS EventKit /
+/// Syncs Milo events to the native device calendar (iOS EventKit /
 /// Android CalendarContract). All state is stored locally in SharedPreferences
 /// — no backend involvement.
 ///
@@ -39,7 +39,7 @@ class DeviceCalendarService {
 
   // ── Connect / disconnect ──────────────────────────────────────────────────
 
-  /// Requests calendar permission and finds/creates the SharedCal calendar.
+  /// Requests calendar permission and finds/creates the Milo calendar.
   /// Returns true on success.
   Future<bool> connect() async {
     // 1. Check / request permission
@@ -70,7 +70,7 @@ class DeviceCalendarService {
   ///
   /// Priority:
   ///   1. Previously saved ID (verified to still exist).
-  ///   2. Create a new "SharedCal" calendar (works reliably on iOS).
+  ///   2. Create a new "Milo" calendar (works reliably on iOS).
   ///   3. Fall back to the first writable calendar on the device (Android).
   Future<String?> _getOrCreateCalendar() async {
     final prefs = await SharedPreferences.getInstance();
@@ -82,12 +82,12 @@ class DeviceCalendarService {
       if (exists) return savedId;
     }
 
-    // Try to create a dedicated calendar named "SharedCal"
+    // Try to create a dedicated calendar named "Milo"
     try {
       final result = await _plugin.createCalendar(
-        'SharedCal',
+        'Milo',
         calendarColor: const Color(0xFF6C63FF),
-        localAccountName: 'SharedCal',
+        localAccountName: 'Milo',
       );
       if (result.isSuccess && result.data != null) {
         await prefs.setString(_calendarIdKey, result.data!);
@@ -162,7 +162,7 @@ class DeviceCalendarService {
     }
   }
 
-  /// Reads events from all personal device calendars (not the SharedCal-managed one)
+  /// Reads events from all personal device calendars (not the Milo-managed one)
   /// and returns them as in-memory CalendarEvent objects with source=deviceImport.
   ///
   /// Returns [] on macOS (device_calendar package is iOS/Android only), or when
@@ -181,7 +181,7 @@ class DeviceCalendarService {
     try {
       if (!await isEnabled()) return [];
 
-      // Values in this map are device event IDs written by SharedCal — skip those events.
+      // Values in this map are device event IDs written by Milo — skip those events.
       // We no longer skip entire calendars by calId because the fallback path in connect()
       // may have stored the user's default iCloud calendar as calId, which would hide all
       // personal events. Filtering per-event by device ID is precise enough.

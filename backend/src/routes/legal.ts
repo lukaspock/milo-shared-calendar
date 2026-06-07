@@ -13,12 +13,12 @@ const STYLE = `
 
 function legalPage(title: string, body: string): Response {
   const html = `<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>${title} — SharedCal</title>
+<meta charset="utf-8"><title>${title} — Milo</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>${STYLE}</style>
 </head><body><div class="wrap">
 ${body}
-<p class="footer">SharedCal · <a href="/privacy" style="color:#6C63FF">Privacy Policy</a> · <a href="/terms" style="color:#6C63FF">Terms of Service</a></p>
+<p class="footer">Milo · <a href="/privacy" style="color:#6C63FF">Privacy Policy</a> · <a href="/terms" style="color:#6C63FF">Terms of Service</a></p>
 </div></body></html>`;
   return new Response(html, { headers: { "Content-Type": "text/html" } });
 }
@@ -63,29 +63,29 @@ export function termsOfService(): Response {
 <p class="sub">Last updated: June 2025</p>
 
 <h2>1. Acceptance</h2>
-<p>By creating an account or using SharedCal you agree to these terms. If you do not agree, do not use the service.</p>
+<p>By creating an account or using Milo you agree to these terms. If you do not agree, do not use the service.</p>
 
 <h2>2. Description of service</h2>
-<p>SharedCal is a shared calendar application that lets users create calendars, invite members, manage events, and optionally sync with Google Calendar.</p>
+<p>Milo is a shared calendar application that lets users create calendars, invite members, manage events, and optionally sync with Google Calendar.</p>
 
 <h2>3. Your account</h2>
 <ul>
   <li>You are responsible for keeping your credentials secure.</li>
   <li>You must not use the service for unlawful purposes or to harass others.</li>
-  <li>You must be at least 13 years old to use SharedCal.</li>
+  <li>You must be at least 13 years old to use Milo.</li>
 </ul>
 
 <h2>4. Content</h2>
-<p>You retain ownership of the content you create (calendar names, event titles, etc.). By submitting content you grant SharedCal a limited licence to store and display it to calendar members as part of operating the service.</p>
+<p>You retain ownership of the content you create (calendar names, event titles, etc.). By submitting content you grant Milo a limited licence to store and display it to calendar members as part of operating the service.</p>
 
 <h2>5. Availability</h2>
-<p>SharedCal is provided "as is". We do not guarantee uninterrupted availability, especially on the free hosting tier where the backend may sleep after inactivity.</p>
+<p>Milo is provided "as is". We do not guarantee uninterrupted availability, especially on the free hosting tier where the backend may sleep after inactivity.</p>
 
 <h2>6. Termination</h2>
 <p>You may delete your account at any time. We reserve the right to suspend or terminate accounts that violate these terms.</p>
 
 <h2>7. Limitation of liability</h2>
-<p>To the fullest extent permitted by law, SharedCal is not liable for any indirect, incidental, or consequential damages arising from your use of the service.</p>
+<p>To the fullest extent permitted by law, Milo is not liable for any indirect, incidental, or consequential damages arising from your use of the service.</p>
 
 <h2>8. Changes</h2>
 <p>We may update these terms from time to time. Continued use of the service after changes constitutes acceptance.</p>
