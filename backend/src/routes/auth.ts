@@ -241,54 +241,81 @@ export async function updateNotificationType(ctx: RequestContext): Promise<Respo
 }
 
 export async function googleAuth(ctx: RequestContext): Promise<Response> {
+  console.log("[GoogleAuth] ── POST /auth/google ───────────────────────");
   let body: { idToken?: string; serverAuthCode?: string };
   try {
     body = await ctx.req.json();
   } catch {
+    console.log("[GoogleAuth] ✗ failed to parse request body");
     return error("Invalid JSON body");
   }
 
   const { idToken, serverAuthCode } = body;
+  console.log("[GoogleAuth] idToken present    :", !!idToken);
+  console.log("[GoogleAuth] idToken prefix     :", idToken ? idToken.substring(0, 30) + "…" : "(none)");
+  console.log("[GoogleAuth] serverAuthCode     :", serverAuthCode ?? "(none)");
+
   if (!idToken) return error("idToken is required");
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const iosClientId = process.env.GOOGLE_IOS_CLIENT_ID;
+  console.log("[GoogleAuth] GOOGLE_CLIENT_ID   :", clientId ? clientId.substring(0, 30) + "…" : "(missing!)");
+  console.log("[GoogleAuth] GOOGLE_IOS_CLIENT_ID:", iosClientId ? iosClientId.substring(0, 30) + "…" : "(missing)");
+  console.log("[GoogleAuth] GOOGLE_CLIENT_SECRET:", clientSecret ? "(set)" : "(missing!)");
+
   if (!clientId || !clientSecret) return error("Google OAuth not configured", 503);
 
   // Accept both Web and iOS client IDs as valid audiences —
   // iOS/macOS tokens have the iOS client ID as audience, not the Web client ID.
   const validAudiences = [clientId, ...(iosClientId ? [iosClientId] : [])];
+  console.log("[GoogleAuth] validAudiences     :", validAudiences);
 
   const auth = new google.auth.OAuth2(clientId, clientSecret);
   let googleUser: { sub: string; email: string; name: string };
   try {
+    console.log("[GoogleAuth] verifying ID token…");
     const ticket = await auth.verifyIdToken({ idToken, audience: validAudiences });
     const payload = ticket.getPayload();
-    if (!payload?.sub || !payload?.email) return error("Invalid Google token", 401);
+    console.log("[GoogleAuth] token payload aud  :", payload?.aud);
+    console.log("[GoogleAuth] token payload sub  :", payload?.sub ? payload.sub.substring(0, 10) + "…" : "(none)");
+    console.log("[GoogleAuth] token payload email:", payload?.email);
+    console.log("[GoogleAuth] token payload iss  :", payload?.iss);
+    if (!payload?.sub || !payload?.email) {
+      console.log("[GoogleAuth] ✗ payload missing sub or email");
+      return error("Invalid Google token", 401);
+    }
     googleUser = {
       sub: payload.sub,
       email: payload.email,
       name: payload.name ?? payload.email.split("@")[0],
     };
-  } catch {
+    console.log("[GoogleAuth] ✓ token verified for:", googleUser.email);
+  } catch (e) {
+    console.log("[GoogleAuth] ✗ verifyIdToken threw:", e instanceof Error ? e.message : String(e));
     return error("Invalid Google token", 401);
   }
 
   // Find existing user by Google ID or email
+  console.log("[GoogleAuth] looking up user by google_id or email…");
   const existing = await db`SELECT * FROM users WHERE google_id = ${googleUser.sub} OR email = ${googleUser.email}`;
+  console.log("[GoogleAuth] existing users found:", existing.length);
   let user: Record<string, unknown>;
   let isNew = false;
 
   if (existing.length > 0) {
     user = existing[0];
+    console.log("[GoogleAuth] existing user id       :", user.id);
+    console.log("[GoogleAuth] existing user google_id:", user.google_id ? "(set)" : "(null — password-only account)");
     if (!user.google_id) {
       // An account with this email already exists with a password — refuse silent
       // merge to prevent account takeover via a Google account with the same email.
+      console.log("[GoogleAuth] ✗ refusing merge: password-only account with same email");
       return error("An account with this email already exists. Please sign in with your password.", 409);
     }
   } else {
     isNew = true;
+    console.log("[GoogleAuth] no existing user — creating new account");
     const colors = ["#6C63FF", "#FF6584", "#43B89C", "#F5A623", "#4A90E2", "#E74C3C", "#2ECC71", "#9B59B6"];
     const countResult = await db`SELECT COUNT(*)::integer AS n FROM users`;
     const color = colors[Number(countResult[0].n) % colors.length];
@@ -299,10 +326,12 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
       RETURNING *
     `;
     user = created[0];
+    console.log("[GoogleAuth] ✓ new user created:", user.id);
   }
 
   const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${user.id}`;
   const token = await signToken({ sub: user.id as string, email: user.email as string, name: user.name as string });
+  console.log("[GoogleAuth] ✓ returning JWT for", user.email, "| isNew:", isNew, "| has_google_calendar:", gcal.length > 0);
   return json({
     token,
     user: {
