@@ -161,5 +161,23 @@ export async function runMigrations(): Promise<void> {
     WHERE jsonb_typeof(imported_by) = 'string'
   `;
 
+  // Device calendar events uploaded by members for cross-user visibility.
+  // Each row represents one native device event from one user's device calendar,
+  // shared into a specific SharedCal calendar.
+  await db`
+    CREATE TABLE IF NOT EXISTS imported_device_events (
+      id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      calendar_id     UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
+      user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      device_event_id TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      start_time      TIMESTAMPTZ NOT NULL,
+      end_time        TIMESTAMPTZ NOT NULL,
+      description     TEXT,
+      last_synced_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (calendar_id, user_id, device_event_id)
+    )
+  `;
+
   console.log("[db] migrations applied");
 }

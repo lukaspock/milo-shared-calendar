@@ -45,16 +45,52 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _apiEvents = list;
       _cache.saveEvents(calendarId, list);
 
-      // Load device calendar events (no-op on macOS, no-op if not enabled)
-      _deviceEvents = await DeviceCalendarService().readExternalEvents(
+      // Load device calendar events from the local device
+      final localDeviceEvents = await DeviceCalendarService().readExternalEvents(
         sharedCalendarId: calendarId,
         startDate: DateTime.now().subtract(const Duration(days: 365)),
         endDate: DateTime.now().add(const Duration(days: 365)),
       );
 
+      // Upload this user's device events to the backend so other members can see them.
+      // Fire-and-forget — never block the main fetch.
+      if (localDeviceEvents.isNotEmpty) {
+        _uploadDeviceEvents(localDeviceEvents);
+      }
+
+      // Deduplicate: don't show a local device event that the API already returned
+      // (happens on subsequent fetches once the backend has persisted and returns it).
+      final apiDeviceIds = list
+          .where((e) => e.source == EventSource.deviceImport)
+          .map((e) => e.id)
+          .toSet();
+      _deviceEvents = localDeviceEvents
+          .where((e) => !apiDeviceIds.contains(e.id))
+          .toList();
+
       _setMergedState();
     } catch (e, st) {
       if (cached == null) state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Uploads [events] (from the local device calendar) to the backend so that
+  /// all members of this calendar can see them. Fire-and-forget.
+  Future<void> _uploadDeviceEvents(List<CalendarEvent> events) async {
+    try {
+      await _api.post('/calendars/$calendarId/device-events', data: {
+        'events': events.map((e) => {
+          'device_event_id': e.id.startsWith('device_')
+              ? e.id.substring('device_'.length)
+              : e.id,
+          'title': e.title,
+          'start_time': e.startTime.toUtc().toIso8601String(),
+          'end_time': e.endTime.toUtc().toIso8601String(),
+          if (e.description != null) 'description': e.description,
+        }).toList(),
+      });
+    } catch (_) {
+      // Never let upload errors affect the main UI
     }
   }
 
@@ -92,6 +128,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       if (cal != calendarId) return;
       // Backend finished importing Google Calendar events — re-fetch so they
       // appear immediately without the user having to tap refresh manually.
+      fetch();
+    } else if (type == 'device_synced') {
+      final cal = msg['calendar_id'] as String?;
+      if (cal != calendarId) return;
+      // A member uploaded their device calendar events — re-fetch so they
+      // become visible to all members immediately.
       fetch();
     } else if (type == 'event_starting' || type == 'event_ended') {
       final cal = msg['calendar_id'] as String?;
