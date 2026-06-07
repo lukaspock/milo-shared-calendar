@@ -121,5 +121,5 @@ const server = Bun.serve({
   websocket: websocketHandler,
 });
 
-console.log(`🚀 SharedCal backend running on http://localhost:${server.port}`);
+console.log(`🚀 Milo backend running on http://localhost:${server.port}`);
 console.log(`🔌 WebSocket available at ws://localhost:${server.port}/ws`);

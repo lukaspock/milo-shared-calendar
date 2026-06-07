@@ -15,5 +15,5 @@ void main() async {
   // ProviderScope.containerOf(context) works inside showModalBottomSheet
   // builders. UncontrolledProviderScope is not found by containerOf and
   // causes modal overlays to crash silently in release/web builds.
-  runApp(const ProviderScope(child: SharedCalApp()));
+  runApp(const ProviderScope(child: MiloApp()));
 }

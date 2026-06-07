@@ -526,7 +526,7 @@ function calendarSuccessPage(): string {
     "Google Calendar connected ✅",
     "#2ECC71",
     `<h1 style="color:#1F1B16;font-size:26px;font-weight:800;margin:0 0 8px;">Calendar connected!</h1>
-     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">Your Google Calendar is now linked to SharedCal. Return to the app and tap <strong>Done</strong>.</p>
+     <p style="color:#6B6357;font-size:15px;margin:0 0 24px;">Your Google Calendar is now linked to Milo. Return to the app and tap <strong>Done</strong>.</p>
      <span style="font-size:64px;">🎉</span>`,
   );
 }
@@ -589,7 +589,7 @@ label{font-size:14px;font-weight:600;color:#1F1B16}
     <input id="pw" name="password" type="password" minlength="6" required autofocus placeholder="••••••••">
     <button type="submit">Set new password →</button>
   </form>
-  <p style="color:#A39A8C;font-size:12px;margin:20px 0 0;text-align:center;">SharedCal</p>
+  <p style="color:#A39A8C;font-size:12px;margin:20px 0 0;text-align:center;">Milo</p>
 </div>
 </body></html>`;
 }
@@ -624,7 +624,7 @@ function page(title: string, accent: string, body: string): string {
     <span style="color:white;font-size:24px;">📅</span>
   </div>
   ${body}
-  <p style="color:#A39A8C;font-size:12px;margin:24px 0 0;">SharedCal</p>
+  <p style="color:#A39A8C;font-size:12px;margin:24px 0 0;">Milo</p>
 </div>
 </body></html>`;
 }

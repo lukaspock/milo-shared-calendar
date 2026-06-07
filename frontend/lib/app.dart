@@ -106,14 +106,14 @@ final _router = GoRouter(
   ],
 );
 
-class SharedCalApp extends ConsumerStatefulWidget {
-  const SharedCalApp({super.key});
+class MiloApp extends ConsumerStatefulWidget {
+  const MiloApp({super.key});
 
   @override
-  ConsumerState<SharedCalApp> createState() => _SharedCalAppState();
+  ConsumerState<MiloApp> createState() => _MiloAppState();
 }
 
-class _SharedCalAppState extends ConsumerState<SharedCalApp> {
+class _MiloAppState extends ConsumerState<MiloApp> {
   @override
   void initState() {
     super.initState();
