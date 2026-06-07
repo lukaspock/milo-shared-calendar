@@ -26,10 +26,13 @@ The goal is a calendar that feels as lightweight as a shared notes app but as po
 - **Event polls** — propose multiple time options, let the group vote, confirm the winner
 - **Recurring events** — daily, weekly, or monthly repeats with per-instance or series-wide editing
 - **Reminders** — email and on-device notifications 30 minutes before an event starts
-- **Google Calendar sync** — mirror events to your personal Google Calendar automatically
+- **Google Calendar sync** — import events from connected members' Google Calendars into the shared calendar; mirror Milo events back to each member's personal Google Calendar. Background sync every 5 minutes keeps everything current.
+- **Device Calendar sharing** — share your iOS/Android calendar events with the group; events from all members' device calendars are merged into the shared view. Syncs automatically every 5 minutes while the calendar is open.
+- **Photo memories** — attach photos to events; scrollable photo grid per calendar with real-time sync
 - **Emoji reactions** — react to events with any emoji; quick-pick the most common or open the full keyboard
 - **Event icons** — attach an emoji icon to an event (20 presets or pick any emoji)
 - **Profile editing** — change your display name, colour, and profile photo (Cloudinary-hosted avatar)
+- **Password reset** — forgot password flow via email link
 - **Sign in with Google** — or use email + password, your choice _(currently unavailable — see Known Limitations)_
 
 ## Stack

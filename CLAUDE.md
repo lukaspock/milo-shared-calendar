@@ -1,4 +1,4 @@
-# SharedCal
+# Milo
 
 A shared calendar app — Flutter frontend + Bun/TypeScript REST API + WebSocket + PostgreSQL.
 
@@ -90,31 +90,41 @@ The production Render DB was migrated manually via psql — those tables already
 
 ## Database schema (summary)
 
-| Table                    | Purpose                                                                                    |
-|--------------------------|--------------------------------------------------------------------------------------------|
-| `users`                  | Accounts — email, password_hash (nullable), name, color, avatar_url, google_id            |
-| `calendars`              | Calendars — name, owner_id, invite_code                                                    |
-| `calendar_members`       | Junction — user_id, calendar_id, role (owner/member)                                       |
-| `events`                 | Calendar events — title, start_time, end_time, color, icon                                 |
-| `event_reactions`        | Emoji reactions — event_id, user_id, emoji (PK on all three)                               |
-| `event_polls`            | Polls — title, options, open/closed state                                                   |
-| `poll_options`           | Time-slot options for a poll                                                                |
-| `poll_votes`             | Per-user votes (yes/no/maybe) per option                                                    |
-| `google_calendar_tokens` | Per-user Google OAuth tokens for Calendar sync                                              |
-| `google_event_ids`       | Mapping SharedCal event IDs → Google Calendar event IDs per user                           |
+| Table                      | Purpose                                                                                    |
+|----------------------------|--------------------------------------------------------------------------------------------|
+| `users`                    | Accounts — email, password_hash (nullable), name, color, avatar_url, google_id            |
+| `calendars`                | Calendars — name, owner_id, invite_code                                                    |
+| `calendar_members`         | Junction — user_id, calendar_id, role (owner/member)                                       |
+| `events`                   | Calendar events — title, start_time, end_time, color, icon, recurrence fields              |
+| `event_reactions`          | Emoji reactions — event_id, user_id, emoji (PK on all three)                               |
+| `event_polls`              | Polls — title, options, open/closed state                                                   |
+| `poll_options`             | Time-slot options for a poll                                                                |
+| `poll_votes`               | Per-user votes (yes/no/maybe) per option                                                    |
+| `google_calendar_tokens`   | Per-user Google OAuth tokens for Calendar sync                                              |
+| `google_event_ids`         | Mapping Milo event IDs → Google Calendar event IDs per user                                |
+| `imported_gcal_events`     | Cached events imported from members' Google Calendars (keyed by calendar_id + ical_uid)    |
+| `imported_device_events`   | Device calendar events uploaded by members (keyed by calendar_id + user_id + device_event_id) |
+| `pending_calendar_connects`| Short-lived OAuth state tokens for Google Calendar connect flow (15 min TTL)               |
+| `event_photos`             | Photo memories attached to events — Cloudinary URLs, per calendar                          |
 
 ## Features
 
-- **Auth:** Register / login with JWT (email+password). Google Sign-In is implemented in code but currently non-functional (iOS native OAuth client ID not configured — see Known issues). Token stored in SharedPreferences.
+- **Auth:** Register / login with JWT (email+password). Password reset via email link (`POST /auth/forgot-password`, `GET/POST /auth/reset-password/:token`). Google Sign-In is implemented in code but currently non-functional (iOS native OAuth client ID not configured — see Known issues). Token stored in SharedPreferences.
 - **Email verification:** Verification email sent on register via Gmail API. Banner in app with auto-poll (every 5 s) — disappears automatically once verified. "Resend email" button available.
-- **Calendars:** Create, join via invite code, view members, kick members (owner only). Members sheet shows each member's profile photo (falls back to colour initial). Owner can delete calendar (cascades all data), members can leave.
+- **Calendars:** Create, join via invite code, view members, kick members (owner only). Members sheet shows each member's profile photo (falls back to colour initial). Owner can delete calendar (cascades all data), members can leave. On join, the joining user's Google Calendar and Device Calendar events are imported immediately (no need to open the calendar screen first).
 - **Account deletion:** Users can delete their own account from the home screen.
 - **Events:** Create / edit / delete events. Optional icon per event — 20 preset emojis, any emoji via full keyboard, or a custom photo (uploaded to Cloudinary `event_icons/`). The icon is shown in the calendar grid day cell and in the event row (left box) instead of the date. Multi-day events appear on every spanned day in the calendar grid. Real-time sync via PostgreSQL NOTIFY → WebSocket. Email notification sent to all verified members (except creator) on new event.
+- **Recurring events:** Daily, weekly, or monthly recurrence. Each instance is stored as a DB row with `parent_event_id`. Editing supports single-instance or all-future-instances modes.
 - **Emoji reactions:** React to any event with any emoji. Quick-pick 8 common emojis or open the full emoji keyboard. One row per user+emoji+event. Broadcast in real-time via WebSocket `reaction_update`.
 - **Profile editing:** `PATCH /auth/me` — update name, colour, and avatar URL. Profile photos upload directly from device to Cloudinary (unsigned preset, cloud `dvlvgosxk`, folder `avatars`) and are stored as a CDN URL on the user record.
 - **Event Polls:** Propose an event with multiple time options. Members vote yes/no/maybe per option. Creator confirms a winning option → automatically creates a regular event + email notification to all verified members.
-- **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`, `reaction_update`.
-- **Google Calendar sync**: Events are mirrored to the user's personal Google Calendar automatically. Available to all users via a web OAuth connect flow.
+- **Photo memories:** Attach photos to events. Photos upload to Cloudinary (`event_photos/` folder) and are stored per calendar. Scrollable photo grid with real-time sync via WebSocket.
+- **Real-time:** WebSocket broadcasts `event_created`, `event_updated`, `event_deleted`, `poll_update`, `member_joined`, `member_notification`, `reaction_update`, `gcal_synced`, `device_synced`.
+- **Google Calendar sync (bidirectional):**
+  - *Milo → Google*: Events created/updated/deleted in Milo are mirrored to each connected member's personal Google Calendar (fire-and-forget, tagged with `sharedcal_origin: true` to avoid re-import).
+  - *Google → Milo*: Events from connected members' Google Calendars are imported into `imported_gcal_events` and shown read-only with "contributed by" attribution. Cache refreshes every 5 min via `startGoogleCalendarSyncScheduler` (backend background job) and on every `GET /calendars/:id/events` when stale. Broadcasts `gcal_synced` when done.
+  - Connect/disconnect via in-app banner → `POST /auth/google-calendar/connect` / `DELETE /auth/google-calendar/disconnect`.
+- **Device Calendar sharing:** Members can share their iOS/Android device calendar events with the group via `POST /calendars/:id/device-events`. Events are stored in `imported_device_events` and shown to all members. The frontend reads device events every 5 minutes (`Timer.periodic`) and uploads only when the set of event IDs changes. Broadcasts `device_synced` on change.
 
 ## Google Sign-In & Calendar integration
 
@@ -132,7 +142,7 @@ Users can authenticate via email+password. Once working, Google Sign-In will als
 2. `google_sign_in` package shows the native Google consent screen
 3. Flutter sends the Google ID token to `POST /auth/google`
 4. Backend verifies the ID token, creates or finds the user
-5. Returns a SharedCal JWT — app behaves identically from here
+5. Returns a Milo JWT — app behaves identically from here
 
 **Web OAuth connect flow (all users):**
 1. User taps "Connect Google Calendar" banner in the app
@@ -162,4 +172,7 @@ Callback URL must be registered: `https://api.milocalendar.tech/auth/google-cale
 - **`ENCRYPTION_KEY` must be set on Render** (exactly 32 ASCII chars). If missing, `encrypt()` throws inside `handleCalendarCallback`, which is swallowed by the catch and returns `false` → users see "Invalid or expired session" on Google Calendar connect. Set it once in the Render dashboard under Environment Variables.
 - Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).
-- Cloudinary uploads use an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app. Avatar photos go to the `avatars/` folder; event icon photos go to `event_icons/`. Both use the same preset.
+- Cloudinary uploads use an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app. Avatar photos go to the `avatars/` folder; event icon photos go to `event_icons/`, and photo memories go to `event_photos/`. All use the same preset.
+- **`startGoogleCalendarSyncScheduler`** fires every 5 min in the backend. It runs `fetchAndCacheGoogleEventsForCalendar` for every calendar that has at least one gcal-connected member. A running-flag prevents overlapping runs. On Render Free Tier the process sleeps after inactivity — the scheduler resumes on the next wake-up.
+- **Device Calendar periodic sync** runs as a `Timer.periodic` (5 min) inside each `EventsNotifier`. It only uploads when the set of device event IDs changes. The timer is cancelled in `dispose()`, so it stops when the user leaves the calendar screen.
+- **Imported events are never written back** to other members' Google/Device Calendars — `syncEvent` is only called for native Milo events (`event_created` WS), never for `source: google_import` or `source: device_import` events.

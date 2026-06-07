@@ -1,4 +1,4 @@
-# SharedCal Backend
+# Milo Backend
 
 Bun + TypeScript REST API with WebSocket support, backed by PostgreSQL.
 
@@ -44,13 +44,14 @@ See the root [CLAUDE.md](../CLAUDE.md) for full environment variable reference a
 
 | Group | Base path | Description |
 |-------|-----------|-------------|
-| Auth | `/auth` | Register, login, Google OAuth, email verification, profile update |
-| Calendars | `/calendars` | Create, join, manage members |
-| Events | `/events` | CRUD + icon field + real-time WS notifications |
+| Auth | `/auth` | Register, login, Google OAuth, email verification, password reset, profile update |
+| Calendars | `/calendars` | Create, join, manage members, device calendar sync |
+| Events | `/events` | CRUD + recurring + icon field + real-time WS notifications |
 | Reactions | `/events/:id/reactions` | Emoji reactions per event per user |
 | Polls | `/calendars/:id/polls` | Create, vote, confirm |
+| Photos | `/events/:id/photos`, `/calendars/:id/photos` | Photo memories — Cloudinary upload + list + delete |
 
-See [CLAUDE.md](CLAUDE.md) for the full route table and WebSocket protocol.
+See [CLAUDE.md](../CLAUDE.md) for the full route table and WebSocket protocol.
 
 ## Known issues
 
