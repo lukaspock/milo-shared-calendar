@@ -447,6 +447,55 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
   D(`fetchAndCacheGoogleEventsForCalendar DONE calendarId=${calendarId}`);
 }
 
+// ── Background scheduler ─────────────────────────────────────────────────────
+
+let _schedulerRunning = false;
+
+/**
+ * Starts a background loop that re-imports Google Calendar events for every
+ * calendar that has at least one member with Google Calendar connected.
+ * Fires immediately on start, then every 5 minutes.
+ * Skips a tick if the previous run is still in progress.
+ */
+export function startGoogleCalendarSyncScheduler(): void {
+  const INTERVAL_MS = 5 * 60_000;
+
+  async function runSync() {
+    if (_schedulerRunning) {
+      D("[gcal-scheduler] previous run still in progress — skipping tick");
+      return;
+    }
+    _schedulerRunning = true;
+    try {
+      const now = new Date();
+      const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+      const endDate = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+
+      const rows = await db`
+        SELECT DISTINCT cm.calendar_id
+        FROM calendar_members cm
+        INNER JOIN google_calendar_tokens gct ON gct.user_id = cm.user_id
+      `;
+      D(`[gcal-scheduler] syncing ${rows.length} calendar(s)`);
+
+      for (const row of rows as Record<string, unknown>[]) {
+        await fetchAndCacheGoogleEventsForCalendar({
+          calendarId: row.calendar_id as string,
+          startDate,
+          endDate,
+        });
+      }
+    } catch (e) {
+      console.error("[gcal-scheduler] sync failed:", e);
+    } finally {
+      _schedulerRunning = false;
+    }
+  }
+
+  setInterval(() => { runSync().catch(console.error); }, INTERVAL_MS);
+  D("[gcal-scheduler] started — interval=5min");
+}
+
 export async function syncEventDeleted(eventId: string): Promise<void> {
   D(`syncEventDeleted — eventId=${eventId}`);
   const rows = await db`

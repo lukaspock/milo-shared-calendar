@@ -12,6 +12,7 @@ import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { deleteAsset } from "./src/routes/assets";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
 import { startReminderScheduler } from "./src/services/reminder.service";
+import { startGoogleCalendarSyncScheduler } from "./src/services/google_calendar";
 
 const router = new Router();
 
@@ -101,6 +102,9 @@ await startNotifyListener();
 
 // Start the event reminder scheduler (checks every 60 s, sends 30 min before events)
 startReminderScheduler();
+
+// Proactively re-import Google Calendar events every 5 min for all connected users
+startGoogleCalendarSyncScheduler();
 
 const server = Bun.serve({
   port: PORT,
