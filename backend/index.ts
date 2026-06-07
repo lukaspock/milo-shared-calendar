@@ -3,7 +3,7 @@ import { authMiddleware } from "./src/middleware/auth.middleware";
 import { authRateLimit, rateLimit } from "./src/middleware/rate_limit.middleware";
 import { register, login, deleteUser, verifyEmail, resendVerification, getMe, updateNotificationType, updateProfile, googleAuth, connectGoogleCalendar, disconnectGoogleCalendar, googleCalendarCallback, forgotPassword, showResetPasswordForm, submitResetPassword } from "./src/routes/auth";
 import { runMigrations } from "./src/db/migrate";
-import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar, patchCalendar } from "./src/routes/calendars";
+import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMembers, removeMember, deleteCalendar, leaveCalendar, patchCalendar, syncDeviceEvents } from "./src/routes/calendars";
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { addEventPhoto, listCalendarPhotos, deleteEventPhoto } from "./src/routes/photos";
@@ -65,6 +65,7 @@ router.patch("/calendars/:id", patchCalendar, [authMiddleware]);
 router.delete("/calendars/:id", deleteCalendar, [authMiddleware]);
 router.post("/calendars/:id/leave", leaveCalendar, [authMiddleware]);
 router.get("/calendars/:id/events", getCalendarEvents, [authMiddleware]);
+router.post("/calendars/:id/device-events", syncDeviceEvents, [authMiddleware]);
 router.get("/calendars/:id/members", listMembers, [authMiddleware]);
 router.delete("/calendars/:id/members/:userId", removeMember, [authMiddleware]);
 

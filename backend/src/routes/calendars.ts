@@ -203,7 +203,37 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
       : (row.imported_by ?? []),
   }));
 
-  return json([...events, ...importedEvents]);
+  // Read device calendar events uploaded by members
+  const deviceRows = await db`
+    SELECT ide.*, u.name AS contributed_by_name, u.color AS contributed_by_color
+    FROM imported_device_events ide
+    INNER JOIN users u ON u.id = ide.user_id
+    WHERE ide.calendar_id = ${id}
+      AND ide.end_time > ${startDate}
+      AND ide.start_time < ${endDate}
+    ORDER BY ide.start_time ASC
+  `;
+
+  const deviceImportedEvents = (deviceRows as Record<string, unknown>[]).map((row) => ({
+    id: `device_${row.device_event_id as string}`,
+    calendar_id: row.calendar_id,
+    created_by: row.user_id,
+    title: row.title,
+    description: row.description ?? null,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    color: row.contributed_by_color ?? "#6C63FF",
+    created_at: row.last_synced_at,
+    updated_at: row.last_synced_at,
+    source: "device_import",
+    imported_by: [{
+      user_id: row.user_id,
+      name: row.contributed_by_name,
+      color: row.contributed_by_color ?? "#6C63FF",
+    }],
+  }));
+
+  return json([...events, ...importedEvents, ...deviceImportedEvents]);
 }
 
 export async function listMembers(ctx: RequestContext): Promise<Response> {
@@ -225,6 +255,13 @@ export async function listMembers(ctx: RequestContext): Promise<Response> {
   `;
 
   return json(members);
+}
+
+async function cleanupImportedDeviceEvents(calendarId: string, departedUserId: string): Promise<void> {
+  await db`
+    DELETE FROM imported_device_events
+    WHERE calendar_id = ${calendarId} AND user_id = ${departedUserId}
+  `;
 }
 
 async function cleanupImportedGcalEvents(calendarId: string, departedUserId: string): Promise<void> {
@@ -266,6 +303,7 @@ export async function removeMember(ctx: RequestContext): Promise<Response> {
   `;
 
   await cleanupImportedGcalEvents(id, targetUserId);
+  await cleanupImportedDeviceEvents(id, targetUserId);
 
   return json({ message: "Member removed" });
 }
@@ -308,6 +346,7 @@ export async function leaveCalendar(ctx: RequestContext): Promise<Response> {
   await db`DELETE FROM calendar_members WHERE calendar_id = ${id} AND user_id = ${userId}`;
 
   await cleanupImportedGcalEvents(id, userId);
+  await cleanupImportedDeviceEvents(id, userId);
 
   return json({ message: "Left calendar" });
 }
@@ -337,4 +376,53 @@ export async function patchCalendar(ctx: RequestContext): Promise<Response> {
 
   const rows = await db`SELECT * FROM calendars WHERE id = ${id}`;
   return json(rows[0]);
+}
+
+interface DeviceEventInput {
+  device_event_id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  description?: string | null;
+}
+
+/// POST /calendars/:id/device-events
+/// Replaces the calling user's device calendar events for this calendar.
+/// All members of the calendar can then see these events in getCalendarEvents.
+export async function syncDeviceEvents(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  const membership = await db`
+    SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  let body: { events?: DeviceEventInput[] };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const events = Array.isArray(body.events) ? body.events : [];
+
+  // Replace all device events for this user in this calendar atomically
+  await db`DELETE FROM imported_device_events WHERE calendar_id = ${id} AND user_id = ${userId}`;
+
+  for (const event of events) {
+    if (!event.device_event_id || !event.title || !event.start_time || !event.end_time) continue;
+    await db`
+      INSERT INTO imported_device_events
+        (calendar_id, user_id, device_event_id, title, start_time, end_time, description)
+      VALUES
+        (${id}, ${userId}, ${event.device_event_id}, ${event.title},
+         ${event.start_time}, ${event.end_time}, ${event.description ?? null})
+    `;
+  }
+
+  // Notify all calendar members so their UI re-fetches and shows the new events
+  broadcastToCalendar(id, { type: "device_synced", calendar_id: id });
+
+  return json({ synced: events.length });
 }
