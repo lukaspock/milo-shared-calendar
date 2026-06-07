@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 export '../models/event.dart' show RecurrenceRule;
@@ -45,17 +46,25 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _apiEvents = list;
       _cache.saveEvents(calendarId, list);
 
+      debugPrint('[events] calendarId=$calendarId — API returned ${list.length} event(s) '
+          '(${list.where((e) => e.source == EventSource.googleImport).length} gcal, '
+          '${list.where((e) => e.source == EventSource.deviceImport).length} device-from-db)');
+
       // Load device calendar events from the local device
       final localDeviceEvents = await DeviceCalendarService().readExternalEvents(
         sharedCalendarId: calendarId,
         startDate: DateTime.now().subtract(const Duration(days: 365)),
         endDate: DateTime.now().add(const Duration(days: 365)),
       );
+      debugPrint('[events] local device events read: ${localDeviceEvents.length}');
 
       // Upload this user's device events to the backend so other members can see them.
       // Fire-and-forget — never block the main fetch.
       if (localDeviceEvents.isNotEmpty) {
+        debugPrint('[events] uploading ${localDeviceEvents.length} device event(s) to backend…');
         _uploadDeviceEvents(localDeviceEvents);
+      } else {
+        debugPrint('[events] no local device events to upload');
       }
 
       // Deduplicate: don't show a local device event that the API already returned
@@ -67,9 +76,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _deviceEvents = localDeviceEvents
           .where((e) => !apiDeviceIds.contains(e.id))
           .toList();
+      debugPrint('[events] _deviceEvents after dedup: ${_deviceEvents.length} '
+          '(${localDeviceEvents.length - _deviceEvents.length} already in API response)');
 
       _setMergedState();
     } catch (e, st) {
+      debugPrint('[events] fetch error: $e\n$st');
       if (cached == null) state = AsyncValue.error(e, st);
     }
   }
@@ -89,7 +101,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           if (e.description != null) 'description': e.description,
         }).toList(),
       });
-    } catch (_) {
+      debugPrint('[events] ✓ device events uploaded successfully');
+    } catch (e) {
+      debugPrint('[events] ✗ device event upload failed: $e');
       // Never let upload errors affect the main UI
     }
   }
