@@ -116,10 +116,11 @@ class CalendarEvent {
           : sourceRaw == 'device_import'
               ? EventSource.deviceImport
               : EventSource.sharedcal,
-      importedBy: (json['imported_by'] as List<dynamic>?)
-              ?.map((e) => ImportedByUser.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      importedBy: json['imported_by'] is List
+          ? (json['imported_by'] as List<dynamic>)
+                .map((e) => ImportedByUser.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : [],
     );
   }
 

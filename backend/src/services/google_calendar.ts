@@ -316,7 +316,11 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
   D(`  ${existingRows.length} existing imported_gcal_events row(s) in DB`);
   const importedByMap = new Map<string, ImportedByEntry[]>();
   for (const row of existingRows as Record<string, unknown>[]) {
-    importedByMap.set(row.ical_uid as string, row.imported_by as ImportedByEntry[]);
+    // Defensive: Bun SQL may return JSONB as a raw string — parse it if so.
+    const importedBy: ImportedByEntry[] = typeof row.imported_by === 'string'
+      ? JSON.parse(row.imported_by as string) as ImportedByEntry[]
+      : (row.imported_by as ImportedByEntry[]) ?? [];
+    importedByMap.set(row.ical_uid as string, importedBy);
   }
 
   for (const member of memberRows as Record<string, unknown>[]) {
@@ -409,7 +413,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
           VALUES
             (${calendarId}, ${icalUid}, ${event.summary ?? "(no title)"},
              ${startTime}, ${endTime}, ${event.description ?? null},
-             ${event.id ?? null}, ${JSON.stringify(merged)})
+             ${event.id ?? null}, ${JSON.stringify(merged)}::jsonb)
           ON CONFLICT (calendar_id, ical_uid) DO UPDATE SET
             title          = EXCLUDED.title,
             start_time     = EXCLUDED.start_time,

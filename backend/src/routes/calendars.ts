@@ -152,7 +152,7 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
       SELECT MIN(last_synced_at) AS oldest
       FROM imported_gcal_events
       WHERE calendar_id = ${id}
-        AND start_time >= ${startDate}
+        AND end_time > ${startDate}
         AND start_time < ${endDate}
     `;
     const oldest = staleness[0]?.oldest as Date | null;
@@ -179,7 +179,7 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     SELECT *
     FROM imported_gcal_events
     WHERE calendar_id = ${id}
-      AND start_time >= ${startDate}
+      AND end_time > ${startDate}
       AND start_time < ${endDate}
     ORDER BY start_time ASC
   `;
@@ -197,7 +197,10 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     created_at: row.last_synced_at,
     updated_at: row.last_synced_at,
     source: "google_import",
-    imported_by: row.imported_by,
+    // Defensive: Bun SQL may return JSONB as a raw string — parse it if so.
+    imported_by: typeof row.imported_by === 'string'
+      ? JSON.parse(row.imported_by as string)
+      : (row.imported_by ?? []),
   }));
 
   return json([...events, ...importedEvents]);

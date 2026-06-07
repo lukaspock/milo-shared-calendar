@@ -152,5 +152,14 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // One-time fix: imported_by was stored as a JSONB string (double-encoded via
+  // JSON.stringify) instead of a JSONB array. Re-parse any rows where
+  // jsonb_typeof(imported_by) = 'string' so they become proper JSON arrays.
+  await db`
+    UPDATE imported_gcal_events
+    SET imported_by = (imported_by #>> '{}')::jsonb
+    WHERE jsonb_typeof(imported_by) = 'string'
+  `;
+
   console.log("[db] migrations applied");
 }
