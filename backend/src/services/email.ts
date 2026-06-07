@@ -23,9 +23,19 @@ async function send(to: string, subject: string, html: string): Promise<void> {
     console.log(`[email] no Google OAuth2 config — skipping "${subject}" to ${to}`);
     return;
   }
-  const raw = Buffer.from(
-    `From: SharedCal <${FROM}>\r\nTo: ${to}\r\nSubject: ${encodeSubject(subject)}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${html}`
-  ).toString("base64url");
+  // RFC 2822 requires MIME-Version and Date headers.
+  // Missing them causes many spam filters (especially non-Gmail recipients) to
+  // flag or silently drop the message.
+  const date = new Date().toUTCString();
+  const headers = [
+    `From: SharedCal <${FROM}>`,
+    `To: ${to}`,
+    `Subject: ${encodeSubject(subject)}`,
+    `Date: ${date}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=utf-8`,
+  ].join("\r\n");
+  const raw = Buffer.from(`${headers}\r\n\r\n${html}`).toString("base64url");
   try {
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
     console.log(`[email] sent "${subject}" to ${to}`);
