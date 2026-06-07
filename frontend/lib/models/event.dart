@@ -14,31 +14,36 @@ class ImportedByUser {
   });
 
   factory ImportedByUser.fromJson(Map<String, dynamic> json) => ImportedByUser(
-        userId: json['user_id'] as String,
-        name: json['name'] as String,
-        color: json['color'] as String,
-      );
+    userId: json['user_id'] as String,
+    name: json['name'] as String,
+    color: json['color'] as String,
+  );
 
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
-        'name': name,
-        'color': color,
-      };
+    'user_id': userId,
+    'name': name,
+    'color': color,
+  };
 }
 
-enum RecurrenceRule { none, daily, weekly, monthly;
+enum RecurrenceRule {
+  none,
+  daily,
+  weekly,
+  monthly;
+
   String get label => switch (this) {
-    RecurrenceRule.none    => 'Does not repeat',
-    RecurrenceRule.daily   => 'Daily',
-    RecurrenceRule.weekly  => 'Weekly',
+    RecurrenceRule.none => 'Does not repeat',
+    RecurrenceRule.daily => 'Daily',
+    RecurrenceRule.weekly => 'Weekly',
     RecurrenceRule.monthly => 'Monthly',
   };
   String? get apiValue => this == RecurrenceRule.none ? null : name;
   static RecurrenceRule fromApi(String? v) => switch (v) {
-    'daily'   => RecurrenceRule.daily,
-    'weekly'  => RecurrenceRule.weekly,
+    'daily' => RecurrenceRule.daily,
+    'weekly' => RecurrenceRule.weekly,
     'monthly' => RecurrenceRule.monthly,
-    _         => RecurrenceRule.none,
+    _ => RecurrenceRule.none,
   };
 }
 
@@ -57,12 +62,16 @@ class CalendarEvent {
   final DateTime updatedAt;
   final RecurrenceRule recurrenceRule;
   final DateTime? recurrenceEnd;
+
   /// Non-null for instances generated from a recurring root event.
   final String? parentEventId;
+
   /// Optional emoji or short label chosen by the creator (e.g. "🎂", "✈️").
   final String? icon;
+
   /// Where this event came from: SharedCal, a member's Google Calendar, or device calendar.
   final EventSource source;
+
   /// For googleImport events: which members' Google Calendars contributed this event.
   final List<ImportedByUser> importedBy;
 
@@ -107,15 +116,17 @@ class CalendarEvent {
       creatorColor: json['creator_color'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      recurrenceRule: RecurrenceRule.fromApi(json['recurrence_rule'] as String?),
+      recurrenceRule: RecurrenceRule.fromApi(
+        json['recurrence_rule'] as String?,
+      ),
       recurrenceEnd: recEndRaw != null ? DateTime.parse(recEndRaw) : null,
       parentEventId: json['parent_event_id'] as String?,
       icon: json['icon'] as String?,
       source: sourceRaw == 'google_import'
           ? EventSource.googleImport
           : sourceRaw == 'device_import'
-              ? EventSource.deviceImport
-              : EventSource.sharedcal,
+          ? EventSource.deviceImport
+          : EventSource.sharedcal,
       importedBy: json['imported_by'] is List
           ? (json['imported_by'] as List<dynamic>)
                 .map((e) => ImportedByUser.fromJson(e as Map<String, dynamic>))
@@ -145,8 +156,8 @@ class CalendarEvent {
     'source': source == EventSource.googleImport
         ? 'google_import'
         : source == EventSource.deviceImport
-            ? 'device_import'
-            : 'sharedcal',
+        ? 'device_import'
+        : 'sharedcal',
     'imported_by': importedBy.map((u) => u.toJson()).toList(),
   };
 

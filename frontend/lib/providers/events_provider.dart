@@ -46,22 +46,29 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _apiEvents = list;
       _cache.saveEvents(calendarId, list);
 
-      debugPrint('[events] calendarId=$calendarId — API returned ${list.length} event(s) '
-          '(${list.where((e) => e.source == EventSource.googleImport).length} gcal, '
-          '${list.where((e) => e.source == EventSource.deviceImport).length} device-from-db)');
+      debugPrint(
+        '[events] calendarId=$calendarId — API returned ${list.length} event(s) '
+        '(${list.where((e) => e.source == EventSource.googleImport).length} gcal, '
+        '${list.where((e) => e.source == EventSource.deviceImport).length} device-from-db)',
+      );
 
       // Load device calendar events from the local device
-      final localDeviceEvents = await DeviceCalendarService().readExternalEvents(
-        sharedCalendarId: calendarId,
-        startDate: DateTime.now().subtract(const Duration(days: 365)),
-        endDate: DateTime.now().add(const Duration(days: 365)),
+      final localDeviceEvents = await DeviceCalendarService()
+          .readExternalEvents(
+            sharedCalendarId: calendarId,
+            startDate: DateTime.now().subtract(const Duration(days: 365)),
+            endDate: DateTime.now().add(const Duration(days: 365)),
+          );
+      debugPrint(
+        '[events] local device events read: ${localDeviceEvents.length}',
       );
-      debugPrint('[events] local device events read: ${localDeviceEvents.length}');
 
       // Upload this user's device events to the backend so other members can see them.
       // Fire-and-forget — never block the main fetch.
       if (localDeviceEvents.isNotEmpty) {
-        debugPrint('[events] uploading ${localDeviceEvents.length} device event(s) to backend…');
+        debugPrint(
+          '[events] uploading ${localDeviceEvents.length} device event(s) to backend…',
+        );
         _uploadDeviceEvents(localDeviceEvents);
       } else {
         debugPrint('[events] no local device events to upload');
@@ -76,8 +83,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _deviceEvents = localDeviceEvents
           .where((e) => !apiDeviceIds.contains(e.id))
           .toList();
-      debugPrint('[events] _deviceEvents after dedup: ${_deviceEvents.length} '
-          '(${localDeviceEvents.length - _deviceEvents.length} already in API response)');
+      debugPrint(
+        '[events] _deviceEvents after dedup: ${_deviceEvents.length} '
+        '(${localDeviceEvents.length - _deviceEvents.length} already in API response)',
+      );
 
       _setMergedState();
     } catch (e, st) {
@@ -90,17 +99,24 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   /// all members of this calendar can see them. Fire-and-forget.
   Future<void> _uploadDeviceEvents(List<CalendarEvent> events) async {
     try {
-      await _api.post('/calendars/$calendarId/device-events', data: {
-        'events': events.map((e) => {
-          'device_event_id': e.id.startsWith('device_')
-              ? e.id.substring('device_'.length)
-              : e.id,
-          'title': e.title,
-          'start_time': e.startTime.toUtc().toIso8601String(),
-          'end_time': e.endTime.toUtc().toIso8601String(),
-          if (e.description != null) 'description': e.description,
-        }).toList(),
-      });
+      await _api.post(
+        '/calendars/$calendarId/device-events',
+        data: {
+          'events': events
+              .map(
+                (e) => {
+                  'device_event_id': e.id.startsWith('device_')
+                      ? e.id.substring('device_'.length)
+                      : e.id,
+                  'title': e.title,
+                  'start_time': e.startTime.toUtc().toIso8601String(),
+                  'end_time': e.endTime.toUtc().toIso8601String(),
+                  if (e.description != null) 'description': e.description,
+                },
+              )
+              .toList(),
+        },
+      );
       debugPrint('[events] ✓ device events uploaded successfully');
     } catch (e) {
       debugPrint('[events] ✗ device event upload failed: $e');
@@ -116,7 +132,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   void _onWsMessage(Map<String, dynamic> msg) {
     final type = msg['type'] as String?;
     if (type == 'event_created') {
-      final event = CalendarEvent.fromJson(msg['event'] as Map<String, dynamic>);
+      final event = CalendarEvent.fromJson(
+        msg['event'] as Map<String, dynamic>,
+      );
       if (event.calendarId != calendarId) return;
       if (!_apiEvents.any((e) => e.id == event.id)) {
         _apiEvents = [..._apiEvents, event]
@@ -127,7 +145,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       // poll-confirmed events and events created by other members.
       DeviceCalendarService().syncEvent(event);
     } else if (type == 'event_updated') {
-      final event = CalendarEvent.fromJson(msg['event'] as Map<String, dynamic>);
+      final event = CalendarEvent.fromJson(
+        msg['event'] as Map<String, dynamic>,
+      );
       if (event.calendarId != calendarId) return;
       _apiEvents = _apiEvents.map((e) => e.id == event.id ? event : e).toList();
       _setMergedState();
@@ -178,19 +198,22 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     DateTime? recurrenceEnd,
   }) async {
     try {
-      final res = await _api.post('/events', data: {
-        'calendar_id': calendarId,
-        'title': title,
-        'description': description,
-        'start_time': startTime.toUtc().toIso8601String(),
-        'end_time': endTime.toUtc().toIso8601String(),
-        if (color != null) 'color': color,
-        if (icon != null) 'icon': icon,
-        if (recurrenceRule != RecurrenceRule.none)
-          'recurrence_rule': recurrenceRule.apiValue,
-        if (recurrenceEnd != null)
-          'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
-      });
+      final res = await _api.post(
+        '/events',
+        data: {
+          'calendar_id': calendarId,
+          'title': title,
+          'description': description,
+          'start_time': startTime.toUtc().toIso8601String(),
+          'end_time': endTime.toUtc().toIso8601String(),
+          if (color != null) 'color': color,
+          if (icon != null) 'icon': icon,
+          if (recurrenceRule != RecurrenceRule.none)
+            'recurrence_rule': recurrenceRule.apiValue,
+          if (recurrenceEnd != null)
+            'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
+        },
+      );
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       if (!_apiEvents.any((e) => e.id == event.id)) {
         _apiEvents = [..._apiEvents, event]
@@ -207,7 +230,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     }
   }
 
-  Future<bool> updateEvent(String id, {
+  Future<bool> updateEvent(
+    String id, {
     String? title,
     String? description,
     DateTime? startTime,
@@ -220,19 +244,24 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     bool editAll = false,
   }) async {
     try {
-      final res = await _api.put('/events/$id', data: {
-        if (title != null) 'title': title,
-        if (description != null) 'description': description,
-        if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
-        if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
-        if (color != null) 'color': color,
-        'icon': icon, // always send (null clears it)
-        if (recurrenceRule != null) 'recurrence_rule': recurrenceRule.apiValue,
-        if (clearRecurrence) 'recurrence_rule': null,
-        if (recurrenceEnd != null)
-          'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
-        if (editAll) 'edit_all': true,
-      });
+      final res = await _api.put(
+        '/events/$id',
+        data: {
+          if (title != null) 'title': title,
+          if (description != null) 'description': description,
+          if (startTime != null)
+            'start_time': startTime.toUtc().toIso8601String(),
+          if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
+          if (color != null) 'color': color,
+          'icon': icon, // always send (null clears it)
+          if (recurrenceRule != null)
+            'recurrence_rule': recurrenceRule.apiValue,
+          if (clearRecurrence) 'recurrence_rule': null,
+          if (recurrenceEnd != null)
+            'recurrence_end': recurrenceEnd.toIso8601String().substring(0, 10),
+          if (editAll) 'edit_all': true,
+        },
+      );
       final event = CalendarEvent.fromJson(res.data as Map<String, dynamic>);
       if (editAll) {
         fetch();
@@ -253,8 +282,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
 
   Future<bool> deleteEvent(String id, {bool deleteAll = false}) async {
     try {
-      await _api.delete('/events/$id',
-          data: deleteAll ? {'delete_all': true} : null);
+      await _api.delete(
+        '/events/$id',
+        data: deleteAll ? {'delete_all': true} : null,
+      );
       if (deleteAll) {
         fetch();
       } else {
@@ -278,7 +309,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   }
 }
 
-final eventsProvider = StateNotifierProvider.family<EventsNotifier,
-    AsyncValue<List<CalendarEvent>>, String>(
-  (_, calendarId) => EventsNotifier(calendarId),
-);
+final eventsProvider =
+    StateNotifierProvider.family<
+      EventsNotifier,
+      AsyncValue<List<CalendarEvent>>,
+      String
+    >((_, calendarId) => EventsNotifier(calendarId));

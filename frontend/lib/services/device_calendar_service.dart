@@ -1,14 +1,15 @@
 import 'dart:convert';
 
 import 'package:device_calendar/device_calendar.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, debugPrint;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform, debugPrint;
 import 'package:flutter/material.dart' show Color;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/event.dart' as sc;
 
-void _D(String msg) => debugPrint('[device-cal] $msg');
+void _dcLog(String msg) => debugPrint('[device-cal] $msg');
 
 /// Syncs SharedCal events to the native device calendar (iOS EventKit /
 /// Android CalendarContract). All state is stored locally in SharedPreferences
@@ -44,25 +45,25 @@ class DeviceCalendarService {
   /// Requests calendar permission and finds/creates the SharedCal calendar.
   /// Returns true on success.
   Future<bool> connect() async {
-    _D('connect() called — platform=${defaultTargetPlatform.name}');
+    _dcLog('connect() called — platform=${defaultTargetPlatform.name}');
 
     // 1. Check / request permission
     var perm = await _plugin.hasPermissions();
-    _D('  hasPermissions → ${perm.data} (errors: ${perm.errors})');
+    _dcLog('  hasPermissions → ${perm.data} (errors: ${perm.errors})');
     if (perm.data != true) {
       perm = await _plugin.requestPermissions();
-      _D('  requestPermissions → ${perm.data} (errors: ${perm.errors})');
+      _dcLog('  requestPermissions → ${perm.data} (errors: ${perm.errors})');
     }
     if (perm.data != true) {
-      _D('  ✗ permission denied — returning false');
+      _dcLog('  ✗ permission denied — returning false');
       return false;
     }
 
     // 2. Find or create dedicated calendar
     final calId = await _getOrCreateCalendar();
-    _D('  _getOrCreateCalendar → $calId');
+    _dcLog('  _getOrCreateCalendar → $calId');
     if (calId == null) {
-      _D('  ✗ could not get/create calendar — returning false');
+      _dcLog('  ✗ could not get/create calendar — returning false');
       return false;
     }
 
@@ -70,13 +71,13 @@ class DeviceCalendarService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_enabledKey, true);
     await prefs.setString(_calendarIdKey, calId);
-    _D('  ✓ connected — calendarId=$calId');
+    _dcLog('  ✓ connected — calendarId=$calId');
     return true;
   }
 
   /// Disables device calendar sync. Existing events on the device are kept.
   Future<void> disconnect() async {
-    _D('disconnect() called');
+    _dcLog('disconnect() called');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_enabledKey, false);
   }
@@ -90,41 +91,45 @@ class DeviceCalendarService {
   Future<String?> _getOrCreateCalendar() async {
     final prefs = await SharedPreferences.getInstance();
     final savedId = prefs.getString(_calendarIdKey);
-    _D('  _getOrCreateCalendar — savedId=$savedId');
+    _dcLog('  _getOrCreateCalendar — savedId=$savedId');
 
     if (savedId != null) {
       final result = await _plugin.retrieveCalendars();
       final exists = result.data?.any((c) => c.id == savedId) ?? false;
-      _D('  saved calendar still exists: $exists');
+      _dcLog('  saved calendar still exists: $exists');
       if (exists) return savedId;
     }
 
     // Try to create a dedicated calendar named "SharedCal"
     try {
-      _D('  creating new SharedCal calendar…');
+      _dcLog('  creating new SharedCal calendar…');
       final result = await _plugin.createCalendar(
         'SharedCal',
         calendarColor: const Color(0xFF6C63FF),
         localAccountName: 'SharedCal',
       );
-      _D('  createCalendar → success=${result.isSuccess} data=${result.data} errors=${result.errors}');
+      _dcLog(
+        '  createCalendar → success=${result.isSuccess} data=${result.data} errors=${result.errors}',
+      );
       if (result.isSuccess && result.data != null) {
         await prefs.setString(_calendarIdKey, result.data!);
         return result.data;
       }
     } catch (e) {
-      _D('  createCalendar threw: $e — falling back to first writable calendar');
+      _dcLog(
+        '  createCalendar threw: $e — falling back to first writable calendar',
+      );
     }
 
     // Fallback: use the first writable calendar (typical on Android)
     final calendarsResult = await _plugin.retrieveCalendars();
     final allCals = calendarsResult.data ?? [];
-    _D('  retrieveCalendars fallback → ${allCals.length} calendar(s)');
+    _dcLog('  retrieveCalendars fallback → ${allCals.length} calendar(s)');
     for (final c in allCals) {
-      _D('    id=${c.id} name="${c.name}" isReadOnly=${c.isReadOnly}');
+      _dcLog('    id=${c.id} name="${c.name}" isReadOnly=${c.isReadOnly}');
     }
     final writable = allCals.where((c) => !(c.isReadOnly ?? true)).toList();
-    _D('  writable calendars: ${writable.length}');
+    _dcLog('  writable calendars: ${writable.length}');
     if (writable.isEmpty) return null;
     final id = writable.first.id!;
     await prefs.setString(_calendarIdKey, id);
@@ -194,20 +199,24 @@ class DeviceCalendarService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    _D('readExternalEvents — calendarId=$sharedCalendarId platform=${defaultTargetPlatform.name}');
+    _dcLog(
+      'readExternalEvents — calendarId=$sharedCalendarId platform=${defaultTargetPlatform.name}',
+    );
 
     // Guard: device_calendar only supports iOS and Android
     if (defaultTargetPlatform != TargetPlatform.iOS &&
         defaultTargetPlatform != TargetPlatform.android) {
-      _D('  ✗ unsupported platform (${defaultTargetPlatform.name}) — returning []');
+      _dcLog(
+        '  ✗ unsupported platform (${defaultTargetPlatform.name}) — returning []',
+      );
       return [];
     }
 
     try {
       final enabled = await isEnabled();
-      _D('  isEnabled → $enabled');
+      _dcLog('  isEnabled → $enabled');
       if (!enabled) {
-        _D('  ✗ device calendar not enabled — returning []');
+        _dcLog('  ✗ device calendar not enabled — returning []');
         return [];
       }
 
@@ -217,20 +226,26 @@ class DeviceCalendarService {
       // personal events. Filtering per-event by device ID is precise enough.
       final map = await _loadMap();
       final sharedCalDeviceIds = map.values.toSet();
-      _D('  sharedCalDeviceIds (events to skip): ${sharedCalDeviceIds.length}');
+      _dcLog(
+        '  sharedCalDeviceIds (events to skip): ${sharedCalDeviceIds.length}',
+      );
 
       final perm = await _plugin.hasPermissions();
-      _D('  hasPermissions check: ${perm.data} (errors: ${perm.errors})');
+      _dcLog('  hasPermissions check: ${perm.data} (errors: ${perm.errors})');
       if (perm.data != true) {
-        _D('  ✗ no calendar permission — returning []');
+        _dcLog('  ✗ no calendar permission — returning []');
         return [];
       }
 
       final calendarsResult = await _plugin.retrieveCalendars();
       final calendars = calendarsResult.data ?? [];
-      _D('  retrieveCalendars → ${calendars.length} calendar(s) (errors: ${calendarsResult.errors})');
+      _dcLog(
+        '  retrieveCalendars → ${calendars.length} calendar(s) (errors: ${calendarsResult.errors})',
+      );
       for (final c in calendars) {
-        _D('    id=${c.id} name="${c.name}" isReadOnly=${c.isReadOnly} accountType=${c.accountType}');
+        _dcLog(
+          '    id=${c.id} name="${c.name}" isReadOnly=${c.isReadOnly} accountType=${c.accountType}',
+        );
       }
 
       final results = <sc.CalendarEvent>[];
@@ -249,34 +264,58 @@ class DeviceCalendarService {
         );
 
         final rawCount = eventsResult.data?.length ?? 0;
-        _D('  calendar "${cal.name}" → $rawCount raw event(s) (errors: ${eventsResult.errors})');
+        _dcLog(
+          '  calendar "${cal.name}" → $rawCount raw event(s) (errors: ${eventsResult.errors})',
+        );
 
-        int skippedCancelled = 0, skippedNoId = 0, skippedOwned = 0, skippedNoTitle = 0, skippedDedup = 0;
+        int skippedCancelled = 0,
+            skippedNoId = 0,
+            skippedOwned = 0,
+            skippedNoTitle = 0,
+            skippedDedup = 0;
         for (final e in eventsResult.data ?? []) {
-          if (e.status == EventStatus.Canceled) { skippedCancelled++; continue; }
-          if (e.eventId == null) { skippedNoId++; continue; }
-          if (sharedCalDeviceIds.contains(e.eventId)) { skippedOwned++; continue; }
-          if (e.title == null || e.start == null || e.end == null) { skippedNoTitle++; continue; }
+          if (e.status == EventStatus.Canceled) {
+            skippedCancelled++;
+            continue;
+          }
+          if (e.eventId == null) {
+            skippedNoId++;
+            continue;
+          }
+          if (sharedCalDeviceIds.contains(e.eventId)) {
+            skippedOwned++;
+            continue;
+          }
+          if (e.title == null || e.start == null || e.end == null) {
+            skippedNoTitle++;
+            continue;
+          }
 
           // Use TZDateTime's own year/month/day (device-local timezone) for the
           // dedup key — toUtc() would give the previous day for all-day events
           // in UTC+2 (midnight local = 22:00 UTC previous day).
-          final dedupKey = '${e.title}|${e.start!.year}-${e.start!.month}-${e.start!.day}';
-          if (seenKeys.contains(dedupKey)) { skippedDedup++; continue; }
+          final dedupKey =
+              '${e.title}|${e.start!.year}-${e.start!.month}-${e.start!.day}';
+          if (seenKeys.contains(dedupKey)) {
+            skippedDedup++;
+            continue;
+          }
           seenKeys.add(dedupKey);
 
           results.add(_toCalendarEvent(e, sharedCalendarId));
         }
 
         if (rawCount > 0) {
-          _D('    skipped: cancelled=$skippedCancelled noId=$skippedNoId owned=$skippedOwned noTitle=$skippedNoTitle dedup=$skippedDedup → kept=${rawCount - skippedCancelled - skippedNoId - skippedOwned - skippedNoTitle - skippedDedup}');
+          _dcLog(
+            '    skipped: cancelled=$skippedCancelled noId=$skippedNoId owned=$skippedOwned noTitle=$skippedNoTitle dedup=$skippedDedup → kept=${rawCount - skippedCancelled - skippedNoId - skippedOwned - skippedNoTitle - skippedDedup}',
+          );
         }
       }
 
-      _D('  ✓ readExternalEvents → ${results.length} event(s) total');
+      _dcLog('  ✓ readExternalEvents → ${results.length} event(s) total');
       return results;
     } catch (e, st) {
-      _D('  ✗ readExternalEvents threw: $e\n$st');
+      _dcLog('  ✗ readExternalEvents threw: $e\n$st');
       return [];
     }
   }

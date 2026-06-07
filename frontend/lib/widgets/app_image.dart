@@ -42,10 +42,8 @@ class AppImage extends StatelessWidget {
       height: size,
       fit: BoxFit.contain,
       // The PNG isn't bundled yet → show the emoji instead.
-      errorBuilder: (_, __, ___) => Text(
-        fallbackEmoji,
-        style: TextStyle(fontSize: size, height: 1.0),
-      ),
+      errorBuilder: (_, __, ___) =>
+          Text(fallbackEmoji, style: TextStyle(fontSize: size, height: 1.0)),
     );
   }
 }
