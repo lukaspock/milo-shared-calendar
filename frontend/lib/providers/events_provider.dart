@@ -98,7 +98,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       );
       final currentIds = events.map((e) => e.id).toSet();
       if (currentIds.length == _lastUploadedDeviceIds.length &&
-          _lastUploadedDeviceIds.containsAll(currentIds)) return;
+          _lastUploadedDeviceIds.containsAll(currentIds)) {
+        return;
+      }
       _lastUploadedDeviceIds = currentIds;
       _uploadDeviceEvents(events);
     } catch (_) {}
