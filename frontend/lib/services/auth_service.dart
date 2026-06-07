@@ -1,31 +1,10 @@
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import 'api_service.dart';
 
-// Web Application client ID from Google Cloud Console.
-// Used as clientId on web (required by google_sign_in_web) and as
-// serverClientId on mobile/desktop (so the backend can verify ID tokens and
-// exchange for Calendar refresh tokens).
-const _kWebClientId =
-    '583283682704-ru7t2guho8bd8p42gmi1u6c8ruq9mq3a.apps.googleusercontent.com';
-
-// macOS OAuth client ID — must be passed explicitly as clientId on macOS,
-// otherwise google_sign_in cannot initiate the OAuth flow (invalid_client).
-const _kMacOSClientId =
-    '583283682704-ethnu73r7o8rblkvra89qsibo0tlq7pp.apps.googleusercontent.com';
-
-final _googleSignIn = GoogleSignIn(
-  clientId: kIsWeb
-      ? _kWebClientId
-      : (defaultTargetPlatform == TargetPlatform.macOS
-          ? _kMacOSClientId
-          : null),
-  serverClientId: _kWebClientId,
-  scopes: ['email', 'openid'],
-);
+// Minimal instance used only for signOut() cleanup on logout/account deletion.
+final _googleSignIn = GoogleSignIn(scopes: ['email', 'openid']);
 
 class AuthService {
   static final AuthService _instance = AuthService._();
@@ -76,68 +55,14 @@ class AuthService {
     return (token: token, user: user);
   }
 
-  Future<({String token, AppUser user})> signInWithGoogle() async {
-    debugPrint('[GoogleSignIn] ── starting sign-in ──────────────────────');
-    debugPrint('[GoogleSignIn] platform  : ${defaultTargetPlatform.name}');
-    debugPrint('[GoogleSignIn] kIsWeb    : $kIsWeb');
-    debugPrint('[GoogleSignIn] clientId  : ${_googleSignIn.clientId ?? "(null — will use Info.plist)"}');
-    debugPrint('[GoogleSignIn] serverClientId: ${_googleSignIn.serverClientId}');
-    debugPrint('[GoogleSignIn] scopes    : ${_googleSignIn.scopes}');
-
-    GoogleSignInAccount? googleUser;
-    try {
-      debugPrint('[GoogleSignIn] calling _googleSignIn.signIn()…');
-      googleUser = await _googleSignIn.signIn();
-      debugPrint('[GoogleSignIn] signIn() returned: ${googleUser?.email ?? "(null)"}');
-    } catch (e, st) {
-      debugPrint('[GoogleSignIn] signIn() threw: $e');
-      debugPrint('[GoogleSignIn] stack: $st');
-      // On web, google_sign_in_web calls the People API after OAuth to fetch
-      // the user profile. If that API is disabled the call throws, but GIS
-      // already set currentUser with the tokens we actually need.
-      if (kIsWeb) {
-        debugPrint('[GoogleSignIn] web fallback: checking currentUser…');
-        googleUser = _googleSignIn.currentUser;
-        debugPrint('[GoogleSignIn] currentUser: ${googleUser?.email ?? "(null)"}');
-      } else {
-        rethrow;
-      }
-    }
-
-    if (googleUser == null) {
-      debugPrint('[GoogleSignIn] ✗ googleUser is null — user cancelled or sign-in failed');
-      throw Exception('Google sign-in cancelled');
-    }
-    debugPrint('[GoogleSignIn] ✓ got googleUser: ${googleUser.email}  id=${googleUser.id}');
-
-    debugPrint('[GoogleSignIn] requesting authentication tokens…');
-    final googleAuth = await googleUser.authentication;
-    final idToken = googleAuth.idToken;
-    final accessToken = googleAuth.accessToken;
-    debugPrint('[GoogleSignIn] idToken     : ${idToken == null ? "(null)" : "${idToken.substring(0, 20)}…"}');
-    debugPrint('[GoogleSignIn] accessToken : ${accessToken == null ? "(null)" : "${accessToken.substring(0, 10)}…"}');
-
-    if (idToken == null) {
-      debugPrint('[GoogleSignIn] ✗ idToken is null — cannot authenticate with backend');
-      throw Exception('No ID token from Google');
-    }
-
-    debugPrint('[GoogleSignIn] posting idToken to /auth/google…');
-    try {
-      final res = await _api.post('/auth/google', data: {'idToken': idToken});
-      debugPrint('[GoogleSignIn] /auth/google status: ${res.statusCode}');
-      debugPrint('[GoogleSignIn] /auth/google body  : ${res.data}');
-      final data = res.data as Map<String, dynamic>;
-      final token = data['token'] as String;
-      final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
-      await _saveSession(token, user);
-      debugPrint('[GoogleSignIn] ✓ signed in as ${user.email}');
-      return (token: token, user: user);
-    } catch (e, st) {
-      debugPrint('[GoogleSignIn] ✗ /auth/google failed: $e');
-      debugPrint('[GoogleSignIn] stack: $st');
-      rethrow;
-    }
+  Future<({String token, AppUser user})> signInWithGoogle(
+      String idToken) async {
+    final res = await _api.post('/auth/google', data: {'idToken': idToken});
+    final data = res.data as Map<String, dynamic>;
+    final token = data['token'] as String;
+    final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    await _saveSession(token, user);
+    return (token: token, user: user);
   }
 
   Future<String> getGoogleCalendarConnectUrl() async {

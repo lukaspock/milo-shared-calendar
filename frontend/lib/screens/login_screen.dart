@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -81,23 +82,12 @@ class LoginScreen extends ConsumerWidget {
               const Spacer(flex: 3),
 
               // ── Continue with Google ─────────────────────────────────────
-              _SocialButton(
-                label: 'Continue with Google',
+              GoogleSignInButton(
                 isLoading: isLoading,
-                onPressed: () =>
-                    ref.read(authProvider.notifier).googleSignIn(),
-                leading: Text(
-                  'G',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    foreground: Paint()
-                      ..shader = const LinearGradient(
-                        colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
-                      ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
-                  ),
-                ),
-                dark: false,
+                onSignedIn: (idToken) =>
+                    ref.read(authProvider.notifier).googleSignIn(idToken),
+                onError: (e) => ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(e))),
               ),
 
               const SizedBox(height: 10),

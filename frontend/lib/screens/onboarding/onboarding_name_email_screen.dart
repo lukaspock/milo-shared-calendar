@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_image.dart';
+import '../../widgets/google_sign_in_button.dart';
 import 'onboarding_shell.dart';
 
 /// Step 1 — auth method choice. No personal info collected here.
@@ -19,10 +20,6 @@ class OnboardingNameEmailScreen extends ConsumerStatefulWidget {
 
 class _OnboardingNameEmailScreenState
     extends ConsumerState<OnboardingNameEmailScreen> {
-
-  Future<void> _googleSignIn() async {
-    await ref.read(authProvider.notifier).googleSignIn();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,51 +51,12 @@ class _OnboardingNameEmailScreenState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Continue with Google ────────────────────────────────────────
-          SizedBox(
-            height: 54,
-            child: OutlinedButton(
-              onPressed: isLoading ? null : _googleSignIn,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: context.appColors.line, width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                backgroundColor: context.appColors.surface,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isLoading)
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: context.appColors.inkMuted),
-                    )
-                  else ...[
-                    Text(
-                      'G',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        foreground: Paint()
-                          ..shader = const LinearGradient(
-                            colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
-                          ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Continue with Google',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.appColors.ink,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          GoogleSignInButton(
+            isLoading: isLoading,
+            onSignedIn: (idToken) =>
+                ref.read(authProvider.notifier).googleSignIn(idToken),
+            onError: (e) => ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(e))),
           ),
 
           const SizedBox(height: 10),
