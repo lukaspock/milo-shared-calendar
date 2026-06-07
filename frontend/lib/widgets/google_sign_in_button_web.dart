@@ -108,22 +108,30 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
       );
     }
 
+    // GIS enforces a hard maximum of 400 px on the rendered button.
+    // Use that same cap here so the button fills whatever is available
+    // up to 400 px, matching the visual weight of the stub button.
+    const double _kGisMaxWidth = 400;
     final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
     return LayoutBuilder(
-      builder: (context, constraints) => SizedBox(
-        height: 56,
-        width: double.infinity,
-        child: plugin.renderButton(
-          configuration: GSIButtonConfiguration(
-            type: GSIButtonType.standard,
-            theme: GSIButtonTheme.outline,
-            size: GSIButtonSize.large,
-            text: GSIButtonText.continueWith,
-            shape: GSIButtonShape.pill,
-            minimumWidth: constraints.maxWidth,
+      builder: (context, constraints) {
+        final width =
+            constraints.maxWidth < _kGisMaxWidth ? constraints.maxWidth : _kGisMaxWidth;
+        return SizedBox(
+          height: 56,
+          width: width,
+          child: plugin.renderButton(
+            configuration: GSIButtonConfiguration(
+              type: GSIButtonType.standard,
+              theme: GSIButtonTheme.outline,
+              size: GSIButtonSize.large,
+              text: GSIButtonText.continueWith,
+              shape: GSIButtonShape.pill,
+              minimumWidth: width,
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

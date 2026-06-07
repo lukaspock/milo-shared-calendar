@@ -61,8 +61,9 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   @override
   Widget build(BuildContext context) {
     final loading = widget.isLoading || _signing;
-    return SizedBox(
-      height: 56,
+    // Cap to 400 px — same limit GIS imposes on the web renderButton.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400, minHeight: 56, maxHeight: 56),
       child: OutlinedButton(
         onPressed: loading ? null : _handleTap,
         style: OutlinedButton.styleFrom(
