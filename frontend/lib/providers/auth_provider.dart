@@ -72,22 +72,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> googleSignIn() async {
-    // ignore: avoid_print
-    print('[AuthProvider] googleSignIn() called');
+  Future<void> googleSignIn(String idToken) async {
     state = state.copyWith(status: AuthStatus.loading, error: null);
     try {
-      final result = await _authService.signInWithGoogle();
-      // ignore: avoid_print
-      print('[AuthProvider] googleSignIn() success — user: ${result.user.email}');
+      final result = await _authService.signInWithGoogle(idToken);
       state = AuthState(status: AuthStatus.authenticated, user: result.user);
     } catch (e) {
-      final msg = e.toString();
-      // ignore: avoid_print
-      print('[AuthProvider] googleSignIn() error: $msg');
       state = AuthState(
         status: AuthStatus.unauthenticated,
-        error: msg.contains('cancelled') ? null : _parseError(e),
+        error: _parseError(e),
       );
     }
   }

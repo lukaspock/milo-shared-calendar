@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -215,34 +216,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                   const SizedBox(height: 16),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => ref.read(authProvider.notifier).googleSignIn(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: context.appColors.line, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                        backgroundColor: context.appColors.surface,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('G', style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18, fontWeight: FontWeight.w800,
-                            foreground: Paint()..shader = const LinearGradient(
-                              colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
-                            ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
-                          )),
-                          const SizedBox(width: 10),
-                          Text('Continue with Google', style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15, fontWeight: FontWeight.w600, color: context.appColors.ink,
-                          )),
-                        ],
-                      ),
-                    ),
+                  GoogleSignInButton(
+                    isLoading: isLoading,
+                    onSignedIn: (idToken) =>
+                        ref.read(authProvider.notifier).googleSignIn(idToken),
+                    onError: (e) => ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(e))),
                   ),
 
                   const SizedBox(height: 28),
