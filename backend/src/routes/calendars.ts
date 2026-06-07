@@ -94,6 +94,18 @@ export async function joinCalendar(ctx: RequestContext): Promise<Response> {
   const count = await db`SELECT COUNT(*)::integer AS member_count FROM calendar_members WHERE calendar_id = ${calendar.id}`;
   const memberCount = count[0].member_count as number;
 
+  // If the joining user has Google Calendar connected, immediately import their
+  // events into this calendar. This bypasses the 5-min staleness check that
+  // getCalendarEvents uses, so their events appear without any delay.
+  const gcalTokens = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${userId} LIMIT 1`;
+  if (gcalTokens.length > 0) {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+    fetchAndCacheGoogleEventsForCalendar({ calendarId: calendar.id, startDate, endDate })
+      .catch((e: unknown) => console.error("[gcal] join-triggered import failed:", e));
+  }
+
   // Notify existing members that someone joined
   broadcastToCalendar(calendar.id, {
     type: "member_joined",

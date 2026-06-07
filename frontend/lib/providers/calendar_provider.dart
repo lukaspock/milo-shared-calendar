@@ -3,6 +3,7 @@ import '../models/calendar.dart';
 import '../models/member.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
+import '../services/device_calendar_service.dart';
 import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import 'auth_provider.dart';
@@ -101,9 +102,39 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       state.whenData((list) {
         state = AsyncValue.data([calendar, ...list]);
       });
+      // Subscribe to WebSocket so gcal_synced / device_synced messages are
+      // received even before the user opens the calendar screen.
+      _ws.subscribeToCalendar(calendar.id);
+      // Upload this user's device calendar events immediately so other members
+      // can see them without waiting for the joining user to open the calendar.
+      _uploadDeviceEventsToCalendar(calendar.id);
       return calendar;
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> _uploadDeviceEventsToCalendar(String calendarId) async {
+    try {
+      final events = await DeviceCalendarService().readExternalEvents(
+        sharedCalendarId: calendarId,
+        startDate: DateTime.now().subtract(const Duration(days: 365)),
+        endDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      if (events.isEmpty) return;
+      await _api.post('/calendars/$calendarId/device-events', data: {
+        'events': events.map((e) => {
+          'device_event_id': e.id.startsWith('device_')
+              ? e.id.substring('device_'.length)
+              : e.id,
+          'title': e.title,
+          'start_time': e.startTime.toUtc().toIso8601String(),
+          'end_time': e.endTime.toUtc().toIso8601String(),
+          if (e.description != null) 'description': e.description,
+        }).toList(),
+      });
+    } catch (_) {
+      // Never let device calendar errors affect the join flow
     }
   }
 
