@@ -1,7 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
+import '../theme/app_theme.dart';
+
+const _kWebClientId =
+    '583283682704-ru7t2guho8bd8p42gmi1u6c8ruq9mq3a.apps.googleusercontent.com';
 
 class GoogleSignInButton extends StatefulWidget {
   const GoogleSignInButton({
@@ -13,7 +18,6 @@ class GoogleSignInButton extends StatefulWidget {
 
   final void Function(String idToken) onSignedIn;
   final void Function(String error)? onError;
-  // ignored on web — GIS button manages its own state
   final bool isLoading;
 
   @override
@@ -22,12 +26,27 @@ class GoogleSignInButton extends StatefulWidget {
 
 class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   StreamSubscription<GoogleSignInUserData?>? _sub;
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
-    _sub = plugin.userDataEvents?.listen(_handleUserData);
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
+      // Initialize GIS with the web client ID so renderButton works.
+      await plugin.initWithParams(SignInInitParameters(
+        clientId: _kWebClientId,
+        scopes: ['email', 'openid'],
+      ));
+      _sub = plugin.userDataEvents?.listen(_handleUserData);
+      if (mounted) setState(() => _ready = true);
+    } catch (_) {
+      if (mounted) setState(() => _ready = true);
+    }
   }
 
   void _handleUserData(GoogleSignInUserData? data) {
@@ -48,6 +67,47 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) {
+      // Placeholder that matches the button size while GIS initializes.
+      return SizedBox(
+        height: 56,
+        child: OutlinedButton(
+          onPressed: null,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: context.appColors.line, width: 1.5),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28)),
+            backgroundColor: context.appColors.surface,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'G',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  foreground: Paint()
+                    ..shader = const LinearGradient(
+                      colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
+                    ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Continue with Google',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.inkMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
     return SizedBox(
       height: 56,
