@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 export '../models/event.dart' show RecurrenceRule;
@@ -11,6 +13,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   EventsNotifier(this.calendarId) : super(const AsyncValue.loading()) {
     fetch();
     _listenToWebSocket();
+    _deviceSyncTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => _periodicDeviceSync(),
+    );
   }
 
   final String calendarId;
@@ -22,6 +28,12 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   // State is always their union; device events survive WebSocket updates.
   List<CalendarEvent> _apiEvents = [];
   List<CalendarEvent> _deviceEvents = [];
+
+  // IDs of device events uploaded in the last sync — used to skip uploads
+  // when nothing has changed and avoid unnecessary device_synced broadcasts.
+  Set<String> _lastUploadedDeviceIds = {};
+
+  Timer? _deviceSyncTimer;
 
   void _setMergedState() {
     state = AsyncValue.data([..._apiEvents, ..._deviceEvents]);
@@ -55,6 +67,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       // Upload this user's device events to the backend so other members can see them.
       // Fire-and-forget — never block the main fetch.
       if (localDeviceEvents.isNotEmpty) {
+        _lastUploadedDeviceIds = localDeviceEvents.map((e) => e.id).toSet();
         _uploadDeviceEvents(localDeviceEvents);
       }
 
@@ -72,6 +85,23 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     } catch (e, st) {
       if (cached == null) state = AsyncValue.error(e, st);
     }
+  }
+
+  /// Reads device calendar events and uploads them only when the set of event
+  /// IDs has changed since the last upload. Skips silently on macOS.
+  Future<void> _periodicDeviceSync() async {
+    try {
+      final events = await DeviceCalendarService().readExternalEvents(
+        sharedCalendarId: calendarId,
+        startDate: DateTime.now().subtract(const Duration(days: 365)),
+        endDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      final currentIds = events.map((e) => e.id).toSet();
+      if (currentIds.length == _lastUploadedDeviceIds.length &&
+          _lastUploadedDeviceIds.containsAll(currentIds)) return;
+      _lastUploadedDeviceIds = currentIds;
+      _uploadDeviceEvents(events);
+    } catch (_) {}
   }
 
   /// Uploads [events] (from the local device calendar) to the backend so that
@@ -259,6 +289,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
 
   @override
   void dispose() {
+    _deviceSyncTimer?.cancel();
     _ws.removeListener(_onWsMessage);
     super.dispose();
   }
