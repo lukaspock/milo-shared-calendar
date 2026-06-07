@@ -1,9 +1,23 @@
 import 'dart:async';
+import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import '../theme/app_theme.dart';
+
+// Cancel any GIS One-Tap auto-prompt so the floating overlay never appears
+// on top of other UI (e.g. the email sign-in sheet).
+@JS('google.accounts.id.cancel')
+external void _jsGisCancel();
+
+void _cancelGisOneTap() {
+  try {
+    _jsGisCancel();
+  } catch (_) {
+    // Best-effort — ignore if GIS isn't fully loaded yet.
+  }
+}
 
 const _kWebClientId =
     '583283682704-ru7t2guho8bd8p42gmi1u6c8ruq9mq3a.apps.googleusercontent.com';
@@ -42,6 +56,8 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         clientId: _kWebClientId,
         scopes: ['email', 'openid'],
       ));
+      // Suppress the GIS One-Tap auto-prompt so it never floats over other UI.
+      _cancelGisOneTap();
       _sub = plugin.userDataEvents?.listen(_handleUserData);
       if (mounted) setState(() => _ready = true);
     } catch (_) {
