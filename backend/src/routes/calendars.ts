@@ -137,17 +137,17 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
   // has connected their Google Calendar. Avoids an infinite needsRefresh=true loop
   // (imported_gcal_events stays empty → MIN(last_synced_at) is always NULL →
   // background refresh fires on every request → memberRows=0 → no gcal_synced).
+  console.log("[gcal-debug] getCalendarEvents — calendarId=%s window=%s→%s",
+    id, startDate.toISOString().substring(0, 10), endDate.toISOString().substring(0, 10));
   const gcalMembers = await db`
     SELECT 1 FROM calendar_members cm
     INNER JOIN google_calendar_tokens gct ON gct.user_id = cm.user_id
     WHERE cm.calendar_id = ${id}
     LIMIT 1
   `;
+  console.log("[gcal-debug]   gcalMembers with tokens: %d", gcalMembers.length);
 
   if (gcalMembers.length > 0) {
-    // Fire-and-forget background refresh when cache is stale (>5 min) or empty.
-    // Scope the staleness check to the current window so out-of-range archived
-    // rows don't permanently keep needsRefresh true.
     const staleness = await db`
       SELECT MIN(last_synced_at) AS oldest
       FROM imported_gcal_events
@@ -156,10 +156,21 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
         AND start_time < ${endDate}
     `;
     const oldest = staleness[0]?.oldest as Date | null;
-    const needsRefresh = !oldest || Date.now() - new Date(oldest).getTime() > 5 * 60 * 1000;
+    const ageMs = oldest ? Date.now() - new Date(oldest).getTime() : null;
+    const needsRefresh = !oldest || (ageMs !== null && ageMs > 5 * 60 * 1000);
+    console.log("[gcal-debug]   oldest_synced=%s age_min=%s needsRefresh=%s",
+      oldest ? new Date(oldest).toISOString() : "NULL",
+      ageMs !== null ? (ageMs / 60_000).toFixed(1) : "N/A",
+      needsRefresh);
     if (needsRefresh) {
+      console.log("[gcal-debug]   → firing background fetchAndCacheGoogleEventsForCalendar");
       fetchAndCacheGoogleEventsForCalendar({ calendarId: id, startDate, endDate })
-        .catch((e: unknown) => console.error("[gcal import] background refresh failed:", e));
+        .catch((e: unknown) => {
+          console.error("[gcal-debug]   background refresh FAILED:", e);
+          console.error("[gcal import] background refresh failed:", e);
+        });
+    } else {
+      console.log("[gcal-debug]   → cache fresh, skipping import");
     }
   }
 
@@ -173,6 +184,7 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     ORDER BY start_time ASC
   `;
 
+  console.log("[gcal-debug]   imported_gcal_events from cache: %d row(s)", importedRows.length);
   const importedEvents = (importedRows as Record<string, unknown>[]).map((row) => ({
     id: row.id,
     calendar_id: row.calendar_id,

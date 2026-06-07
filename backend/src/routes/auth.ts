@@ -472,16 +472,21 @@ export async function deleteUser(ctx: RequestContext): Promise<Response> {
 
 export async function disconnectGoogleCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
+  console.log("[gcal-debug] disconnectGoogleCalendar — userId=%s", userId);
   await db`DELETE FROM google_calendar_tokens WHERE user_id = ${userId}`;
+  console.log("[gcal-debug] disconnectGoogleCalendar ✓ token deleted");
   return json({ message: "Google Calendar disconnected" });
 }
 
 export async function connectGoogleCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
+  console.log("[gcal-debug] connectGoogleCalendar — userId=%s", userId);
   try {
     const url = await generateCalendarConnectUrl(userId);
+    console.log("[gcal-debug] connectGoogleCalendar ✓ returning OAuth URL to app");
     return json({ url });
-  } catch {
+  } catch (err) {
+    console.error("[gcal-debug] connectGoogleCalendar ✗ generateCalendarConnectUrl threw:", err);
     return error("Google Calendar not configured", 503);
   }
 }
@@ -491,8 +496,11 @@ export async function googleCalendarCallback(ctx: RequestContext): Promise<Respo
   const code = urlObj.searchParams.get("code");
   const state = urlObj.searchParams.get("state");
   const errParam = urlObj.searchParams.get("error");
+  console.log("[gcal-debug] googleCalendarCallback — state=%s error=%s code_present=%s",
+    state ?? "(none)", errParam ?? "(none)", !!code);
 
   if (errParam || !code || !state) {
+    console.warn("[gcal-debug] googleCalendarCallback ✗ missing params or Google error:", errParam);
     return new Response(calendarErrorPage(errParam ?? "Missing parameters"), {
       status: 400, headers: { "Content-Type": "text/html" },
     });
@@ -500,10 +508,12 @@ export async function googleCalendarCallback(ctx: RequestContext): Promise<Respo
 
   const success = await handleCalendarCallback(code, state);
   if (!success) {
+    console.warn("[gcal-debug] googleCalendarCallback ✗ handleCalendarCallback returned false");
     return new Response(calendarErrorPage("Invalid or expired session. Please try again in the app."), {
       status: 400, headers: { "Content-Type": "text/html" },
     });
   }
+  console.log("[gcal-debug] googleCalendarCallback ✓ returning success page");
   return new Response(calendarSuccessPage(), {
     status: 200, headers: { "Content-Type": "text/html" },
   });
