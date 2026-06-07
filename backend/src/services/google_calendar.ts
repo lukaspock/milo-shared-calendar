@@ -81,7 +81,12 @@ export async function handleCalendarCallback(code: string, state: string): Promi
     const now = new Date();
     const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
     const endDate = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
-    db`SELECT calendar_id FROM calendar_members WHERE user_id = ${pending.userId}`
+    // JOIN with calendars to skip any stale membership rows for deleted calendars.
+    db`
+      SELECT cm.calendar_id FROM calendar_members cm
+      INNER JOIN calendars c ON c.id = cm.calendar_id
+      WHERE cm.user_id = ${pending.userId}
+    `
       .then(async (rows) => {
         for (const row of rows as Record<string, unknown>[]) {
           await fetchAndCacheGoogleEventsForCalendar({
@@ -217,6 +222,14 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
   endDate: Date;
 }): Promise<void> {
   const { calendarId, startDate, endDate } = params;
+
+  // Guard: skip if the calendar was deleted between when this task was scheduled
+  // and when it actually runs (race condition with ON DELETE CASCADE).
+  const calExists = await db`SELECT 1 FROM calendars WHERE id = ${calendarId} LIMIT 1`;
+  if (calExists.length === 0) {
+    console.warn(`[gcal] calendar ${calendarId} no longer exists, skipping import`);
+    return;
+  }
 
   // Members who have connected Google Calendar, joined with user profile
   const memberRows = await db`
