@@ -1,4 +1,4 @@
-# SharedCal Frontend
+# Milo Frontend
 
 Flutter app targeting iOS, Android, and macOS.
 
@@ -48,14 +48,22 @@ lib/
 | `go_router` | Navigation |
 | `google_fonts` | Plus Jakarta Sans typeface |
 | `emoji_picker_flutter` | Full emoji keyboard for reactions and event icons |
-| `image_picker` | Gallery/camera access for profile photo upload |
+| `image_picker` | Gallery/camera access for profile photo and event icon upload |
+| `device_calendar` | Read/write native iOS/Android calendar (device calendar sharing) |
+| `flutter_local_notifications` | On-device event reminders |
 | `shared_preferences` | Persist JWT + cached user |
 | `web_socket_channel` | Real-time WebSocket connection |
 | `url_launcher` | Open Google OAuth in browser |
 
-## Cloudinary avatar upload
+## Cloudinary uploads
 
-Profile photos are uploaded directly from the device to Cloudinary (unsigned preset `avatars`, cloud `dvlvgosxk`). The resulting CDN URL is saved on the user record via `PATCH /auth/me`. No API secret is required or stored in the app.
+All media uploads go directly from the device to Cloudinary (unsigned preset `avatars`, cloud `dvlvgosxk`) — no API secret is required or stored in the app.
+
+| Type | Folder | Trigger |
+|------|--------|---------|
+| Profile avatar | `avatars/` | `PATCH /auth/me` |
+| Event icon (photo) | `event_icons/` | Create / edit event |
+| Photo memory | `event_photos/` | Add photo to event |
 
 ## Known issues
 
