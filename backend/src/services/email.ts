@@ -28,7 +28,7 @@ async function send(to: string, subject: string, html: string): Promise<void> {
   // flag or silently drop the message.
   const date = new Date().toUTCString();
   const headers = [
-    `From: SharedCal <${FROM}>`,
+    `From: Milo <${FROM}>`,
     `To: ${to}`,
     `Subject: ${encodeSubject(subject)}`,
     `Date: ${date}`,
@@ -49,11 +49,11 @@ function base(content: string): string {
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
 <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:20px;border:1.5px solid #EFE4D2;overflow:hidden;">
 <tr><td style="background:#1F1B16;padding:24px 32px;">
-  <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">📅 SharedCal</span>
+  <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">📅 Milo</span>
 </td></tr>
 <tr><td style="padding:32px;">${content}</td></tr>
 <tr><td style="padding:16px 32px;background:#FBF1E4;border-top:1.5px solid #EFE4D2;">
-  <span style="color:#A39A8C;font-size:12px;">SharedCal — shared calendars made simple</span>
+  <span style="color:#A39A8C;font-size:12px;">Milo — shared calendars made simple</span>
 </td></tr>
 </table>
 </td></tr></table></body></html>`;
@@ -77,7 +77,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
     </p>
     <p style="color:#A39A8C;font-size:12px;margin:20px 0 0;">This link expires in 24 hours.</p>
   `);
-  await send(email, "Verify your SharedCal email address", html);
+  await send(email, "Verify your Milo email address", html);
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
@@ -85,7 +85,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
   const html = base(`
     <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 8px;">Reset your password 🔑</h2>
     <p style="color:#6B6357;font-size:15px;line-height:1.6;margin:0 0 4px;">
-      Hi ${name}, we received a request to reset your SharedCal password.
+      Hi ${name}, we received a request to reset your Milo password.
       Tap the button below to choose a new one.
     </p>
     ${btn(link, "Reset password")}
@@ -97,7 +97,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
       This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email.
     </p>
   `);
-  await send(email, "Reset your SharedCal password", html);
+  await send(email, "Reset your Milo password", html);
 }
 
 export async function sendReminderEmail(params: {
