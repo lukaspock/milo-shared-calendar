@@ -65,10 +65,13 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       );
 
       // Upload this user's device events to the backend so other members can see them.
-      // Fire-and-forget — never block the main fetch.
-      if (localDeviceEvents.isNotEmpty) {
-        _lastUploadedDeviceIds = localDeviceEvents.map((e) => e.id).toSet();
-        _uploadDeviceEvents(localDeviceEvents);
+      // Only upload when the set of IDs changed — prevents a cascade loop where
+      // device_synced → fetch() → upload → device_synced → fetch() → ...
+      final currentDeviceIds = localDeviceEvents.map((e) => e.id).toSet();
+      if (currentDeviceIds.length != _lastUploadedDeviceIds.length ||
+          !_lastUploadedDeviceIds.containsAll(currentDeviceIds)) {
+        _lastUploadedDeviceIds = currentDeviceIds;
+        if (localDeviceEvents.isNotEmpty) _uploadDeviceEvents(localDeviceEvents);
       }
 
       // Deduplicate: don't show a local device event that the API already returned
