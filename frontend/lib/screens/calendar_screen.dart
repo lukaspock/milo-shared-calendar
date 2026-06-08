@@ -740,7 +740,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     crossAxisCount: cols,
                                     crossAxisSpacing: 12,
                                     mainAxisSpacing: 16,
-                                    childAspectRatio: 0.72,
+                                    childAspectRatio: 1.0,
                                   ),
                               itemCount: photos.length,
                               itemBuilder: (ctx, i) {
