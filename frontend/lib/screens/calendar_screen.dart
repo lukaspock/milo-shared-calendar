@@ -23,9 +23,17 @@ Widget _calIconChild(String icon, double tileSize, Color fallbackColor) {
     final s = tileSize * 0.75;
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: Image.network(icon, width: s, height: s, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor)),
+      child: Image.network(
+        icon,
+        width: s,
+        height: s,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.calendar_today_rounded,
+          size: tileSize * 0.42,
+          color: fallbackColor,
+        ),
+      ),
     );
   }
   return Text(icon, style: TextStyle(fontSize: tileSize * 0.45, height: 1.0));
@@ -61,7 +69,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  void _showUploadSheet(BuildContext context, String eventId, String eventTitle) {
+  void _showUploadSheet(
+    BuildContext context,
+    String eventId,
+    String eventTitle,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -75,14 +87,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _showSelectEventSheet(BuildContext ctx, List<CalendarEvent> events) {
-    final pastEvents = events
-        .where((e) => e.endTime.isBefore(DateTime.now()))
-        .toList()
-      ..sort((a, b) => b.endTime.compareTo(a.endTime));
+    final pastEvents =
+        events.where((e) => e.endTime.isBefore(DateTime.now())).toList()
+          ..sort((a, b) => b.endTime.compareTo(a.endTime));
 
     if (pastEvents.isEmpty) {
       ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(content: Text('Noch keine vergangenen Events vorhanden')),
+        const SnackBar(
+          content: Text('Noch keine vergangenen Events vorhanden'),
+        ),
       );
       return;
     }
@@ -127,8 +140,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 itemBuilder: (lCtx, i) {
                   final ev = pastEvents[i];
                   return ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 4,
+                    ),
                     title: Text(
                       ev.title,
                       style: GoogleFonts.plusJakartaSans(
@@ -171,6 +186,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If this calendar was deleted by the owner while we are on this screen,
+    // the CalendarNotifier removes it from state — navigate back to home.
+    ref.listen(calendarProvider, (_, next) {
+      next.whenData((list) {
+        if (!list.any((c) => c.id == widget.calendarId) && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This calendar has been deleted.')),
+          );
+          context.go('/home');
+        }
+      });
+    });
+
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
     final openPolls = polls.where((p) => !p.closed).toList();
@@ -206,7 +234,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       decoration: BoxDecoration(
                         color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.appColors.line, width: 1.5),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
                       ),
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
@@ -222,7 +253,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     size: 40,
                     radius: 12,
                     child: calendar != null && calendarIcon(calendar) != null
-                        ? _calIconChild(calendarIcon(calendar)!, 40, context.appColors.inkMuted)
+                        ? _calIconChild(
+                            calendarIcon(calendar)!,
+                            40,
+                            context.appColors.inkMuted,
+                          )
                         : Icon(
                             Icons.calendar_today_rounded,
                             size: 18,
@@ -271,7 +306,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         decoration: BoxDecoration(
                           color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: context.appColors.line, width: 1.5),
+                          border: Border.all(
+                            color: context.appColors.line,
+                            width: 1.5,
+                          ),
                         ),
                         child: Icon(
                           Icons.people_rounded,
@@ -283,9 +321,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () {
-                      ref.read(eventsProvider(widget.calendarId).notifier).fetch();
+                      ref
+                          .read(eventsProvider(widget.calendarId).notifier)
+                          .fetch();
                       if (calendar?.photoMode == true) {
-                        ref.read(photosProvider(widget.calendarId).notifier).fetch();
+                        ref
+                            .read(photosProvider(widget.calendarId).notifier)
+                            .fetch();
                       }
                     },
                     child: Container(
@@ -294,7 +336,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       decoration: BoxDecoration(
                         color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.appColors.line, width: 1.5),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
                       ),
                       child: Icon(
                         Icons.refresh_rounded,
@@ -313,7 +358,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Expanded(
               child: eventsAsync.when(
                 loading: () => Center(
-                  child: CircularProgressIndicator(color: context.appColors.ink),
+                  child: CircularProgressIndicator(
+                    color: context.appColors.ink,
+                  ),
                 ),
                 error: (e, _) => Center(
                   child: Text(
@@ -370,250 +417,268 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       return age.inHours >= 0 &&
                           age.inHours < 48 &&
                           e.endTime.isBefore(now) &&
-                          !photos.any((p) =>
-                              p.eventId == e.id &&
-                              p.uploadedBy == currentUserId);
+                          !photos.any(
+                            (p) =>
+                                p.eventId == e.id &&
+                                p.uploadedBy == currentUserId,
+                          );
                     }).toList();
                   }
 
                   // ── Tab 0: Calendar ────────────────────────────────────
-                  if (_tabIndex == 0) { return Column(
-                    children: [
-                      // Photo memory banners
-                      if (activeEvent != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: _PhotoBanner(
-                            icon: '📸',
-                            color: const Color(0xFFFFF3E0),
-                            borderColor: const Color(0xFFE8A020),
-                            iconColor: const Color(0xFFB07000),
-                            message: 'Don\'t forget to take a photo!',
-                            eventTitle: activeEvent.title,
-                            actionLabel: 'Add photo',
-                            onAction: () => _showUploadSheet(
-                              context,
-                              activeEvent!.id,
-                              activeEvent.title,
-                            ),
-                          ),
-                        ),
-                      if (activeEvent == null && recentlyEndedEvents.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: _PhotoBanner(
-                            icon: '🖼',
-                            color: const Color(0xFFE8F4FD),
-                            borderColor: const Color(0xFF2196F3),
-                            iconColor: const Color(0xFF1565C0),
-                            message: 'Heb dir eine Erinnerung auf!',
-                            eventTitle: recentlyEndedEvents.first.title,
-                            actionLabel: 'Foto hochladen',
-                            onAction: () => _showUploadSheet(
-                              context,
-                              recentlyEndedEvents.first.id,
-                              recentlyEndedEvents.first.title,
-                            ),
-                          ),
-                        ),
-
-                      // ── Calendar card ─────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: context.appColors.surface,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: context.appColors.line,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.appColors.line.withOpacity(0.5),
-                                offset: const Offset(0, 4),
-                                blurRadius: 0,
+                  if (_tabIndex == 0) {
+                    return Column(
+                      children: [
+                        // Photo memory banners
+                        if (activeEvent != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _PhotoBanner(
+                              icon: '📸',
+                              color: const Color(0xFFFFF3E0),
+                              borderColor: const Color(0xFFE8A020),
+                              iconColor: const Color(0xFFB07000),
+                              message: 'Don\'t forget to take a photo!',
+                              eventTitle: activeEvent.title,
+                              actionLabel: 'Add photo',
+                              onAction: () => _showUploadSheet(
+                                context,
+                                activeEvent!.id,
+                                activeEvent.title,
                               ),
-                            ],
+                            ),
                           ),
-                          padding: EdgeInsets.all(kIsWeb ? 18 : 12),
-                          child: _CalendarGrid(
-                            month: _focusedMonth,
-                            selectedDay: _selectedDay,
-                            eventsByDay: eventsByDay,
-                            calHue: calHue,
-                            onMonthChanged: (m) =>
-                                setState(() => _focusedMonth = m),
-                            onDaySelected: (d) =>
-                                setState(() => _selectedDay = d),
+                        if (activeEvent == null &&
+                            recentlyEndedEvents.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _PhotoBanner(
+                              icon: '🖼',
+                              color: const Color(0xFFE8F4FD),
+                              borderColor: const Color(0xFF2196F3),
+                              iconColor: const Color(0xFF1565C0),
+                              message: 'Heb dir eine Erinnerung auf!',
+                              eventTitle: recentlyEndedEvents.first.title,
+                              actionLabel: 'Foto hochladen',
+                              onAction: () => _showUploadSheet(
+                                context,
+                                recentlyEndedEvents.first.id,
+                                recentlyEndedEvents.first.title,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 16),
-
-                      // ── Day header ────────────────────────────────────────
-                      if (_selectedDay != null)
+                        // ── Calendar card ─────────────────────────────────────
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              Text(
-                                DateFormat('EEE, MMM d')
-                                    .format(_selectedDay!)
-                                    .toUpperCase(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: context.appColors.inkMuted,
-                                  letterSpacing: 1.0,
-                                ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: context.appColors.surface,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: context.appColors.line,
+                                width: 1.5,
                               ),
-                              const SizedBox(width: 8),
-                              if (_isSameDay(_selectedDay!, DateTime.now()))
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: calHue.bg,
-                                    borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.appColors.line.withOpacity(
+                                    0.5,
                                   ),
-                                  child: Text(
-                                    'today',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: calHue.ink,
-                                    ),
-                                  ),
+                                  offset: const Offset(0, 4),
+                                  blurRadius: 0,
                                 ),
-                              const Expanded(child: SizedBox()),
-                            ],
+                              ],
+                            ),
+                            padding: EdgeInsets.all(kIsWeb ? 18 : 12),
+                            child: _CalendarGrid(
+                              month: _focusedMonth,
+                              selectedDay: _selectedDay,
+                              eventsByDay: eventsByDay,
+                              calHue: calHue,
+                              onMonthChanged: (m) =>
+                                  setState(() => _focusedMonth = m),
+                              onDaySelected: (d) =>
+                                  setState(() => _selectedDay = d),
+                            ),
                           ),
                         ),
 
-                      const SizedBox(height: 8),
+                        const SizedBox(height: 16),
 
-                      // ── Events + Polls ────────────────────────────────────
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          children: [
-                            if (selectedEvents.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Text(
-                                  _selectedDay == null
-                                      ? 'Tap a date to see events'
-                                      : 'No events on this day',
+                        // ── Day header ────────────────────────────────────────
+                        if (_selectedDay != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Text(
+                                  DateFormat(
+                                    'EEE, MMM d',
+                                  ).format(_selectedDay!).toUpperCase(),
                                   style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
                                     color: context.appColors.inkMuted,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 1.0,
                                   ),
                                 ),
-                              )
-                            else
-                              ...selectedEvents.asMap().entries.map((e) {
-                                final ev = e.value;
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                      bottom: e.key < selectedEvents.length - 1
-                                          ? 10
-                                          : 0),
-                                  child: _EventRow(
-                                    event: ev,
-                                    calHue: calHue,
-                                    onTap: () => context.go(
-                                      '/calendar/${widget.calendarId}/event/${ev.id}',
-                                      extra: ev,
-                                    ),
-                                    fmtTime: _fmt,
-                                  ),
-                                );
-                              }),
-
-                            if (openPolls.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              Row(
-                                children: [
-                                  Text(
-                                    'OPEN POLLS',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: context.appColors.inkMuted,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
+                                const SizedBox(width: 8),
+                                if (_isSameDay(_selectedDay!, DateTime.now()))
                                   Container(
-                                    width: 20,
-                                    height: 20,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: calHue.bg,
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        '${openPolls.length}',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: calHue.ink,
-                                        ),
+                                    child: Text(
+                                      'today',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: calHue.ink,
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              ...openPolls.asMap().entries.map((e) {
-                                final poll = e.value;
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                      bottom: e.key < openPolls.length - 1
-                                          ? 10
-                                          : 0),
-                                  child: _PollCard(
-                                    poll: poll,
-                                    calHue: calHue,
-                                    onTap: () => context.go(
-                                      '/calendar/${widget.calendarId}/polls/${poll.id}',
-                                      extra: poll,
+                                const Expanded(child: SizedBox()),
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 8),
+
+                        // ── Events + Polls ────────────────────────────────────
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            children: [
+                              if (selectedEvents.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    _selectedDay == null
+                                        ? 'Tap a date to see events'
+                                        : 'No events on this day',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: context.appColors.inkMuted,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                );
-                              }),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ); }
+                                )
+                              else
+                                ...selectedEvents.asMap().entries.map((e) {
+                                  final ev = e.value;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: e.key < selectedEvents.length - 1
+                                          ? 10
+                                          : 0,
+                                    ),
+                                    child: _EventRow(
+                                      event: ev,
+                                      calHue: calHue,
+                                      onTap: () => context.go(
+                                        '/calendar/${widget.calendarId}/event/${ev.id}',
+                                        extra: ev,
+                                      ),
+                                      fmtTime: _fmt,
+                                    ),
+                                  );
+                                }),
 
-                  // ── Tab 1: Photos grid ─────────────────────────────────────
-                  if (photos.isEmpty) { return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.photo_library_outlined,
-                            size: 48, color: context.appColors.inkMuted),
-                        const SizedBox(height: 12),
-                        Text(
-                          calendar?.photoMode == true
-                              ? 'No photos yet – create some memories!'
-                              : 'Photo mode is not enabled for this calendar.',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: context.appColors.inkMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                              if (openPolls.isNotEmpty) ...[
+                                const SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'OPEN POLLS',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: context.appColors.inkMuted,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: calHue.bg,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${openPolls.length}',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: calHue.ink,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                ...openPolls.asMap().entries.map((e) {
+                                  final poll = e.value;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: e.key < openPolls.length - 1
+                                          ? 10
+                                          : 0,
+                                    ),
+                                    child: _PollCard(
+                                      poll: poll,
+                                      calHue: calHue,
+                                      onTap: () => context.go(
+                                        '/calendar/${widget.calendarId}/polls/${poll.id}',
+                                        extra: poll,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ],
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ],
-                    ),
-                  ); }
+                    );
+                  }
+
+                  // ── Tab 1: Photos grid ─────────────────────────────────────
+                  if (photos.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.photo_library_outlined,
+                            size: 48,
+                            color: context.appColors.inkMuted,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            calendar?.photoMode == true
+                                ? 'No photos yet – create some memories!'
+                                : 'Photo mode is not enabled for this calendar.',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: context.appColors.inkMuted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
                   return Column(
                     children: [
@@ -633,13 +698,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                             const Spacer(),
                             GestureDetector(
-                              onTap: () => _showSelectEventSheet(context, events),
+                              onTap: () =>
+                                  _showSelectEventSheet(context, events),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: context.appColors.surfaceSoft,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: context.appColors.line, width: 1.5),
+                                  border: Border.all(
+                                    color: context.appColors.line,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 child: Text(
                                   '+ Photo',
@@ -662,52 +734,70 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 ? (constraints.maxWidth ~/ 220).clamp(2, 6)
                                 : 2;
                             return GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: cols,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.72,
-                          ),
-                          itemCount: photos.length,
-                          itemBuilder: (ctx, i) {
-                            final photo = photos[i];
-                            final date = photo.eventStartTime ?? photo.createdAt;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  DateFormat('d. MMM yyyy').format(date),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.appColors.inkMuted,
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: cols,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 16,
+                                    childAspectRatio: 0.72,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Expanded(
-                                  child: _PhotoCard(
-                                    photo: photo,
-                                    currentUserId: currentUserId,
-                                    onDelete: () async {
-                                      final ok = await ref
-                                          .read(photosProvider(widget.calendarId).notifier)
-                                          .deletePhoto(photo.eventId, photo.id);
-                                      if (!ok && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Fehler beim Löschen')),
-                                        );
-                                      }
-                                    },
-                                    onTap: () => _showFullScreenPhoto(context, photo),
-                                  ),
-                                ),
-                              ],
+                              itemCount: photos.length,
+                              itemBuilder: (ctx, i) {
+                                final photo = photos[i];
+                                final date =
+                                    photo.eventStartTime ?? photo.createdAt;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      DateFormat('d. MMM yyyy').format(date),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.appColors.inkMuted,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Expanded(
+                                      child: _PhotoCard(
+                                        photo: photo,
+                                        currentUserId: currentUserId,
+                                        onDelete: () async {
+                                          final ok = await ref
+                                              .read(
+                                                photosProvider(
+                                                  widget.calendarId,
+                                                ).notifier,
+                                              )
+                                              .deletePhoto(
+                                                photo.eventId,
+                                                photo.id,
+                                              );
+                                          if (!ok && context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Fehler beim Löschen',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        onTap: () => _showFullScreenPhoto(
+                                          context,
+                                          photo,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             );
-                          },
-                        );
                           },
                         ),
                       ),
@@ -717,73 +807,82 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             ),
             // ── Bottom tab bar (only when photo memories is enabled) ─────
-            if (calendar?.photoMode == true) Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 6 : 10),
-                child: Container(
-                  width: 2 * _kTabW + 8,
-                  decoration: BoxDecoration(
-                    color: context.appColors.surface,
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: context.appColors.line, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.appColors.ink.withOpacity(0.06),
-                        offset: const Offset(0, 2),
-                        blurRadius: 8,
-                      ),
-                    ],
+            if (calendar?.photoMode == true)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    kIsWeb ? 4 : 6,
+                    16,
+                    kIsWeb ? 6 : 10,
                   ),
-                  child: Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeInOut,
-                        left: 4.0 + _tabIndex * _kTabW,
-                        top: 4,
-                        width: _kTabW,
-                        bottom: 4,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0E6),
-                            borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 2 * _kTabW + 8,
+                    decoration: BoxDecoration(
+                      color: context.appColors.surface,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: context.appColors.line,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.appColors.ink.withOpacity(0.06),
+                          offset: const Offset(0, 2),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeInOut,
+                          left: 4.0 + _tabIndex * _kTabW,
+                          top: 4,
+                          width: _kTabW,
+                          bottom: 4,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0E6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: _kTabW,
-                              child: _buildTabItem(
-                                context: context,
-                                icon: Icons.calendar_today_rounded,
-                                label: 'Calendar',
-                                selected: _tabIndex == 0,
-                                onTap: () => setState(() => _tabIndex = 0),
+                        Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: _kTabW,
+                                child: _buildTabItem(
+                                  context: context,
+                                  icon: Icons.calendar_today_rounded,
+                                  label: 'Calendar',
+                                  selected: _tabIndex == 0,
+                                  onTap: () => setState(() => _tabIndex = 0),
+                                ),
                               ),
-                            ),
-                            SizedBox(
-                              width: _kTabW,
-                              child: _buildTabItem(
-                                context: context,
-                                icon: Icons.photo_library_rounded,
-                                label: 'Photos',
-                                selected: _tabIndex == 1,
-                                onTap: () => setState(() => _tabIndex = 1),
+                              SizedBox(
+                                width: _kTabW,
+                                child: _buildTabItem(
+                                  context: context,
+                                  icon: Icons.photo_library_rounded,
+                                  label: 'Photos',
+                                  selected: _tabIndex == 1,
+                                  onTap: () => setState(() => _tabIndex = 1),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -802,7 +901,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: ElevatedButton(
                 onPressed: _showCreateSheet,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
@@ -1055,9 +1157,7 @@ class _PollCardState extends State<_PollCard> {
                   ),
                 ],
               ),
-              child: Center(
-                child: AppImages.poll(size: 20),
-              ),
+              child: Center(child: AppImages.poll(size: 20)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1414,12 +1514,19 @@ class _EventRowState extends State<_EventRow> {
                       ),
                       if (widget.event.source == EventSource.googleImport) ...[
                         const SizedBox(width: 6),
-                        Icon(Icons.calendar_month_rounded,
-                            size: 12, color: context.appColors.inkMuted),
-                      ] else if (widget.event.source == EventSource.deviceImport) ...[
+                        Icon(
+                          Icons.calendar_month_rounded,
+                          size: 12,
+                          color: context.appColors.inkMuted,
+                        ),
+                      ] else if (widget.event.source ==
+                          EventSource.deviceImport) ...[
                         const SizedBox(width: 6),
-                        Icon(Icons.phone_iphone_rounded,
-                            size: 12, color: context.appColors.inkMuted),
+                        Icon(
+                          Icons.phone_iphone_rounded,
+                          size: 12,
+                          color: context.appColors.inkMuted,
+                        ),
                       ],
                     ],
                   ),
@@ -1440,11 +1547,22 @@ class _EventRowState extends State<_EventRow> {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-bool _isIconUrl(String s) => s.startsWith('http://') || s.startsWith('https://');
+bool _isIconUrl(String s) =>
+    s.startsWith('http://') || s.startsWith('https://');
 
 const _months = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
 ];
 
 // Badge shown inside a day cell — icon or title for 1 event, count for many.
@@ -1482,7 +1600,10 @@ class _DayCellBadge extends StatelessWidget {
     if (single && icon != null) {
       return Container(
         width: double.infinity,
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(4),
+        ),
         alignment: Alignment.center,
         child: Text(icon, style: const TextStyle(fontSize: 11, height: 1.3)),
       );
@@ -1492,20 +1613,23 @@ class _DayCellBadge extends StatelessWidget {
   }
 
   Widget _textBadge(String text, Color bg) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
-        child: Text(
-          text,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 8,
-            color: calHue.ink,
-            fontWeight: FontWeight.w700,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.clip,
-        ),
-      );
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 8,
+        color: calHue.ink,
+        fontWeight: FontWeight.w700,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.clip,
+    ),
+  );
 }
 
 // Left-side icon box for an event row — event icon when set, date otherwise.
@@ -1697,34 +1821,36 @@ class _PhotoCard extends StatelessWidget {
       onTap: onTap,
       onLongPress: canDelete
           ? () => showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: Text(
-                    'Foto löschen?',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text(
+                  'Foto löschen?',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
                   ),
-                  content: Text(
-                    'Dieses Foto wird für alle Mitglieder gelöscht.',
-                    style: GoogleFonts.plusJakartaSans(),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Abbrechen'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onDelete();
-                      },
-                      child: Text(
-                        'Löschen',
-                        style: TextStyle(color: AppTheme.danger),
-                      ),
-                    ),
-                  ],
                 ),
-              )
+                content: Text(
+                  'Dieses Foto wird für alle Mitglieder gelöscht.',
+                  style: GoogleFonts.plusJakartaSans(),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Abbrechen'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onDelete();
+                    },
+                    child: Text(
+                      'Löschen',
+                      style: TextStyle(color: AppTheme.danger),
+                    ),
+                  ),
+                ],
+              ),
+            )
           : null,
       child: Container(
         decoration: BoxDecoration(
@@ -1747,8 +1873,11 @@ class _PhotoCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: context.appColors.surfaceSoft,
-                  child: Icon(Icons.broken_image_rounded,
-                      color: context.appColors.inkMuted, size: 40),
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    color: context.appColors.inkMuted,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
@@ -1757,7 +1886,10 @@ class _PhotoCard extends StatelessWidget {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
@@ -1846,9 +1978,9 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
     if (!mounted) return;
     if (ok) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto hochgeladen!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Foto hochgeladen!')));
     } else {
       setState(() {
         _uploading = false;
@@ -1865,7 +1997,10 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32,
+        24,
+        16,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 32,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1894,7 +2029,10 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ],
           ),
@@ -1933,36 +2071,46 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _uploading ? null : () => _pickImage(ImageSource.gallery),
+                  onPressed: _uploading
+                      ? null
+                      : () => _pickImage(ImageSource.gallery),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     side: BorderSide(color: context.appColors.line, width: 1.5),
                     foregroundColor: context.appColors.ink,
                   ),
                   icon: const Icon(Icons.photo_library_rounded, size: 18),
                   label: Text(
                     'Galerie',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _uploading ? null : () => _pickImage(ImageSource.camera),
+                  onPressed: _uploading
+                      ? null
+                      : () => _pickImage(ImageSource.camera),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     side: BorderSide(color: context.appColors.line, width: 1.5),
                     foregroundColor: context.appColors.ink,
                   ),
                   icon: const Icon(Icons.camera_alt_rounded, size: 18),
                   label: Text(
                     'Kamera',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -1978,7 +2126,8 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28)),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
                 ),
                 child: _uploading
                     ? const SizedBox(

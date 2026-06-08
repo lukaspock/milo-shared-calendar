@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -76,26 +77,38 @@ class LocalNotificationService {
   Future<bool> requestPermission() async {
     await init();
     try {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (android != null) {
         final granted = await android.requestNotificationsPermission();
         return granted ?? true;
       }
 
-      final ios = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final ios = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       if (ios != null) {
         final granted = await ios.requestPermissions(
-            alert: true, badge: true, sound: true);
+          alert: true,
+          badge: true,
+          sound: true,
+        );
         return granted ?? false;
       }
 
-      final macos = _plugin.resolvePlatformSpecificImplementation<
-          MacOSFlutterLocalNotificationsPlugin>();
+      final macos = _plugin
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >();
       if (macos != null) {
         final granted = await macos.requestPermissions(
-            alert: true, badge: true, sound: true);
+          alert: true,
+          badge: true,
+          sound: true,
+        );
         return granted ?? false;
       }
     } catch (_) {
@@ -125,21 +138,59 @@ class LocalNotificationService {
     }
   }
 
-  /// Schedules a local notification 30 min before [event] starts.
-  /// No-op if the event is in the past or less than 31 min away.
-  Future<void> scheduleEventReminder(CalendarEvent event) async {
+  // ── Reminder preferences (per-event, stored locally) ─────────────────────
+
+  /// Persists [minutes] (or null = no reminder) for [eventId] in SharedPreferences.
+  Future<void> saveReminderPreference(String eventId, int? minutes) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (minutes == null) {
+      await prefs.remove('reminder_$eventId');
+    } else {
+      await prefs.setInt('reminder_$eventId', minutes);
+    }
+  }
+
+  /// Returns the saved reminder preference for [eventId], or null if none.
+  Future<int?> loadReminderPreference(String eventId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('reminder_$eventId');
+  }
+
+  // ── Scheduling ────────────────────────────────────────────────────────────
+
+  /// Schedules a local notification [reminderMinutes] before [event] starts.
+  ///
+  /// Pass `reminderMinutes: null` to skip scheduling (no reminder).
+  /// Saves the preference so it can be restored when the event is edited.
+  /// No-op if the reminder time is already in the past.
+  Future<void> scheduleEventReminder(
+    CalendarEvent event, {
+    int? reminderMinutes = 30,
+  }) async {
+    if (reminderMinutes == null) {
+      // User chose "No reminder" — persist the preference and bail out.
+      await saveReminderPreference(event.id, null);
+      return;
+    }
+
     await init();
     final user = AuthService().cachedUser;
     if (user == null || user.notificationType != NotificationType.push) return;
 
-    final reminderTime = event.startTime.subtract(const Duration(minutes: 30));
+    final reminderTime = event.startTime.subtract(
+      Duration(minutes: reminderMinutes),
+    );
     if (!reminderTime.isAfter(DateTime.now())) return;
 
+    // Persist so the edit form can pre-fill the value
+    await saveReminderPreference(event.id, reminderMinutes);
+
+    final label = _reminderLabel(reminderMinutes);
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'event_reminders',
         'Event reminders',
-        channelDescription: 'Reminds you 30 minutes before an event starts.',
+        channelDescription: 'Reminds you before an event starts.',
         importance: Importance.high,
         priority: Priority.high,
       ),
@@ -153,7 +204,7 @@ class LocalNotificationService {
     try {
       await _plugin.zonedSchedule(
         id,
-        'Starting in 30 minutes',
+        label,
         event.title,
         tz.TZDateTime.from(reminderTime, tz.local),
         details,
@@ -164,6 +215,14 @@ class LocalNotificationService {
     } catch (_) {
       // Scheduled notifications may not be supported on all platforms/configs.
     }
+  }
+
+  /// Human-readable notification title for a given reminder lead time.
+  static String _reminderLabel(int minutes) {
+    if (minutes < 60) return 'Starting in $minutes minutes';
+    if (minutes == 60) return 'Starting in 1 hour';
+    if (minutes < 1440) return 'Starting in ${minutes ~/ 60} hours';
+    return 'Starting tomorrow';
   }
 
   /// Cancels a previously scheduled reminder for the given event ID.
@@ -180,7 +239,8 @@ class LocalNotificationService {
     // Backend-sent reminder (30 min before) → show immediately for push users
     if (type == 'event_reminder') {
       final user = AuthService().cachedUser;
-      if (user == null || user.notificationType != NotificationType.push) return;
+      if (user == null || user.notificationType != NotificationType.push)
+        return;
       final title = (msg['event_title'] as String?)?.trim();
       if (title != null && title.isNotEmpty) {
         show('Starting in 30 minutes', title);

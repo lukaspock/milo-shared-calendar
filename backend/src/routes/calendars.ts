@@ -360,6 +360,10 @@ export async function deleteCalendar(ctx: RequestContext): Promise<Response> {
   const photoUrls = await db`SELECT photo_url FROM event_photos WHERE calendar_id = ${id}`;
   cleanupAssets(photoUrls.map((p: Record<string, unknown>) => p.photo_url as string));
 
+  // Notify all connected members before the row is deleted so their WS
+  // subscriptions are still active when the broadcast fires.
+  broadcastToCalendar(id, { type: "calendar_deleted", calendar_id: id });
+
   await db`DELETE FROM calendars WHERE id = ${id}`;
   return json({ message: "Calendar deleted" });
 }

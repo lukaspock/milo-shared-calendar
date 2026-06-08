@@ -269,6 +269,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     String? icon,
     RecurrenceRule recurrenceRule = RecurrenceRule.none,
     DateTime? recurrenceEnd,
+
+    /// Minutes before the event to fire a reminder notification.
+    /// Pass null to skip the reminder entirely.
+    int? reminderMinutes = 30,
   }) async {
     try {
       final res = await _api.post(
@@ -296,7 +300,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       }
       // Fire-and-forget: sync to device calendar + schedule reminder
       DeviceCalendarService().syncEvent(event);
-      LocalNotificationService().scheduleEventReminder(event);
+      LocalNotificationService().scheduleEventReminder(
+        event,
+        reminderMinutes: reminderMinutes,
+      );
       return event;
     } catch (_) {
       return null;
@@ -315,6 +322,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     DateTime? recurrenceEnd,
     bool clearRecurrence = false,
     bool editAll = false,
+
+    /// Updated reminder lead time in minutes. Pass null to remove the reminder.
+    int? reminderMinutes = 30,
   }) async {
     try {
       final res = await _api.put(
@@ -346,7 +356,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       // Fire-and-forget: sync update to device calendar + reschedule reminder
       DeviceCalendarService().syncEvent(event);
       LocalNotificationService().cancelEventReminder(id);
-      LocalNotificationService().scheduleEventReminder(event);
+      LocalNotificationService().scheduleEventReminder(
+        event,
+        reminderMinutes: reminderMinutes,
+      );
       return true;
     } catch (_) {
       return false;
