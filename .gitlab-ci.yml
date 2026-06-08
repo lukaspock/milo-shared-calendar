@@ -24,6 +24,12 @@ stages:
   - deploy
   - release
 
+# Don't let git clean remove gitignored build artifacts (e.g. frontend/build/ios/SourcePackages).
+# The default "-ffdx" (with -x) deletes ignored files too, which causes "Directory not empty"
+# errors on the local shell runner when Swift PM leaves behind locked directories.
+variables:
+  GIT_CLEAN_FLAGS: -ffd
+
 # Avoid duplicate pipelines: run for merge requests, and for branch pushes that
 # don't already have an open MR (prevents the "detached + branch" double pipeline).
 workflow:
