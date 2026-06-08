@@ -226,6 +226,23 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     ORDER BY ide.start_time ASC
   `;
 
+  console.log("[device-sync] getCalendarEvents calendarId=%s window=%s→%s → device_import rows=%d",
+    id,
+    startDate.toISOString().substring(0, 10),
+    endDate.toISOString().substring(0, 10),
+    deviceRows.length,
+  );
+  for (const row of deviceRows as Record<string, unknown>[]) {
+    console.log("[device-sync]   row: device_event_id=%s title=%s user=%s start=%s",
+      row.device_event_id,
+      row.title,
+      row.user_id,
+      row.start_time instanceof Date
+        ? (row.start_time as Date).toISOString().substring(0, 10)
+        : String(row.start_time).substring(0, 10),
+    );
+  }
+
   const deviceImportedEvents = (deviceRows as Record<string, unknown>[]).map((row) => ({
     id: `device_${row.device_event_id as string}`,
     calendar_id: row.calendar_id,
@@ -245,6 +262,10 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     }],
   }));
 
+  console.log("[device-sync] getCalendarEvents: returning %d total events (%d sharedcal, %d gcal, %d device)",
+    events.length + importedEvents.length + deviceImportedEvents.length,
+    events.length, importedEvents.length, deviceImportedEvents.length,
+  );
   return json([...events, ...importedEvents, ...deviceImportedEvents]);
 }
 
@@ -405,25 +426,47 @@ export async function syncDeviceEvents(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const { id } = ctx.params;
 
+  console.log("[device-sync] syncDeviceEvents: userId=%s calendarId=%s", userId, id);
+
   const membership = await db`
     SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}
   `;
-  if (membership.length === 0) return error("Not a member of this calendar", 403);
+  if (membership.length === 0) {
+    console.log("[device-sync] syncDeviceEvents: REJECTED — user=%s is not a member of calendar=%s", userId, id);
+    return error("Not a member of this calendar", 403);
+  }
 
   let body: { events?: DeviceEventInput[] };
   try {
     body = await ctx.req.json();
   } catch {
+    console.log("[device-sync] syncDeviceEvents: REJECTED — invalid JSON body");
     return error("Invalid JSON body");
   }
 
   const events = Array.isArray(body.events) ? body.events : [];
+  console.log("[device-sync] syncDeviceEvents: received %d events from user=%s", events.length, userId);
+  for (const ev of events) {
+    console.log("[device-sync]   event: id=%s title=%s start=%s valid=%s",
+      ev.device_event_id,
+      ev.title,
+      ev.start_time?.toString().substring(0, 10) ?? "null",
+      !!(ev.device_event_id && ev.title && ev.start_time && ev.end_time),
+    );
+  }
 
   // Replace all device events for this user in this calendar atomically
-  await db`DELETE FROM imported_device_events WHERE calendar_id = ${id} AND user_id = ${userId}`;
+  const deleteResult = await db`DELETE FROM imported_device_events WHERE calendar_id = ${id} AND user_id = ${userId}`;
+  console.log("[device-sync] syncDeviceEvents: deleted previous rows for user=%s (count approx)", userId);
 
+  let inserted = 0;
+  let skipped = 0;
   for (const event of events) {
-    if (!event.device_event_id || !event.title || !event.start_time || !event.end_time) continue;
+    if (!event.device_event_id || !event.title || !event.start_time || !event.end_time) {
+      console.log("[device-sync]   SKIPPING invalid event: id=%s title=%s", event.device_event_id, event.title);
+      skipped++;
+      continue;
+    }
     await db`
       INSERT INTO imported_device_events
         (calendar_id, user_id, device_event_id, title, start_time, end_time, description)
@@ -431,10 +474,13 @@ export async function syncDeviceEvents(ctx: RequestContext): Promise<Response> {
         (${id}, ${userId}, ${event.device_event_id}, ${event.title},
          ${event.start_time}, ${event.end_time}, ${event.description ?? null})
     `;
+    inserted++;
   }
+
+  console.log("[device-sync] syncDeviceEvents: inserted=%d skipped=%d — broadcasting device_synced", inserted, skipped);
 
   // Notify all calendar members so their UI re-fetches and shows the new events
   broadcastToCalendar(id, { type: "device_synced", calendar_id: id });
 
-  return json({ synced: events.length });
+  return json({ synced: inserted });
 }

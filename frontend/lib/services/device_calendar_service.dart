@@ -1,7 +1,8 @@
 import 'dart:convert';
 
 import 'package:device_calendar/device_calendar.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show debugPrint, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart' show Color;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -42,21 +43,38 @@ class DeviceCalendarService {
   /// Requests calendar permission and finds/creates the Milo calendar.
   /// Returns true on success.
   Future<bool> connect() async {
+    debugPrint('[DeviceCal] connect() called');
     // 1. Check / request permission
     var perm = await _plugin.hasPermissions();
+    debugPrint(
+      '[DeviceCal] hasPermissions=${perm.data}, errors=${perm.errors}',
+    );
     if (perm.data != true) {
       perm = await _plugin.requestPermissions();
+      debugPrint(
+        '[DeviceCal] requestPermissions=${perm.data}, errors=${perm.errors}',
+      );
     }
-    if (perm.data != true) return false;
+    if (perm.data != true) {
+      debugPrint('[DeviceCal] connect() FAILED — permission denied');
+      return false;
+    }
 
     // 2. Find or create dedicated calendar
     final calId = await _getOrCreateCalendar();
-    if (calId == null) return false;
+    debugPrint('[DeviceCal] _getOrCreateCalendar → calId=$calId');
+    if (calId == null) {
+      debugPrint(
+        '[DeviceCal] connect() FAILED — could not find/create calendar',
+      );
+      return false;
+    }
 
     // 3. Persist
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_enabledKey, true);
     await prefs.setString(_calendarIdKey, calId);
+    debugPrint('[DeviceCal] connect() SUCCESS — calId=$calId saved');
     return true;
   }
 
@@ -75,37 +93,55 @@ class DeviceCalendarService {
   Future<String?> _getOrCreateCalendar() async {
     final prefs = await SharedPreferences.getInstance();
     final savedId = prefs.getString(_calendarIdKey);
+    debugPrint('[DeviceCal] _getOrCreateCalendar — savedId=$savedId');
 
     if (savedId != null) {
       final result = await _plugin.retrieveCalendars();
+      debugPrint(
+        '[DeviceCal]   retrieveCalendars: ${result.data?.length ?? 0} calendars found',
+      );
       final exists = result.data?.any((c) => c.id == savedId) ?? false;
+      debugPrint('[DeviceCal]   savedId still exists=$exists');
       if (exists) return savedId;
     }
 
     // Try to create a dedicated calendar named "Milo"
     try {
+      debugPrint('[DeviceCal]   trying createCalendar("Milo")');
       final result = await _plugin.createCalendar(
         'Milo',
         calendarColor: const Color(0xFF6C63FF),
         localAccountName: 'Milo',
       );
+      debugPrint(
+        '[DeviceCal]   createCalendar: isSuccess=${result.isSuccess} data=${result.data} errors=${result.errors}',
+      );
       if (result.isSuccess && result.data != null) {
         await prefs.setString(_calendarIdKey, result.data!);
         return result.data;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[DeviceCal]   createCalendar threw: $e');
       // createCalendar is not available on all Android setups — fall through
     }
 
     // Fallback: use the first writable calendar (typical on Android)
     final calendarsResult = await _plugin.retrieveCalendars();
-    final writable = calendarsResult.data
-            ?.where((c) => !(c.isReadOnly ?? true))
-            .toList() ??
-        [];
+    final allCals = calendarsResult.data ?? [];
+    debugPrint('[DeviceCal]   fallback: total calendars=${allCals.length}');
+    for (final c in allCals) {
+      debugPrint(
+        '[DeviceCal]     cal id=${c.id} name=${c.name} readOnly=${c.isReadOnly}',
+      );
+    }
+    final writable = allCals.where((c) => !(c.isReadOnly ?? true)).toList();
+    debugPrint('[DeviceCal]   writable calendars=${writable.length}');
     if (writable.isEmpty) return null;
     final id = writable.first.id!;
     await prefs.setString(_calendarIdKey, id);
+    debugPrint(
+      '[DeviceCal]   fallback chosen: id=$id name=${writable.first.name}',
+    );
     return id;
   }
 
@@ -172,30 +208,53 @@ class DeviceCalendarService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
+    debugPrint(
+      '[DeviceCal] readExternalEvents() — platform=$defaultTargetPlatform calendarId=$sharedCalendarId',
+    );
+
     // Guard: device_calendar only supports iOS and Android
     if (defaultTargetPlatform != TargetPlatform.iOS &&
         defaultTargetPlatform != TargetPlatform.android) {
+      debugPrint('[DeviceCal] readExternalEvents: skipping — not iOS/Android');
       return [];
     }
 
     try {
-      if (!await isEnabled()) return [];
+      final enabled = await isEnabled();
+      debugPrint('[DeviceCal] readExternalEvents: isEnabled=$enabled');
+      if (!enabled) {
+        debugPrint(
+          '[DeviceCal] readExternalEvents: returning [] — device calendar NOT connected by user',
+        );
+        return [];
+      }
 
       // Values in this map are device event IDs written by Milo — skip those events.
-      // We no longer skip entire calendars by calId because the fallback path in connect()
-      // may have stored the user's default iCloud calendar as calId, which would hide all
-      // personal events. Filtering per-event by device ID is precise enough.
       final map = await _loadMap();
       final sharedCalDeviceIds = map.values.toSet();
+      debugPrint(
+        '[DeviceCal] readExternalEvents: miloWrittenDeviceIds count=${sharedCalDeviceIds.length}',
+      );
 
       final calendarsResult = await _plugin.retrieveCalendars();
       final calendars = calendarsResult.data ?? [];
+      debugPrint(
+        '[DeviceCal] readExternalEvents: device calendars found=${calendars.length}',
+      );
+      for (final cal in calendars) {
+        debugPrint(
+          '[DeviceCal]   cal id=${cal.id} name="${cal.name}" readOnly=${cal.isReadOnly}',
+        );
+      }
 
       final results = <sc.CalendarEvent>[];
       // Dedup key: title + UTC date — prevents the same holiday from appearing
-      // twice when it exists in multiple iOS calendar sources (e.g. a subscribed
-      // Austrian holidays calendar AND the iCloud calendar both carry Fronleichnam).
+      // twice when it exists in multiple iOS calendar sources.
       final seenKeys = <String>{};
+      int skippedMilo = 0,
+          skippedNullId = 0,
+          skippedCancelled = 0,
+          skippedDedup = 0;
 
       for (final cal in calendars) {
         final eventsResult = await _plugin.retrieveEvents(
@@ -205,26 +264,53 @@ class DeviceCalendarService {
             endDate: tz.TZDateTime.from(endDate, tz.UTC),
           ),
         );
+        final rawCount = eventsResult.data?.length ?? 0;
+        debugPrint(
+          '[DeviceCal]   cal "${cal.name}": $rawCount events in window',
+        );
 
         for (final e in eventsResult.data ?? []) {
-          if (e.status == EventStatus.Canceled) continue;
-          if (e.eventId == null) continue;
-          if (sharedCalDeviceIds.contains(e.eventId)) continue;
-          if (e.title == null || e.start == null || e.end == null) continue;
+          if (e.status == EventStatus.Canceled) {
+            skippedCancelled++;
+            continue;
+          }
+          if (e.eventId == null) {
+            skippedNullId++;
+            continue;
+          }
+          if (sharedCalDeviceIds.contains(e.eventId)) {
+            skippedMilo++;
+            continue;
+          }
+          if (e.title == null || e.start == null || e.end == null) {
+            skippedNullId++;
+            continue;
+          }
 
-          // Use TZDateTime's own year/month/day (device-local timezone) for the
-          // dedup key — toUtc() would give the previous day for all-day events
-          // in UTC+2 (midnight local = 22:00 UTC previous day).
-          final dedupKey = '${e.title}|${e.start!.year}-${e.start!.month}-${e.start!.day}';
-          if (seenKeys.contains(dedupKey)) continue;
+          final dedupKey =
+              '${e.title}|${e.start!.year}-${e.start!.month}-${e.start!.day}';
+          if (seenKeys.contains(dedupKey)) {
+            skippedDedup++;
+            continue;
+          }
           seenKeys.add(dedupKey);
 
           results.add(_toCalendarEvent(e, sharedCalendarId));
         }
       }
 
+      debugPrint(
+        '[DeviceCal] readExternalEvents: RESULT=${results.length} events'
+        ' (skipped: cancelled=$skippedCancelled nullId=$skippedNullId miloWritten=$skippedMilo dedup=$skippedDedup)',
+      );
+      for (final e in results) {
+        debugPrint(
+          '[DeviceCal]   → "${e.title}" id=${e.id} start=${e.startTime.toIso8601String()}',
+        );
+      }
       return results;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[DeviceCal] readExternalEvents ERROR: $e\n$st');
       return [];
     }
   }
