@@ -92,6 +92,7 @@ export async function login(ctx: RequestContext): Promise<Response> {
       id: user.id, email: user.email, name: user.name, color: user.color,
       notification_type: user.notification_type ?? "email",
       email_verified: user.email_verified ?? false,
+      avatar_url: user.avatar_url ?? null,
     },
   });
 }
