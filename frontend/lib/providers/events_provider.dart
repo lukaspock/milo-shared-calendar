@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 export '../models/event.dart' show RecurrenceRule;
@@ -57,6 +58,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _apiEvents = list;
       _cache.saveEvents(calendarId, list);
 
+      debugPrint('[DeviceSync] fetch(): API returned ${list.length} events '
+          '(${list.where((e) => e.source == EventSource.deviceImport).length} device_import, '
+          '${list.where((e) => e.source == EventSource.googleImport).length} google_import)');
+
       // Load device calendar events from the local device
       final localDeviceEvents = await DeviceCalendarService().readExternalEvents(
         sharedCalendarId: calendarId,
@@ -64,14 +69,26 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         endDate: DateTime.now().add(const Duration(days: 365)),
       );
 
+      debugPrint('[DeviceSync] fetch(): localDeviceEvents=${localDeviceEvents.length} '
+          'lastUploadedIds=${_lastUploadedDeviceIds.length}');
+
       // Upload this user's device events to the backend so other members can see them.
       // Only upload when the set of IDs changed — prevents a cascade loop where
       // device_synced → fetch() → upload → device_synced → fetch() → ...
       final currentDeviceIds = localDeviceEvents.map((e) => e.id).toSet();
-      if (currentDeviceIds.length != _lastUploadedDeviceIds.length ||
-          !_lastUploadedDeviceIds.containsAll(currentDeviceIds)) {
+      final idsChanged = currentDeviceIds.length != _lastUploadedDeviceIds.length ||
+          !_lastUploadedDeviceIds.containsAll(currentDeviceIds);
+      debugPrint('[DeviceSync] fetch(): currentIds=${currentDeviceIds.length} idsChanged=$idsChanged');
+      if (idsChanged) {
         _lastUploadedDeviceIds = currentDeviceIds;
-        if (localDeviceEvents.isNotEmpty) _uploadDeviceEvents(localDeviceEvents);
+        if (localDeviceEvents.isNotEmpty) {
+          debugPrint('[DeviceSync] fetch(): triggering upload of ${localDeviceEvents.length} events');
+          _uploadDeviceEvents(localDeviceEvents);
+        } else {
+          debugPrint('[DeviceSync] fetch(): no local device events to upload');
+        }
+      } else {
+        debugPrint('[DeviceSync] fetch(): IDs unchanged — skipping upload');
       }
 
       // Deduplicate: don't show a local device event that the API already returned
@@ -84,8 +101,10 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           .where((e) => !apiDeviceIds.contains(e.id))
           .toList();
 
+      debugPrint('[DeviceSync] fetch(): _deviceEvents (local-only, not yet in API)=${_deviceEvents.length}');
       _setMergedState();
     } catch (e, st) {
+      debugPrint('[DeviceSync] fetch() ERROR: $e\n$st');
       if (cached == null) state = AsyncValue.error(e, st);
     }
   }
@@ -93,6 +112,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
   /// Reads device calendar events and uploads them only when the set of event
   /// IDs has changed since the last upload. Skips silently on macOS.
   Future<void> _periodicDeviceSync() async {
+    debugPrint('[DeviceSync] _periodicDeviceSync() — calendarId=$calendarId');
     try {
       final events = await DeviceCalendarService().readExternalEvents(
         sharedCalendarId: calendarId,
@@ -100,20 +120,30 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
         endDate: DateTime.now().add(const Duration(days: 365)),
       );
       final currentIds = events.map((e) => e.id).toSet();
+      debugPrint('[DeviceSync] _periodicDeviceSync(): currentIds=${currentIds.length} lastUploaded=${_lastUploadedDeviceIds.length}');
       if (currentIds.length == _lastUploadedDeviceIds.length &&
           _lastUploadedDeviceIds.containsAll(currentIds)) {
+        debugPrint('[DeviceSync] _periodicDeviceSync(): no change — skipping upload');
         return;
       }
+      debugPrint('[DeviceSync] _periodicDeviceSync(): change detected — uploading ${events.length} events');
       _lastUploadedDeviceIds = currentIds;
       _uploadDeviceEvents(events);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[DeviceSync] _periodicDeviceSync() ERROR: $e\n$st');
+    }
   }
 
   /// Uploads [events] (from the local device calendar) to the backend so that
   /// all members of this calendar can see them. Fire-and-forget.
   Future<void> _uploadDeviceEvents(List<CalendarEvent> events) async {
+    debugPrint('[DeviceSync] _uploadDeviceEvents(): uploading ${events.length} events to calendarId=$calendarId');
+    for (final e in events) {
+      final rawId = e.id.startsWith('device_') ? e.id.substring('device_'.length) : e.id;
+      debugPrint('[DeviceSync]   → "${e.title}" device_event_id=$rawId start=${e.startTime.toUtc().toIso8601String()}');
+    }
     try {
-      await _api.post('/calendars/$calendarId/device-events', data: {
+      final res = await _api.post('/calendars/$calendarId/device-events', data: {
         'events': events.map((e) => {
           'device_event_id': e.id.startsWith('device_')
               ? e.id.substring('device_'.length)
@@ -124,7 +154,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           if (e.description != null) 'description': e.description,
         }).toList(),
       });
-    } catch (_) {
+      debugPrint('[DeviceSync] _uploadDeviceEvents(): SUCCESS — response=${res.data}');
+    } catch (e, st) {
+      debugPrint('[DeviceSync] _uploadDeviceEvents() ERROR: $e\n$st');
       // Never let upload errors affect the main UI
     }
   }
@@ -167,6 +199,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     } else if (type == 'device_synced') {
       final cal = msg['calendar_id'] as String?;
       if (cal != calendarId) return;
+      debugPrint('[DeviceSync] WS device_synced received for calendarId=$calendarId — triggering fetch()');
       // A member uploaded their device calendar events — re-fetch so they
       // become visible to all members immediately.
       fetch();
