@@ -1583,15 +1583,18 @@ class _DayCellBadge extends StatelessWidget {
     final icon = single ? events[0].icon : null;
 
     if (single && icon != null && _isIconUrl(icon)) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: SizedBox(
-          width: double.infinity,
-          height: 18,
-          child: Image.network(
-            icon,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _textBadge(events[0].title, bg),
+      return SizedBox(
+        width: double.infinity,
+        child: Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              icon,
+              width: 20,
+              height: 20,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _textBadge(events[0].title, bg),
+            ),
           ),
         ),
       );
