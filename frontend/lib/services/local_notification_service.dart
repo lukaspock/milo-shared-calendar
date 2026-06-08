@@ -239,8 +239,9 @@ class LocalNotificationService {
     // Backend-sent reminder (30 min before) → show immediately for push users
     if (type == 'event_reminder') {
       final user = AuthService().cachedUser;
-      if (user == null || user.notificationType != NotificationType.push)
+      if (user == null || user.notificationType != NotificationType.push) {
         return;
+      }
       final title = (msg['event_title'] as String?)?.trim();
       if (title != null && title.isNotEmpty) {
         show('Starting in 30 minutes', title);

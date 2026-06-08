@@ -195,8 +195,9 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       if (hueIndex != null) body['hue_index'] = hueIndex;
       if (icon != null) body['icon'] = icon;
       if (clearIcon) body['icon'] = null;
-      if (body.isNotEmpty)
+      if (body.isNotEmpty) {
         await _api.patch('/calendars/$calendarId', data: body);
+      }
     } catch (_) {}
   }
 
