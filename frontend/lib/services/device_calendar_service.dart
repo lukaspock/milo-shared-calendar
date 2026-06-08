@@ -336,8 +336,17 @@ class DeviceCalendarService {
       endTime = e.end!.toLocal();
     }
 
+    // Build a composite occurrence ID so that recurring events with the same
+    // iOS eventId (e.g. annual holidays) get a distinct key per occurrence.
+    // Format: device_<eventId>_<YYYYMMDD>  — unique per event + start date.
+    final dateTag =
+        '${startTime.year}'
+        '${startTime.month.toString().padLeft(2, '0')}'
+        '${startTime.day.toString().padLeft(2, '0')}';
+    final occurrenceId = 'device_${e.eventId}_$dateTag';
+
     return sc.CalendarEvent(
-      id: 'device_${e.eventId}',
+      id: occurrenceId,
       calendarId: sharedCalendarId,
       createdBy: '',
       title: e.title ?? '',
