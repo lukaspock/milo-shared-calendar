@@ -455,9 +455,14 @@ export async function syncDeviceEvents(ctx: RequestContext): Promise<Response> {
     );
   }
 
-  // Replace all device events for this user in this calendar atomically
-  const deleteResult = await db`DELETE FROM imported_device_events WHERE calendar_id = ${id} AND user_id = ${userId}`;
-  console.log("[device-sync] syncDeviceEvents: deleted previous rows for user=%s (count approx)", userId);
+  // Replace all device events for this user in this calendar atomically.
+  // We delete first to remove events that no longer exist on the device, then
+  // upsert each incoming event. The ON CONFLICT clause handles iOS recurring
+  // events that share the same eventId across annual occurrences (e.g. public
+  // holidays) — without it the second INSERT would crash with a UNIQUE
+  // constraint violation → HTTP 500.
+  await db`DELETE FROM imported_device_events WHERE calendar_id = ${id} AND user_id = ${userId}`;
+  console.log("[device-sync] syncDeviceEvents: deleted previous rows for user=%s", userId);
 
   let inserted = 0;
   let skipped = 0;
@@ -473,6 +478,12 @@ export async function syncDeviceEvents(ctx: RequestContext): Promise<Response> {
       VALUES
         (${id}, ${userId}, ${event.device_event_id}, ${event.title},
          ${event.start_time}, ${event.end_time}, ${event.description ?? null})
+      ON CONFLICT (calendar_id, user_id, device_event_id)
+      DO UPDATE SET
+        title       = EXCLUDED.title,
+        start_time  = EXCLUDED.start_time,
+        end_time    = EXCLUDED.end_time,
+        description = EXCLUDED.description
     `;
     inserted++;
   }
