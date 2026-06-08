@@ -32,6 +32,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final user = await _authService.getStoredUser();
     if (user != null) {
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      // Silently refresh in background to pick up any changes (avatar, name, etc.)
+      // that happened since the last session without blocking app startup.
+      refreshUser();
     } else {
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
@@ -59,10 +62,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, error: null);
     try {
       final result = await _authService.register(
-          email: email,
-          password: password,
-          name: name,
-          notificationType: notificationType);
+        email: email,
+        password: password,
+        name: name,
+        notificationType: notificationType,
+      );
       state = AuthState(status: AuthStatus.authenticated, user: result.user);
     } catch (e) {
       state = AuthState(
