@@ -358,12 +358,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   List<CalendarEvent> recentlyEndedEvents = [];
                   if (calendar?.photoMode == true) {
                     for (final e in events) {
+                      if (e.source != EventSource.sharedcal) continue;
                       if (e.startTime.isBefore(now) && e.endTime.isAfter(now)) {
                         activeEvent = e;
                         break;
                       }
                     }
                     recentlyEndedEvents = events.where((e) {
+                      if (e.source != EventSource.sharedcal) return false;
                       final age = now.difference(e.endTime);
                       return age.inHours >= 0 &&
                           age.inHours < 48 &&
