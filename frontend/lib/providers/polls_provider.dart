@@ -3,6 +3,7 @@ import '../models/event.dart';
 import '../models/poll.dart';
 import '../services/api_service.dart';
 import '../services/device_calendar_service.dart';
+import '../services/local_notification_service.dart';
 import '../services/websocket_service.dart';
 import 'events_provider.dart';
 
@@ -52,8 +53,7 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
         icon: icon,
         color: color,
       );
-      state.whenData(
-          (list) => state = AsyncValue.data([poll, ...list]));
+      state.whenData((list) => state = AsyncValue.data([poll, ...list]));
       return poll;
     } catch (_) {
       return null;
@@ -73,7 +73,8 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
       );
       state.whenData((list) {
         state = AsyncValue.data(
-            list.map((p) => p.id == pollId ? updated : p).toList());
+          list.map((p) => p.id == pollId ? updated : p).toList(),
+        );
       });
       return true;
     } catch (_) {
@@ -84,16 +85,18 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
   Future<bool> confirmPoll({
     required String pollId,
     required String optionId,
+
+    /// Minutes before the created event to fire a reminder notification.
+    /// Pass null to skip the reminder.
+    int? reminderMinutes = 30,
   }) async {
     try {
-      final data = await _api.confirmPoll(
-        pollId: pollId,
-        optionId: optionId,
-      );
+      final data = await _api.confirmPoll(pollId: pollId, optionId: optionId);
       final updated = EventPoll.fromJson(data['poll'] as Map<String, dynamic>);
       state.whenData((list) {
         state = AsyncValue.data(
-            list.map((p) => p.id == pollId ? updated : p).toList());
+          list.map((p) => p.id == pollId ? updated : p).toList(),
+        );
       });
 
       // Inject the new event directly into eventsProvider (reliable regardless
@@ -103,6 +106,10 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
         final event = CalendarEvent.fromJson(eventJson as Map<String, dynamic>);
         ref.read(eventsProvider(calendarId).notifier).injectEvent(event);
         DeviceCalendarService().syncEvent(event);
+        LocalNotificationService().scheduleEventReminder(
+          event,
+          reminderMinutes: reminderMinutes,
+        );
       }
 
       return true;
@@ -115,8 +122,7 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
     try {
       await _api.deletePoll(pollId);
       state.whenData((list) {
-        state =
-            AsyncValue.data(list.where((p) => p.id != pollId).toList());
+        state = AsyncValue.data(list.where((p) => p.id != pollId).toList());
       });
       return true;
     } catch (_) {
@@ -131,7 +137,9 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
   }
 }
 
-final pollsProvider = StateNotifierProvider.family<PollsNotifier,
-    AsyncValue<List<EventPoll>>, String>(
-  (ref, calendarId) => PollsNotifier(ref, calendarId),
-);
+final pollsProvider =
+    StateNotifierProvider.family<
+      PollsNotifier,
+      AsyncValue<List<EventPoll>>,
+      String
+    >((ref, calendarId) => PollsNotifier(ref, calendarId));

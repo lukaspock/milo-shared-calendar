@@ -1,4 +1,3 @@
-
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,19 +10,38 @@ import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
 import '../services/api_service.dart';
+import '../services/local_notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 
-bool _isEventIconUrl(String s) => s.startsWith('http://') || s.startsWith('https://');
+bool _isEventIconUrl(String s) =>
+    s.startsWith('http://') || s.startsWith('https://');
 
 // Common emoji options for quick reactions
 const _quickEmojis = ['❤️', '🎉', '👍', '😂', '🔥', '😮', '👏', '🙌'];
 
 // Premade event icon options
 const _premadeIcons = [
-  '📅', '🎂', '✈️', '🏋️', '🎮', '🎵', '🎓', '💼',
-  '🏖️', '🍕', '🎉', '⚽', '🏥', '🛒', '📚', '🎨',
-  '🤝', '💡', '🎤', '🌿',
+  '📅',
+  '🎂',
+  '✈️',
+  '🏋️',
+  '🎮',
+  '🎵',
+  '🎓',
+  '💼',
+  '🏖️',
+  '🍕',
+  '🎉',
+  '⚽',
+  '🏥',
+  '🛒',
+  '📚',
+  '🎨',
+  '🤝',
+  '💡',
+  '🎤',
+  '🌿',
 ];
 
 class EventDetailScreen extends ConsumerStatefulWidget {
@@ -42,6 +60,17 @@ class EventDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<EventDetailScreen> createState() => _EventDetailScreenState();
 }
 
+// Reminder options shown in the event form: null = no reminder.
+const _kReminderOptions = [null, 5, 15, 30, 60, 120, 1440];
+
+String _reminderLabel(int? minutes) {
+  if (minutes == null) return 'None';
+  if (minutes < 60) return '$minutes min';
+  if (minutes == 60) return '1 hour';
+  if (minutes < 1440) return '${minutes ~/ 60} hours';
+  return '1 day';
+}
+
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
@@ -52,6 +81,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   RecurrenceRule _recurrenceRule = RecurrenceRule.none;
   DateTime? _recurrenceEnd;
   String? _selectedIcon;
+  // Reminder lead time: null = no reminder, int = minutes before event.
+  int? _reminderMinutes = 30;
 
   List<EventReaction> _reactions = [];
   bool _reactionsLoading = false;
@@ -72,11 +103,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _recurrenceEnd = _existingEvent!.recurrenceEnd;
       _selectedIcon = _existingEvent!.icon;
       _loadReactions();
+      _loadSavedReminder();
     } else if (widget.extra is DateTime) {
       final d = widget.extra as DateTime;
       _startTime = DateTime(d.year, d.month, d.day, 9, 0);
       _endTime = DateTime(d.year, d.month, d.day, 10, 0);
     }
+  }
+
+  Future<void> _loadSavedReminder() async {
+    if (_existingEvent == null) return;
+    final saved = await LocalNotificationService().loadReminderPreference(
+      _existingEvent!.id,
+    );
+    // loadReminderPreference returns null if no key is stored.
+    // We distinguish "not stored yet" (use default 30) from "stored as null"
+    // (user explicitly chose no reminder). SharedPreferences.getInt returns
+    // null for a missing key, so we keep the default 30 if nothing is saved.
+    if (saved != null && mounted) setState(() => _reminderMinutes = saved);
   }
 
   @override
@@ -153,7 +197,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
     if (time == null || !mounted) return;
 
-    final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     setState(() {
       if (isStart) {
         _startTime = dt;
@@ -182,12 +232,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (_isNew) {
       final ev = await notifier.createEvent(
         title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty
+            ? null
+            : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
         icon: _selectedIcon,
         recurrenceRule: _recurrenceRule,
         recurrenceEnd: _recurrenceEnd,
+        reminderMinutes: _reminderMinutes,
       );
       ok = ev != null;
     } else {
@@ -208,7 +261,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ok = await notifier.updateEvent(
         _existingEvent!.id,
         title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty
+            ? null
+            : _descCtrl.text.trim(),
         startTime: _startTime,
         endTime: _endTime,
         icon: _selectedIcon,
@@ -216,6 +271,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         clearRecurrence: _recurrenceRule == RecurrenceRule.none,
         recurrenceEnd: _recurrenceEnd,
         editAll: editAll,
+        reminderMinutes: _reminderMinutes,
       );
     }
 
@@ -316,18 +372,35 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(color: context.appColors.line, borderRadius: BorderRadius.circular(2)),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             const SizedBox(height: 16),
-            Text('Repeat', style: GoogleFonts.plusJakartaSans(
-              fontSize: 17, fontWeight: FontWeight.w700, color: context.appColors.ink)),
+            Text(
+              'Repeat',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.ink,
+              ),
+            ),
             const SizedBox(height: 12),
             for (final rule in RecurrenceRule.values)
               ListTile(
-                title: Text(rule.label, style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15, fontWeight: FontWeight.w500,
-                  color: _recurrenceRule == rule ? AppTheme.accent : context.appColors.ink)),
+                title: Text(
+                  rule.label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: _recurrenceRule == rule
+                        ? AppTheme.accent
+                        : context.appColors.ink,
+                  ),
+                ),
                 trailing: _recurrenceRule == rule
                     ? const Icon(Icons.check_rounded, color: AppTheme.accent)
                     : null,
@@ -354,8 +427,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: ColorScheme.light(
-            primary: context.appColors.ink, onPrimary: Colors.white,
-            surface: context.appColors.surface, onSurface: context.appColors.ink,
+            primary: context.appColors.ink,
+            onPrimary: Colors.white,
+            surface: context.appColors.surface,
+            onSurface: context.appColors.ink,
           ),
         ),
         child: child!,
@@ -366,7 +441,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   String _fmtFull(DateTime dt) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${weekdays[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}  '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
@@ -422,11 +510,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     // Determine if current user can edit this event.
     // Imported events (Google Calendar, device) are always read-only.
-    final isImported = !_isNew &&
+    final isImported =
+        !_isNew &&
         _existingEvent != null &&
         _existingEvent!.source != EventSource.sharedcal;
-    final isCreator = _existingEvent != null &&
-        _existingEvent!.createdBy == currentUserId;
+    final isCreator =
+        _existingEvent != null && _existingEvent!.createdBy == currentUserId;
     final isOwner = calendar?.isOwner ?? false;
     final canEdit = _isNew || (!isImported && (isCreator || isOwner));
 
@@ -448,10 +537,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       decoration: BoxDecoration(
                         color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.appColors.line, width: 1.5),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: context.appColors.ink),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: context.appColors.ink,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -460,8 +555,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       _isNew
                           ? 'New event${calendar != null ? ' in ${calendar.name}' : ''}'
                           : canEdit
-                              ? 'Edit event'
-                              : 'Event',
+                          ? 'Edit event'
+                          : 'Event',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -476,8 +571,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     hue: calHue,
                     size: 40,
                     radius: 12,
-                    child: Icon(Icons.calendar_today_rounded,
-                        size: 18, color: context.appColors.inkMuted),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: context.appColors.inkMuted,
+                    ),
                   ),
                 ],
               ),
@@ -550,24 +648,34 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     decoration: BoxDecoration(
                       color: context.appColors.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: context.appColors.line, width: 1.5),
+                      border: Border.all(
+                        color: context.appColors.line,
+                        width: 1.5,
+                      ),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: _selectedIcon != null && _isEventIconUrl(_selectedIcon!)
+                      child:
+                          _selectedIcon != null &&
+                              _isEventIconUrl(_selectedIcon!)
                           ? Image.network(
                               _selectedIcon!,
                               width: 40,
                               height: 40,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 22),
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.broken_image_outlined,
+                                size: 22,
+                              ),
                             )
                           : Center(
                               child: Text(
                                 _selectedIcon ?? '＋',
                                 style: TextStyle(
                                   fontSize: _selectedIcon != null ? 22 : 18,
-                                  color: _selectedIcon != null ? null : context.appColors.inkMuted,
+                                  color: _selectedIcon != null
+                                      ? null
+                                      : context.appColors.inkMuted,
                                 ),
                               ),
                             ),
@@ -634,8 +742,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                   _Divider(),
                   _FieldRow(
-                    icon: Icon(Icons.repeat_rounded,
-                        size: 16, color: context.appColors.inkSoft),
+                    icon: Icon(
+                      Icons.repeat_rounded,
+                      size: 16,
+                      color: context.appColors.inkSoft,
+                    ),
                     label: 'Repeat',
                     value: _recurrenceRule.label,
                     onTap: _pickRecurrence,
@@ -644,18 +755,26 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   if (_recurrenceRule != RecurrenceRule.none) ...[
                     _Divider(),
                     _FieldRow(
-                      icon: Icon(Icons.event_outlined,
-                          size: 16, color: context.appColors.inkSoft),
+                      icon: Icon(
+                        Icons.event_outlined,
+                        size: 16,
+                        color: context.appColors.inkSoft,
+                      ),
                       label: 'Repeat until',
                       value: _recurrenceEnd != null
                           ? '${_recurrenceEnd!.year}-'
-                            '${_recurrenceEnd!.month.toString().padLeft(2, '0')}-'
-                            '${_recurrenceEnd!.day.toString().padLeft(2, '0')}'
+                                '${_recurrenceEnd!.month.toString().padLeft(2, '0')}-'
+                                '${_recurrenceEnd!.day.toString().padLeft(2, '0')}'
                           : 'No end date',
                       onTap: _pickRecurrenceEnd,
-                      isLast: true,
+                      isLast: false,
                     ),
                   ],
+                  _Divider(),
+                  _ReminderRow(
+                    value: _reminderMinutes,
+                    onChanged: (v) => setState(() => _reminderMinutes = v),
+                  ),
                 ],
               ),
             ),
@@ -701,7 +820,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     child: AppImages.note(size: 16),
                   ),
                   prefixIconConstraints: const BoxConstraints(
-                    minWidth: 0, minHeight: 0,
+                    minWidth: 0,
+                    minHeight: 0,
                   ),
                 ),
               ),
@@ -742,13 +862,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white,
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
                         )
                       : Text(
                           _isNew ? 'Save event' : 'Save changes',
                           style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w700, fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
                           ),
                         ),
                 ),
@@ -801,7 +923,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   // ── View mode (non-creator / non-owner) ──────────────────────────────────
 
   Widget _buildViewMode(
-      BuildContext context, CalHue calHue, String currentUserId) {
+    BuildContext context,
+    CalHue calHue,
+    String currentUserId,
+  ) {
     final event = _existingEvent;
     if (event == null) {
       return Center(
@@ -905,8 +1030,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 if (event.recurrenceRule != RecurrenceRule.none) ...[
                   _Divider(),
                   _ReadOnlyRow(
-                    icon: Icon(Icons.repeat_rounded,
-                        size: 16, color: context.appColors.inkSoft),
+                    icon: Icon(
+                      Icons.repeat_rounded,
+                      size: 16,
+                      color: context.appColors.inkSoft,
+                    ),
                     label: 'Repeats',
                     value: event.recurrenceRule.label,
                     isLast: true,
@@ -1022,18 +1150,23 @@ class _ReactionsSection extends StatelessWidget {
             GestureDetector(
               onTap: onAdd,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(10),
-                  border:
-                      Border.all(color: context.appColors.line, width: 1.5),
+                  border: Border.all(color: context.appColors.line, width: 1.5),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_reaction_outlined,
-                        size: 14, color: context.appColors.inkSoft),
+                    Icon(
+                      Icons.add_reaction_outlined,
+                      size: 14,
+                      color: context.appColors.inkSoft,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'React',
@@ -1057,7 +1190,9 @@ class _ReactionsSection extends StatelessWidget {
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
-                strokeWidth: 2, color: context.appColors.inkMuted),
+                strokeWidth: 2,
+                color: context.appColors.inkMuted,
+              ),
             ),
           )
         else if (grouped.isEmpty)
@@ -1077,8 +1212,7 @@ class _ReactionsSection extends StatelessWidget {
               final emoji = entry.key;
               final list = entry.value;
               final mine = list.any((r) => r.userId == currentUserId);
-              final names =
-                  list.map((r) => r.userName).take(3).join(', ');
+              final names = list.map((r) => r.userName).take(3).join(', ');
               final tooltip = list.length > 3
                   ? '$names and ${list.length - 3} more'
                   : names;
@@ -1090,7 +1224,9 @@ class _ReactionsSection extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 120),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: mine
                           ? context.appColors.inkMuted.withOpacity(0.12)
@@ -1106,8 +1242,7 @@ class _ReactionsSection extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(emoji,
-                            style: const TextStyle(fontSize: 16)),
+                        Text(emoji, style: const TextStyle(fontSize: 16)),
                         const SizedBox(width: 4),
                         Text(
                           '${list.length}',
@@ -1236,8 +1371,11 @@ class _FieldRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded,
-                size: 16, color: context.appColors.inkMuted),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: context.appColors.inkMuted,
+            ),
           ],
         ),
       ),
@@ -1252,6 +1390,84 @@ class _Divider extends StatelessWidget {
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       color: context.appColors.line,
+    );
+  }
+}
+
+// ── Reminder row ──────────────────────────────────────────────────────────────
+// Horizontal chip row for picking a reminder lead time (none / 5 / 15 / 30 / …)
+
+class _ReminderRow extends StatelessWidget {
+  const _ReminderRow({required this.value, required this.onChanged});
+  final int? value;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.notifications_none_rounded,
+            size: 16,
+            color: context.appColors.inkSoft,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Remind me',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.appColors.inkSoft,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _kReminderOptions.map((opt) {
+                  final selected = opt == value;
+                  return GestureDetector(
+                    onTap: () => onChanged(opt),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? context.appColors.ink
+                            : context.appColors.surfaceSoft,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected
+                              ? context.appColors.ink
+                              : context.appColors.line,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        _reminderLabel(opt),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: selected
+                              ? context.appColors.bg
+                              : context.appColors.ink,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1288,12 +1504,18 @@ class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
         color: widget.surfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
       child: Column(
         mainAxisSize: _showFull ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
               color: widget.lineColor,
               borderRadius: BorderRadius.circular(2),
@@ -1305,7 +1527,10 @@ class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
               Text(
                 'React',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 17, fontWeight: FontWeight.w700, color: widget.inkColor),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: widget.inkColor,
+                ),
               ),
               const Spacer(),
               GestureDetector(
@@ -1313,7 +1538,8 @@ class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
                 child: Text(
                   _showFull ? 'Quick picks' : 'All emojis',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13, fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: widget.inkColor.withOpacity(0.5),
                   ),
                 ),
@@ -1323,24 +1549,36 @@ class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
           const SizedBox(height: 16),
           if (!_showFull)
             Wrap(
-              spacing: 8, runSpacing: 8,
-              children: _quickEmojis.map((e) => GestureDetector(
-                onTap: () => widget.onEmojiSelected(e),
-                child: Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(
-                    color: widget.surfaceSoftColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: widget.lineColor, width: 1.5),
-                  ),
-                  child: Center(child: Text(e, style: const TextStyle(fontSize: 26))),
-                ),
-              )).toList(),
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickEmojis
+                  .map(
+                    (e) => GestureDetector(
+                      onTap: () => widget.onEmojiSelected(e),
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: widget.surfaceSoftColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: widget.lineColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(e, style: const TextStyle(fontSize: 26)),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             )
           else
             Expanded(
               child: epf.EmojiPicker(
-                onEmojiSelected: (_, emoji) => widget.onEmojiSelected(emoji.emoji),
+                onEmojiSelected: (_, emoji) =>
+                    widget.onEmojiSelected(emoji.emoji),
                 config: epf.Config(
                   emojiViewConfig: epf.EmojiViewConfig(
                     backgroundColor: widget.surfaceColor,
@@ -1356,7 +1594,9 @@ class _ReactionPickerSheetState extends State<_ReactionPickerSheet> {
                     iconColorSelected: widget.inkColor,
                     indicatorColor: widget.inkColor,
                   ),
-                  bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(
+                    enabled: false,
+                  ),
                 ),
               ),
             ),
@@ -1416,9 +1656,9 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
         setState(() => _uploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: ${e.message}')));
       }
     }
   }
@@ -1430,14 +1670,23 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
         color: widget.surfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Grabber
           Container(
-            width: 36, height: 4,
-            decoration: BoxDecoration(color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: widget.lineColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -1447,17 +1696,32 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
               Text(
                 'Event icon',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 17, fontWeight: FontWeight.w700, color: widget.inkColor),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: widget.inkColor,
+                ),
               ),
               const Spacer(),
-              _ModeTab(label: 'Presets', active: _mode == 'presets', inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'presets')),
+              _ModeTab(
+                label: 'Presets',
+                active: _mode == 'presets',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'presets'),
+              ),
               const SizedBox(width: 10),
-              _ModeTab(label: 'Emoji', active: _mode == 'emoji', inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'emoji')),
+              _ModeTab(
+                label: 'Emoji',
+                active: _mode == 'emoji',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'emoji'),
+              ),
               const SizedBox(width: 10),
-              _ModeTab(label: 'Photo', active: _mode == 'photo', inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'photo')),
+              _ModeTab(
+                label: 'Photo',
+                active: _mode == 'photo',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'photo'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1465,23 +1729,31 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
           // Content
           if (_mode == 'presets')
             Wrap(
-              spacing: 8, runSpacing: 8,
+              spacing: 8,
+              runSpacing: 8,
               children: _premadeIcons.map((e) {
                 final selected = e == widget.current;
                 return GestureDetector(
                   onTap: () => widget.onSelected(e),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 100),
-                    width: 52, height: 52,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: selected ? widget.inkColor.withOpacity(0.1) : widget.surfaceSoftColor,
+                      color: selected
+                          ? widget.inkColor.withOpacity(0.1)
+                          : widget.surfaceSoftColor,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: selected ? widget.inkColor.withOpacity(0.5) : widget.lineColor,
+                        color: selected
+                            ? widget.inkColor.withOpacity(0.5)
+                            : widget.lineColor,
                         width: selected ? 2 : 1.5,
                       ),
                     ),
-                    child: Center(child: Text(e, style: const TextStyle(fontSize: 26))),
+                    child: Center(
+                      child: Text(e, style: const TextStyle(fontSize: 26)),
+                    ),
                   ),
                 );
               }).toList(),
@@ -1506,7 +1778,9 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                     iconColorSelected: widget.inkColor,
                     indicatorColor: widget.inkColor,
                   ),
-                  bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(
+                    enabled: false,
+                  ),
                 ),
               ),
             )
@@ -1526,12 +1800,20 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                   ),
                 ),
                 child: _uploading
-                    ? Center(child: CircularProgressIndicator(color: widget.inkColor, strokeWidth: 2))
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: widget.inkColor,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 32, color: widget.inkMutedColor),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 32,
+                            color: widget.inkMutedColor,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Pick from gallery',
@@ -1565,16 +1847,16 @@ class _ModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-            color: active ? inkColor : inkColor.withOpacity(0.4),
-          ),
-        ),
-      );
+    onTap: onTap,
+    child: Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+        color: active ? inkColor : inkColor.withOpacity(0.4),
+      ),
+    ),
+  );
 }
 
 // Renders an event icon — either a network image (URL) or emoji text.

@@ -25,10 +25,23 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       final memberCount = msg['member_count'] as int?;
       if (calendarId == null || memberCount == null) return;
       state.whenData((list) {
-        state = AsyncValue.data(list.map((c) {
-          if (c.id == calendarId) return c.copyWithMemberCount(memberCount);
-          return c;
-        }).toList());
+        state = AsyncValue.data(
+          list.map((c) {
+            if (c.id == calendarId) return c.copyWithMemberCount(memberCount);
+            return c;
+          }).toList(),
+        );
+      });
+    } else if (msg['type'] == 'calendar_deleted') {
+      // Owner deleted the calendar — remove it from state immediately so
+      // all members stop seeing it without needing a manual refresh.
+      final calendarId = msg['calendar_id'] as String?;
+      if (calendarId == null) return;
+      state.whenData((list) {
+        final updated = list.where((c) => c.id != calendarId).toList();
+        state = AsyncValue.data(updated);
+        _cache.saveCalendars(updated);
+        _cache.clearEvents(calendarId);
       });
     }
   }
@@ -75,16 +88,23 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     }
   }
 
-  Future<CalendarModel?> createCalendar(String name, {bool photoMode = false, int hueIndex = 0, String? icon}) async {
+  Future<CalendarModel?> createCalendar(
+    String name, {
+    bool photoMode = false,
+    int hueIndex = 0,
+    String? icon,
+  }) async {
     try {
-      final res = await _api.post('/calendars', data: {
-        'name': name,
-        if (photoMode) 'photo_mode': true,
-        'hue_index': hueIndex,
-        if (icon != null) 'icon': icon,
-      });
-      final calendar =
-          CalendarModel.fromJson(res.data as Map<String, dynamic>);
+      final res = await _api.post(
+        '/calendars',
+        data: {
+          'name': name,
+          if (photoMode) 'photo_mode': true,
+          'hue_index': hueIndex,
+          if (icon != null) 'icon': icon,
+        },
+      );
+      final calendar = CalendarModel.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
         state = AsyncValue.data([calendar, ...list]);
       });
@@ -96,9 +116,11 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
 
   Future<CalendarModel?> joinCalendar(String inviteCode) async {
     try {
-      final res = await _api.post('/calendars/join', data: {'invite_code': inviteCode});
-      final calendar =
-          CalendarModel.fromJson(res.data as Map<String, dynamic>);
+      final res = await _api.post(
+        '/calendars/join',
+        data: {'invite_code': inviteCode},
+      );
+      final calendar = CalendarModel.fromJson(res.data as Map<String, dynamic>);
       state.whenData((list) {
         state = AsyncValue.data([calendar, ...list]);
       });
@@ -122,32 +144,50 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
         endDate: DateTime.now().add(const Duration(days: 365)),
       );
       if (events.isEmpty) return;
-      await _api.post('/calendars/$calendarId/device-events', data: {
-        'events': events.map((e) => {
-          'device_event_id': e.id.startsWith('device_')
-              ? e.id.substring('device_'.length)
-              : e.id,
-          'title': e.title,
-          'start_time': e.startTime.toUtc().toIso8601String(),
-          'end_time': e.endTime.toUtc().toIso8601String(),
-          if (e.description != null) 'description': e.description,
-        }).toList(),
-      });
+      await _api.post(
+        '/calendars/$calendarId/device-events',
+        data: {
+          'events': events
+              .map(
+                (e) => {
+                  'device_event_id': e.id.startsWith('device_')
+                      ? e.id.substring('device_'.length)
+                      : e.id,
+                  'title': e.title,
+                  'start_time': e.startTime.toUtc().toIso8601String(),
+                  'end_time': e.endTime.toUtc().toIso8601String(),
+                  if (e.description != null) 'description': e.description,
+                },
+              )
+              .toList(),
+        },
+      );
     } catch (_) {
       // Never let device calendar errors affect the join flow
     }
   }
 
-  Future<void> updateCalendarAppearance(String calendarId, {int? hueIndex, String? icon, bool clearIcon = false}) async {
+  Future<void> updateCalendarAppearance(
+    String calendarId, {
+    int? hueIndex,
+    String? icon,
+    bool clearIcon = false,
+  }) async {
     // Optimistic local update
     if (hueIndex != null) setCalendarHue(calendarId, hueIndex);
     if (icon != null) setCalendarIcon(calendarId, icon);
     if (clearIcon) clearCalendarIconOverride(calendarId);
     state.whenData((list) {
-      state = AsyncValue.data(list.map((c) {
-        if (c.id != calendarId) return c;
-        return c.copyWith(hueIndex: hueIndex, icon: icon, clearIcon: clearIcon);
-      }).toList());
+      state = AsyncValue.data(
+        list.map((c) {
+          if (c.id != calendarId) return c;
+          return c.copyWith(
+            hueIndex: hueIndex,
+            icon: icon,
+            clearIcon: clearIcon,
+          );
+        }).toList(),
+      );
     });
 
     try {
@@ -155,7 +195,9 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
       if (hueIndex != null) body['hue_index'] = hueIndex;
       if (icon != null) body['icon'] = icon;
       if (clearIcon) body['icon'] = null;
-      if (body.isNotEmpty) await _api.patch('/calendars/$calendarId', data: body);
+      if (body.isNotEmpty) {
+        await _api.patch('/calendars/$calendarId', data: body);
+      }
     } catch (_) {}
   }
 
@@ -179,10 +221,13 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
     // Grab the calendar's local photo icon before deletion so we can clean it up
     CalendarModel? calendar;
     state.whenData((list) {
-      try { calendar = list.firstWhere((c) => c.id == calendarId); } catch (_) {}
+      try {
+        calendar = list.firstWhere((c) => c.id == calendarId);
+      } catch (_) {}
     });
     final iconUrl = calendar != null ? calendarIcon(calendar!) : null;
-    final isPhotoIcon = iconUrl != null &&
+    final isPhotoIcon =
+        iconUrl != null &&
         (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'));
 
     try {
@@ -223,13 +268,13 @@ class CalendarNotifier extends StateNotifier<AsyncValue<List<CalendarModel>>> {
 }
 
 final calendarProvider =
-    StateNotifierProvider<CalendarNotifier, AsyncValue<List<CalendarModel>>>(
-  (ref) {
-    // Re-create the notifier whenever auth status changes
-    ref.watch(authProvider.select((s) => s.status));
-    return CalendarNotifier(ref);
-  },
-);
+    StateNotifierProvider<CalendarNotifier, AsyncValue<List<CalendarModel>>>((
+      ref,
+    ) {
+      // Re-create the notifier whenever auth status changes
+      ref.watch(authProvider.select((s) => s.status));
+      return CalendarNotifier(ref);
+    });
 
 // Currently selected calendar ID
 final selectedCalendarProvider = StateProvider<String?>((_) => null);

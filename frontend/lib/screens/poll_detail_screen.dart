@@ -25,12 +25,24 @@ class PollDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<PollDetailScreen> createState() => _PollDetailScreenState();
 }
 
+// Same reminder options as on the event form.
+const _kPollReminderOptions = [null, 5, 15, 30, 60, 120, 1440];
+
+String _pollReminderLabel(int? minutes) {
+  if (minutes == null) return 'None';
+  if (minutes < 60) return '$minutes min';
+  if (minutes == 60) return '1 hour';
+  if (minutes < 1440) return '${minutes ~/ 60} hours';
+  return '1 day';
+}
+
 class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
   bool _isLoading = false;
+  // Default reminder for the event that will be created when the poll is confirmed.
+  int? _reminderMinutes = 30;
 
   EventPoll? get _poll {
-    final polls =
-        ref.watch(pollsProvider(widget.calendarId)).valueOrNull;
+    final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull;
     return polls?.where((p) => p.id == widget.pollId).firstOrNull ??
         (widget.extra is EventPoll ? widget.extra as EventPoll : null);
   }
@@ -38,8 +50,18 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
   String _fmtFull(DateTime dt) {
     const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const mo = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}  '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -47,11 +69,9 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 
   Future<void> _vote(String optionId, String vote) async {
     setState(() => _isLoading = true);
-    final ok = await ref.read(pollsProvider(widget.calendarId).notifier).vote(
-          pollId: widget.pollId,
-          optionId: optionId,
-          vote: vote,
-        );
+    final ok = await ref
+        .read(pollsProvider(widget.calendarId).notifier)
+        .vote(pollId: widget.pollId, optionId: optionId, vote: vote);
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (!ok) {
@@ -62,35 +82,28 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
   }
 
   Future<void> _confirm(String optionId) async {
-    final confirmed = await showDialog<bool>(
+    // Show confirmation dialog with reminder picker.
+    final result = await showDialog<({bool confirmed, int? reminder})>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Create event?'),
-        content: const Text(
-            'This will close the poll and create a regular event for this time slot.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create Event'),
-          ),
-        ],
-      ),
+      builder: (ctx) => _ConfirmPollDialog(initialReminder: _reminderMinutes),
     );
-    if (confirmed != true || !mounted) return;
-    setState(() => _isLoading = true);
+    if (result == null || !result.confirmed || !mounted) return;
+    setState(() {
+      _isLoading = true;
+      _reminderMinutes = result.reminder;
+    });
     final ok = await ref
         .read(pollsProvider(widget.calendarId).notifier)
-        .confirmPoll(pollId: widget.pollId, optionId: optionId);
+        .confirmPoll(
+          pollId: widget.pollId,
+          optionId: optionId,
+          reminderMinutes: result.reminder,
+        );
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Event created and added to calendar.')),
+        const SnackBar(content: Text('Event created and added to calendar.')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,8 +124,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -132,8 +144,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final poll = _poll;
-    final currentUserId =
-        ref.watch(authProvider).user?.id ?? '';
+    final currentUserId = ref.watch(authProvider).user?.id ?? '';
     final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
         ?.where((c) => c.id == widget.calendarId)
@@ -151,8 +162,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () =>
-                          context.go('/calendar/${widget.calendarId}'),
+                      onTap: () => context.go('/calendar/${widget.calendarId}'),
                       child: Container(
                         width: 40,
                         height: 40,
@@ -160,10 +170,15 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                           color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: context.appColors.line, width: 1.5),
+                            color: context.appColors.line,
+                            width: 1.5,
+                          ),
                         ),
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 16, color: context.appColors.ink),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 16,
+                          color: context.appColors.ink,
+                        ),
                       ),
                     ),
                   ],
@@ -171,7 +186,9 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
               ),
               Expanded(
                 child: Center(
-                  child: CircularProgressIndicator(color: context.appColors.ink),
+                  child: CircularProgressIndicator(
+                    color: context.appColors.ink,
+                  ),
                 ),
               ),
             ],
@@ -193,19 +210,23 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () =>
-                        context.go('/calendar/${widget.calendarId}'),
+                    onTap: () => context.go('/calendar/${widget.calendarId}'),
                     child: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
                         color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border:
-                            Border.all(color: context.appColors.line, width: 1.5),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: context.appColors.ink),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: context.appColors.ink,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -229,10 +250,15 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                           color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: context.appColors.line, width: 1.5),
+                            color: context.appColors.line,
+                            width: 1.5,
+                          ),
                         ),
-                        child: Icon(Icons.delete_outline_rounded,
-                            size: 18, color: AppTheme.danger),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: AppTheme.danger,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -273,7 +299,9 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: poll.closed
                                 ? const Color(0xFFD4EDDA)
@@ -340,8 +368,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 
                     ...poll.options.map((opt) {
                       final myVote = opt.voteFor(currentUserId);
-                      final isConfirmed =
-                          poll.confirmedOptionId == opt.id;
+                      final isConfirmed = poll.confirmedOptionId == opt.id;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -411,9 +438,7 @@ class _OptionCard extends StatelessWidget {
             : context.appColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isConfirmed
-              ? const Color(0xFF28A745)
-              : context.appColors.line,
+          color: isConfirmed ? const Color(0xFF28A745) : context.appColors.line,
           width: isConfirmed ? 2 : 1.5,
         ),
         boxShadow: [
@@ -461,7 +486,9 @@ class _OptionCard extends StatelessWidget {
                 if (isConfirmed)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF28A745),
                       borderRadius: BorderRadius.circular(8),
@@ -491,16 +518,19 @@ class _OptionCard extends StatelessWidget {
                 : Row(
                     children: [
                       _VoteCount(
-                          label: '✅ ${option.yesCount}',
-                          color: const Color(0xFF28A745)),
+                        label: '✅ ${option.yesCount}',
+                        color: const Color(0xFF28A745),
+                      ),
                       const SizedBox(width: 12),
                       _VoteCount(
-                          label: '❓ ${option.maybeCount}',
-                          color: const Color(0xFFC8951A)),
+                        label: '❓ ${option.maybeCount}',
+                        color: const Color(0xFFC8951A),
+                      ),
                       const SizedBox(width: 12),
                       _VoteCount(
-                          label: '❌ ${option.noCount}',
-                          color: const Color(0xFFDC3545)),
+                        label: '❌ ${option.noCount}',
+                        color: const Color(0xFFDC3545),
+                      ),
                       const Spacer(),
                       Text(
                         '${option.votes.length} vote${option.votes.length == 1 ? '' : 's'}',
@@ -517,9 +547,10 @@ class _OptionCard extends StatelessWidget {
           // Vote chips (only when open)
           if (!pollClosed) ...[
             Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: context.appColors.line),
+              height: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              color: context.appColors.line,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: _hasCustomOptions
@@ -540,8 +571,7 @@ class _OptionCard extends StatelessWidget {
                             borderColor: const Color(0xFF28A745),
                             onTap: isLoading
                                 ? null
-                                : () => onVote(
-                                    myVote == 'yes' ? 'no' : 'yes'),
+                                : () => onVote(myVote == 'yes' ? 'no' : 'yes'),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -552,9 +582,7 @@ class _OptionCard extends StatelessWidget {
                             selected: myVote == 'maybe',
                             bgColor: const Color(0xFFFFF3CD),
                             borderColor: const Color(0xFFE5B130),
-                            onTap: isLoading
-                                ? null
-                                : () => onVote('maybe'),
+                            onTap: isLoading ? null : () => onVote('maybe'),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -565,9 +593,7 @@ class _OptionCard extends StatelessWidget {
                             selected: myVote == 'no',
                             bgColor: const Color(0xFFF8D7DA),
                             borderColor: const Color(0xFFDC3545),
-                            onTap: isLoading
-                                ? null
-                                : () => onVote('no'),
+                            onTap: isLoading ? null : () => onVote('no'),
                           ),
                         ),
                       ],
@@ -578,9 +604,10 @@ class _OptionCard extends StatelessWidget {
           // Create Event button (creator only, poll open)
           if (!pollClosed && isCreator) ...[
             Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: context.appColors.line),
+              height: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              color: context.appColors.line,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: SizedBox(
@@ -676,9 +703,7 @@ class _CustomVoteChips extends StatelessWidget {
         final color = vo.flutterColor;
         final bg = color.withOpacity(0.12);
         return GestureDetector(
-          onTap: isLoading
-              ? null
-              : () => onVote(selected ? '' : vo.label),
+          onTap: isLoading ? null : () => onVote(selected ? '' : vo.label),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -694,8 +719,7 @@ class _CustomVoteChips extends StatelessWidget {
               vo.label,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.w800 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                 color: selected ? color : color.withOpacity(0.7),
               ),
             ),
@@ -747,8 +771,7 @@ class _VoteChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding:
-            const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(10),
@@ -762,15 +785,108 @@ class _VoteChip extends StatelessWidget {
             '$emoji $label',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
-              fontWeight:
-                  selected ? FontWeight.w800 : FontWeight.w500,
-              color: selected
-                  ? borderColor
-                  : borderColor.withOpacity(0.7),
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+              color: selected ? borderColor : borderColor.withOpacity(0.7),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Confirm poll dialog with reminder picker ──────────────────────────────────
+
+class _ConfirmPollDialog extends StatefulWidget {
+  const _ConfirmPollDialog({required this.initialReminder});
+  final int? initialReminder;
+
+  @override
+  State<_ConfirmPollDialog> createState() => _ConfirmPollDialogState();
+}
+
+class _ConfirmPollDialogState extends State<_ConfirmPollDialog> {
+  late int? _reminder;
+
+  @override
+  void initState() {
+    super.initState();
+    _reminder = widget.initialReminder;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        'Create event?',
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This will close the poll and create a regular event for this time slot.',
+            style: GoogleFonts.plusJakartaSans(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'REMINDER',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.9,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _kPollReminderOptions.map((opt) {
+              final selected = opt == _reminder;
+              return GestureDetector(
+                onTap: () => setState(() => _reminder = opt),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _pollReminderLabel(opt),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selected
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () =>
+              Navigator.pop(context, (confirmed: false, reminder: _reminder)),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () =>
+              Navigator.pop(context, (confirmed: true, reminder: _reminder)),
+          child: const Text('Create Event'),
+        ),
+      ],
     );
   }
 }
