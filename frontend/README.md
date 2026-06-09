@@ -50,7 +50,7 @@ lib/
 | `emoji_picker_flutter` | Full emoji keyboard for reactions and event icons |
 | `image_picker` | Gallery/camera access for profile photo and event icon upload |
 | `device_calendar` | Read/write native iOS/Android calendar (device calendar sharing) |
-| `flutter_local_notifications` | On-device event reminders |
+| `flutter_local_notifications` | On-device event reminders with configurable lead time |
 | `shared_preferences` | Persist JWT + cached user |
 | `web_socket_channel` | Real-time WebSocket connection |
 | `url_launcher` | Open Google OAuth in browser |

@@ -105,7 +105,10 @@ Connect to `/ws`. Messages are JSON.
 { "type": "poll_update", "poll_id": "...", "calendar_id": "..." }
 { "type": "member_joined", "calendar_id": "...", "member_count": 3 }
 { "type": "member_notification", "event_id": "...", "sender_name": "...", "message": "..." }
+{ "type": "calendar_deleted", "calendar_id": "..." }
 ```
+
+`calendar_deleted` is broadcast to all subscribed members **before** the DB row is deleted, so their WS subscriptions are still live at send time.
 
 Events are also broadcast via PostgreSQL NOTIFY on channel `calendar_events` for cross-process sync.
 

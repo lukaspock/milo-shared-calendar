@@ -150,6 +150,16 @@ flutter analyze --no-pub                   # static analysis
 ipconfig getifaddr en0                     # get local IP for physical device testing
 ```
 
+## Custom event reminders
+
+`EventDetailScreen` shows a horizontal chip row (`None / 5 min / 15 min / 30 min / 1 h / 2 h / 1 day`) below the time fields. The selected value is passed to `LocalNotificationService.scheduleEventReminder(reminderMinutes: ...)`. `null` = no reminder. The chosen value is persisted per-event in `SharedPreferences` (key `reminder_<eventId>`) so editing re-fills the previous choice.
+
+`PollDetailScreen` shows the same chip picker inside the confirm dialog. The chosen minutes are passed to `confirmPoll(...)` and forwarded to `scheduleEventReminder` after the event is created.
+
+## Deleted calendar handling
+
+When a `calendar_deleted` WS message arrives, `CalendarNotifier` removes the calendar from state and cache. `CalendarScreen` watches the calendar list via `ref.watch(calendarProvider)` — if the current calendar disappears, it navigates back to `/home` with a `SnackBar` notification. This covers both the live-deletion case (WS arrives while the screen is open) and the app-resume case (user returns to a calendar that was deleted while offline).
+
 ## Email verification UI
 
 `home_screen.dart` shows a yellow banner when `user.emailVerified == false`:
@@ -191,3 +201,4 @@ Google Calendar connection happens separately via the web OAuth flow — see the
 - `extra:` in GoRouter is not type-safe — always null-check before casting (`widget.extra is EventPoll ? widget.extra as EventPoll : null`).
 - `AppUser` is encoded as pipe-separated string in SharedPreferences — `_decodeUser` is backwards-compatible (defaults `emailVerified` to `false` if field missing).
 - All `DateTime` values sent to the backend must use `.toUtc().toIso8601String()` — local times cause events to be stored with the wrong offset. Values received from the API must use `.toLocal()` after `DateTime.parse()` so they display correctly in the user's timezone.
+- **Device calendar recurring events** use a composite occurrence ID (`eventId_startIso`) because iOS reuses the same `eventId` for every instance of a recurring event. The backend upserts on `(calendar_id, user_id, device_event_id)` — the composite key prevents duplicate rows for the same occurrence.
