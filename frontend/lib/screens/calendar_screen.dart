@@ -940,6 +940,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
     ).length;
 
+    final calHue = cal != null ? hueFor(cal) : stickerHues[0];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final tabs = <({IconData icon, IconData activeIcon, String label, int index, int badge})>[
@@ -1016,6 +1017,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   icon: isSelected ? t.activeIcon : t.icon,
                                   label: t.label,
                                   selected: isSelected,
+                                  accentColor: calHue.deep,
                                   onTap: () {
                                     setState(() => _tabIndex = t.index);
                                     if (t.index == 0) {
@@ -1075,9 +1077,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required IconData icon,
     required String label,
     required bool selected,
+    required Color accentColor,
     required VoidCallback onTap,
   }) {
-    const softOrange = Color(0xFFFF8C4B);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -1088,7 +1090,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Icon(
               icon,
               size: 20,
-              color: selected ? softOrange : context.appColors.inkMuted,
+              color: selected ? accentColor : context.appColors.inkMuted,
             ),
             const SizedBox(height: 3),
             Text(
@@ -1096,7 +1098,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 10,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? softOrange : context.appColors.inkMuted,
+                color: selected ? accentColor : context.appColors.inkMuted,
               ),
             ),
           ],
