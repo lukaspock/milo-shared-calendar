@@ -101,6 +101,7 @@ class OnboardingShell extends StatelessWidget {
                     // Title
                     Text(
                       title,
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
@@ -114,6 +115,7 @@ class OnboardingShell extends StatelessWidget {
                     // Subtitle
                     Text(
                       subtitle,
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         color: context.appColors.inkSoft,

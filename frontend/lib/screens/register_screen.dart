@@ -135,6 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                   Text(
                     'Create account.',
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
@@ -145,6 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   const SizedBox(height: 8),
                   Text(
                     'Join Shared Calendar and start collaborating.',
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       color: context.appColors.inkSoft,
@@ -216,12 +218,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                   const SizedBox(height: 16),
 
-                  GoogleSignInButton(
-                    isLoading: isLoading,
-                    onSignedIn: (idToken) =>
-                        ref.read(authProvider.notifier).googleSignIn(idToken),
-                    onError: (e) => ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(e))),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: GoogleSignInButton(
+                        isLoading: isLoading,
+                        onSignedIn: (idToken) =>
+                            ref.read(authProvider.notifier).googleSignIn(idToken),
+                        onError: (e) => ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(e))),
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 28),

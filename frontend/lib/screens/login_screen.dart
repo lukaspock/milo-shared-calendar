@@ -62,13 +62,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const Spacer(flex: 2),
 
               // ── Logo tiles ───────────────────────────────────────────────
-              _HeroTiles(),
+              Center(child: _HeroTiles()),
 
               const SizedBox(height: 32),
 
               // ── Heading ──────────────────────────────────────────────────
               Text(
                 'Welcome back.',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
@@ -79,6 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 8),
               Text(
                 'Sign in to your shared calendars.',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   color: context.appColors.inkSoft,
@@ -88,58 +90,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               const Spacer(flex: 3),
 
-              // ── Continue with Google ─────────────────────────────────────
-              // When the email sheet is open the GIS platform view is replaced
-              // with a plain Flutter widget so its native overlay doesn't sit
-              // above the sheet and intercept taps on the email input.
-              if (_emailSheetOpen)
-                _GooglePlaceholderButton(isLoading: isLoading)
-              else
-                GoogleSignInButton(
-                  isLoading: isLoading,
-                  onSignedIn: (idToken) =>
-                      ref.read(authProvider.notifier).googleSignIn(idToken),
-                  onError: (e) => ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(e))),
-                ),
-
-              const SizedBox(height: 10),
-
-              // ── Continue with Apple ──────────────────────────────────────
-              _SocialButton(
-                label: 'Continue with Apple',
-                isLoading: isLoading,
-                onPressed: () => _showAppleComingSoon(context),
-                leading: const Icon(Icons.apple,
-                    size: 22, color: Colors.white),
-                dark: true,
-              ),
-
-              const SizedBox(height: 10),
-
-              // ── Use Email ────────────────────────────────────────────────
-              SizedBox(
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: isLoading ? null : () => _showEmailSignIn(context),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: context.appColors.line, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28)),
-                    backgroundColor: context.appColors.surface,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              // All 3 buttons constrained to 420 px to match GIS renderButton's
+              // max width; height 44 px to match GIS renderButton's height.
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(Icons.mail_outline_rounded,
-                          size: 18, color: context.appColors.inkSoft),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Continue with email',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.ink,
+                      // ── Continue with Google ───────────────────────────────
+                      // When the email sheet is open the GIS platform view is
+                      // replaced with a plain Flutter widget so its native
+                      // overlay doesn't sit above the sheet and intercept taps.
+                      if (_emailSheetOpen)
+                        _GooglePlaceholderButton(isLoading: isLoading)
+                      else
+                        GoogleSignInButton(
+                          isLoading: isLoading,
+                          onSignedIn: (idToken) =>
+                              ref.read(authProvider.notifier).googleSignIn(idToken),
+                          onError: (e) => ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(e))),
+                        ),
+
+                      const SizedBox(height: 10),
+
+                      // ── Continue with Apple ────────────────────────────────
+                      _SocialButton(
+                        label: 'Continue with Apple',
+                        isLoading: isLoading,
+                        onPressed: () => _showAppleComingSoon(context),
+                        leading: const Icon(Icons.apple,
+                            size: 20, color: Colors.white),
+                        dark: true,
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ── Use Email ──────────────────────────────────────────
+                      SizedBox(
+                        height: 44,
+                        child: OutlinedButton(
+                          onPressed: isLoading ? null : () => _showEmailSignIn(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: context.appColors.line, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(22)),
+                            backgroundColor: context.appColors.surface,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.mail_outline_rounded,
+                                  size: 17, color: context.appColors.inkSoft),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Continue with email',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.appColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -514,18 +528,16 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      height: 56,
+      height: 44,
       child: dark
           ? ElevatedButton(
               onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
-                // Apple button is always black — matches Apple HIG and stays
-                // legible in both light (ink ≈ black) and dark mode.
                 backgroundColor: isDark ? Colors.black : context.appColors.ink,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 56),
+                minimumSize: const Size(double.infinity, 44),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
+                    borderRadius: BorderRadius.circular(22)),
                 elevation: 0,
                 shadowColor: Colors.transparent,
               ),
@@ -536,7 +548,7 @@ class _SocialButton extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: context.appColors.line, width: 1.5),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
+                    borderRadius: BorderRadius.circular(22)),
                 backgroundColor: context.appColors.surface,
               ),
               child: _buttonContent(context),
@@ -616,13 +628,13 @@ class _GooglePlaceholderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 44,
       child: OutlinedButton(
         onPressed: null,
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: context.appColors.line, width: 1.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28)),
+              borderRadius: BorderRadius.circular(22)),
           backgroundColor: context.appColors.surface,
         ),
         child: Row(

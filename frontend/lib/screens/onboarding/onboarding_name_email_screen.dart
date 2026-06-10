@@ -47,88 +47,92 @@ class _OnboardingNameEmailScreenState
       buttonLabel: '',
       onContinue: null,
       hideButton: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Continue with Google ────────────────────────────────────────
-          GoogleSignInButton(
-            isLoading: isLoading,
-            onSignedIn: (idToken) =>
-                ref.read(authProvider.notifier).googleSignIn(idToken),
-            onError: (e) => ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(e))),
-          ),
-
-          const SizedBox(height: 10),
-
-          // ── Continue with Apple ─────────────────────────────────────────
-          SizedBox(
-            height: 54,
-            child: ElevatedButton(
-              onPressed:
-                  isLoading ? null : () => _showAppleComingSoon(context),
-              style: ElevatedButton.styleFrom(
-                // Always black — matches Apple HIG; in dark mode ink is cream.
-                backgroundColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.black
-                    : context.appColors.ink,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                elevation: 0,
-                shadowColor: Colors.transparent,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Continue with Google ──────────────────────────────────────
+              GoogleSignInButton(
+                isLoading: isLoading,
+                onSignedIn: (idToken) =>
+                    ref.read(authProvider.notifier).googleSignIn(idToken),
+                onError: (e) => ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(e))),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.apple, size: 22, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Continue with Apple',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+
+              const SizedBox(height: 10),
+
+              // ── Continue with Apple ───────────────────────────────────────
+              SizedBox(
+                height: 44,
+                child: ElevatedButton(
+                  onPressed:
+                      isLoading ? null : () => _showAppleComingSoon(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black
+                        : context.appColors.ink,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22)),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // ── Continue with email ─────────────────────────────────────────
-          SizedBox(
-            height: 54,
-            child: OutlinedButton(
-              onPressed: isLoading ? null : () => context.go('/onboarding/email'),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: context.appColors.line, width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                backgroundColor: context.appColors.surface,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.mail_outline_rounded,
-                      size: 18, color: context.appColors.inkSoft),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Continue with email',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: context.appColors.ink,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.apple, size: 20, color: Colors.white),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Continue with Apple',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+
+              const SizedBox(height: 10),
+
+              // ── Continue with email ───────────────────────────────────────
+              SizedBox(
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: isLoading ? null : () => context.go('/onboarding/email'),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: context.appColors.line, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22)),
+                    backgroundColor: context.appColors.surface,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.mail_outline_rounded,
+                          size: 17, color: context.appColors.inkSoft),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Continue with email',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
