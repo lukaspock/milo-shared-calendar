@@ -9,7 +9,6 @@ import '../providers/calendar_provider.dart';
 import '../providers/polls_provider.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_image.dart';
 
 class _Slot {
   DateTime start;
