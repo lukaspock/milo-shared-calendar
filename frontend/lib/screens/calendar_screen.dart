@@ -3170,7 +3170,7 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Wähle deine Farbe',
+            'Choose your color',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -3179,7 +3179,7 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Diese Farbe sehen andere Mitglieder bei deinen importierten Events aus Google Kalender und Gerätekalender.',
+            'Other members see this color on your imported Google Calendar and device calendar events.',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -3242,7 +3242,7 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
                 ),
               ),
               child: Text(
-                'Speichern',
+                'Save',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,

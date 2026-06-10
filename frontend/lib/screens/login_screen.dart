@@ -129,13 +129,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       // ── Use Email ──────────────────────────────────────────
                       SizedBox(
-                        height: 44,
+                        height: 56,
                         child: OutlinedButton(
                           onPressed: isLoading ? null : () => _showEmailSignIn(context),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: context.appColors.line, width: 1.5),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(22)),
+                                borderRadius: BorderRadius.circular(28)),
                             backgroundColor: context.appColors.surface,
                           ),
                           child: Row(
@@ -528,16 +528,16 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      height: 44,
+      height: 56,
       child: dark
           ? ElevatedButton(
               onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDark ? Colors.black : context.appColors.ink,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 44),
+                minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22)),
+                    borderRadius: BorderRadius.circular(28)),
                 elevation: 0,
                 shadowColor: Colors.transparent,
               ),
@@ -547,8 +547,9 @@ class _SocialButton extends StatelessWidget {
               onPressed: isLoading ? null : onPressed,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: context.appColors.line, width: 1.5),
+                minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22)),
+                    borderRadius: BorderRadius.circular(28)),
                 backgroundColor: context.appColors.surface,
               ),
               child: _buttonContent(context),
@@ -628,13 +629,13 @@ class _GooglePlaceholderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: 56,
       child: OutlinedButton(
         onPressed: null,
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: context.appColors.line, width: 1.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22)),
+              borderRadius: BorderRadius.circular(28)),
           backgroundColor: context.appColors.surface,
         ),
         child: Row(
