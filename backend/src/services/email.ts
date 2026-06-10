@@ -247,3 +247,26 @@ export async function sendPollConfirmedNotification(params: {
     await send(email, `Confirmed: ${eventTitle} — ${calendarName}`, html);
   }
 }
+
+export async function sendChatMessageNotification(
+  calendarName: string,
+  senderName: string,
+  content: string,
+  recipients: string[],
+): Promise<void> {
+  if (recipients.length === 0) return;
+  const preview = content.length > 200 ? content.slice(0, 200) + "…" : content;
+  const html = base(`
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">Neue Nachricht in ${calendarName} 💬</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
+      <tr><td style="padding:20px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#A39A8C;text-transform:uppercase;letter-spacing:0.5px;">${senderName}</p>
+        <p style="margin:0;font-size:15px;color:#1F1B16;line-height:1.6;">${preview}</p>
+      </td></tr>
+    </table>
+    <p style="color:#A39A8C;font-size:12px;margin:16px 0 0;">Öffne Milo um zu antworten.</p>
+  `);
+  for (const email of recipients) {
+    await send(email, `Neue Nachricht in ${calendarName}`, html);
+  }
+}

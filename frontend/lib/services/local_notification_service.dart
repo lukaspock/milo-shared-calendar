@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -136,6 +137,40 @@ class LocalNotificationService {
     } catch (_) {
       // Never let notification failures bubble into the app flow.
     }
+  }
+
+  /// Displays a chat message notification with optional sender avatar as large icon.
+  Future<void> showChatNotification({
+    required String title,
+    required String body,
+    Uint8List? largeIconBytes,
+  }) async {
+    await init();
+    final androidDetails = AndroidNotificationDetails(
+      'chat_messages',
+      'Chat',
+      channelDescription: 'Neue Chat-Nachrichten',
+      importance: Importance.high,
+      priority: Priority.high,
+      styleInformation: BigTextStyleInformation(body),
+      largeIcon: largeIconBytes != null
+          ? ByteArrayAndroidBitmap(largeIconBytes)
+          : null,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    const macosDetails = DarwinNotificationDetails();
+    try {
+      await _plugin.show(
+        body.hashCode.abs() % 100000,
+        title,
+        body,
+        NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
+          macOS: macosDetails,
+        ),
+      );
+    } catch (_) {}
   }
 
   // ── Reminder preferences (per-event, stored locally) ─────────────────────

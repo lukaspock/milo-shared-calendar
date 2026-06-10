@@ -7,17 +7,20 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../models/calendar.dart';
 import '../models/event.dart' show CalendarEvent, EventSource;
 import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
+import '../providers/chat_provider.dart';
 import '../providers/events_provider.dart';
 import '../providers/photos_provider.dart';
 import '../providers/polls_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 import '../widgets/members_dialog.dart';
+import 'chat_screen.dart';
 
 Widget _calIconChild(String icon, double tileSize, Color fallbackColor) {
   if (icon.startsWith('http://') || icon.startsWith('https://')) {
@@ -63,7 +66,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _selectedDay;
   String _viewMode = 'monthly';
-  int _tabIndex = 0; // 0 = Calendar, 1 = Photos
+  int _tabIndex = 1; // 0 = Chat, 1 = Calendar, 2 = Photos
 
   @override
   void initState() {
@@ -492,8 +495,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     }).toList();
                   }
 
-                  // ── Tab 0: Calendar ────────────────────────────────────
+                  // ── Tab 0: Chat ────────────────────────────────────────
                   if (_tabIndex == 0) {
+                    return ChatView(
+                      calendarId: widget.calendarId,
+                      currentUserId: currentUserId,
+                      calDeepColor: calHue.deep,
+                    );
+                  }
+
+                  // ── Tab 1: Calendar ────────────────────────────────────
+                  if (_tabIndex == 1) {
                     if (_viewMode == 'weekly') {
                       return Column(
                         children: [
@@ -773,7 +785,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     );
                   }
 
-                  // ── Tab 1: Photos grid ─────────────────────────────────────
+                  // ── Tab 2: Photos grid ─────────────────────────────────────
                   if (photos.isEmpty) {
                     return Center(
                       child: Column(
@@ -927,87 +939,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
               ),
             ),
-            // ── Bottom tab bar (only when photo memories is enabled) ─────
-            if (calendar?.photoMode == true)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    kIsWeb ? 4 : 6,
-                    16,
-                    kIsWeb ? 6 : 10,
-                  ),
-                  child: Container(
-                    width: 2 * _kTabW + 8,
-                    decoration: BoxDecoration(
-                      color: context.appColors.surface,
-                      borderRadius: BorderRadius.circular(26),
-                      border: Border.all(
-                        color: context.appColors.line,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.appColors.ink.withOpacity(0.06),
-                          offset: const Offset(0, 2),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        AnimatedPositioned(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeInOut,
-                          left: 4.0 + _tabIndex * _kTabW,
-                          top: 4,
-                          width: _kTabW,
-                          bottom: 4,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF0E6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: _kTabW,
-                                child: _buildTabItem(
-                                  context: context,
-                                  icon: Icons.calendar_today_rounded,
-                                  label: 'Calendar',
-                                  selected: _tabIndex == 0,
-                                  onTap: () => setState(() => _tabIndex = 0),
-                                ),
-                              ),
-                              SizedBox(
-                                width: _kTabW,
-                                child: _buildTabItem(
-                                  context: context,
-                                  icon: Icons.photo_library_rounded,
-                                  label: 'Photos',
-                                  selected: _tabIndex == 1,
-                                  onTap: () => setState(() => _tabIndex = 1),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            // ── Bottom tab bar (always visible) ──────────────────────────
+            _buildTabIsland(context, calendar),
           ],
         ),
       ),
-      floatingActionButton: _tabIndex == 0
+      floatingActionButton: _tabIndex == 1
           ? DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
@@ -1040,6 +977,116 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             )
           : null,
+    );
+  }
+
+  Widget _buildTabIsland(BuildContext context, CalendarModel? cal) {
+    final hasPhotos = cal?.photoMode == true;
+    final unread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
+    final tabCount = hasPhotos ? 3 : 2;
+    final totalWidth = tabCount * _kTabW + 8.0;
+
+    // Map logical tab positions: Chat=0, Calendar=1, Photos=2
+    final tabs = [
+      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Chat', index: 0),
+      (icon: Icons.calendar_today_rounded, activeIcon: Icons.calendar_month_rounded, label: 'Calendar', index: 1),
+      if (hasPhotos)
+        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 2),
+    ];
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 6 : 10),
+        child: Container(
+          width: totalWidth,
+          decoration: BoxDecoration(
+            color: context.appColors.surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: context.appColors.line, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: context.appColors.ink.withOpacity(0.06),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                left: 4.0 + _tabIndex * _kTabW,
+                top: 4,
+                width: _kTabW,
+                bottom: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF0E6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: tabs.map((t) {
+                    final isSelected = _tabIndex == t.index;
+                    return SizedBox(
+                      width: _kTabW,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _buildTabItem(
+                            context: context,
+                            icon: isSelected ? t.activeIcon : t.icon,
+                            label: t.label,
+                            selected: isSelected,
+                            onTap: () {
+                              setState(() => _tabIndex = t.index);
+                              if (t.index == 0) {
+                                ref.read(chatProvider(widget.calendarId).notifier).markAsRead();
+                              }
+                            },
+                          ),
+                          // Unread badge on Chat tab
+                          if (t.index == 0 && unread > 0)
+                            Positioned(
+                              top: 4,
+                              right: 18,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 16, minHeight: 16),
+                                child: Text(
+                                  unread > 9 ? '9+' : '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
