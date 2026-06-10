@@ -159,6 +159,7 @@ class CalendarEvent {
     String? icon,
     RecurrenceRule? recurrenceRule,
     DateTime? recurrenceEnd,
+    String? creatorColor,
   }) {
     return CalendarEvent(
       id: id,
@@ -171,7 +172,7 @@ class CalendarEvent {
       color: color ?? this.color,
       icon: icon ?? this.icon,
       creatorName: creatorName,
-      creatorColor: creatorColor,
+      creatorColor: creatorColor ?? this.creatorColor,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,

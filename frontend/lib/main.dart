@@ -9,6 +9,7 @@ void main() async {
   await loadCalendarHues();
   await loadCalendarIcons();
   await loadCalendarViews();
+  await loadColorPrompted();
   // Initialize on-device notifications + the global WebSocket listener that
   // surfaces them. Safe no-op for users on email notifications.
   await LocalNotificationService().init();
