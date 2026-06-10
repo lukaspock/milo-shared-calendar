@@ -13,7 +13,9 @@ import '../models/event.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
+import '../providers/chat_provider.dart';
 import '../providers/events_provider.dart';
+import '../providers/polls_provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
@@ -725,6 +727,9 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
                     ],
                   ),
                   const SizedBox(height: 6),
+                  // Notification badges row
+                  _CalendarBadgeRow(calendarId: widget.calendar.id),
+                  const SizedBox(height: 4),
                   // Footer
                   GestureDetector(
                     onTap: () {
@@ -767,6 +772,91 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
               Icon(Icons.chevron_right_rounded, color: context.appColors.inkMuted, size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CalendarBadgeRow extends ConsumerStatefulWidget {
+  const _CalendarBadgeRow({required this.calendarId});
+  final String calendarId;
+
+  @override
+  ConsumerState<_CalendarBadgeRow> createState() => _CalendarBadgeRowState();
+}
+
+class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
+  @override
+  void initState() {
+    super.initState();
+    // Load chat messages once to compute unread count from last-read timestamp
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(chatProvider(widget.calendarId).notifier).ensureLoaded();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chatUnread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
+    final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
+    final currentUserId = ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
+    final unansweredPolls = polls.where((p) =>
+      !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
+    ).length;
+
+    if (chatUnread == 0 && unansweredPolls == 0) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        if (chatUnread > 0)
+          _BadgeChip(
+            icon: Icons.chat_bubble_rounded,
+            label: '$chatUnread unread message${chatUnread == 1 ? '' : 's'}',
+            color: const Color(0xFF6C63FF),
+          ),
+        if (unansweredPolls > 0)
+          _BadgeChip(
+            icon: Icons.how_to_vote_rounded,
+            label: '$unansweredPolls open poll${unansweredPolls == 1 ? '' : 's'}',
+            color: const Color(0xFFE87A35),
+          ),
+      ],
+    );
+  }
+}
+
+class _BadgeChip extends StatelessWidget {
+  const _BadgeChip({required this.icon, required this.label, required this.color});
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:math' show max;
 import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,13 +61,13 @@ class CalendarScreen extends ConsumerStatefulWidget {
   ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-const double _kTabW = 96.0;
+// _kTabW removed — tab island is now full-width with LayoutBuilder
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _selectedDay;
   String _viewMode = 'monthly';
-  int _tabIndex = 1; // 0 = Chat, 1 = Calendar, 2 = Photos
+  int _tabIndex = 1; // 0 = Chat, 1 = Calendar, 2 = Polls, 3 = Photos
 
   @override
   void initState() {
@@ -250,7 +251,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
-    final openPolls = polls.where((p) => !p.closed).toList();
 
     final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
@@ -390,31 +390,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () {
-                      ref
-                          .read(eventsProvider(widget.calendarId).notifier)
-                          .fetch();
-                      if (calendar?.photoMode == true) {
-                        ref
-                            .read(photosProvider(widget.calendarId).notifier)
-                            .fetch();
-                      }
-                    },
+                    onTap: _showCreateSheet,
                     child: Container(
-                      width: 40,
                       height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: context.appColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: context.appColors.line,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.refresh_rounded,
-                        size: 18,
                         color: context.appColors.ink,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded, size: 16, color: context.appColors.surface),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Add',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.appColors.surface,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -724,60 +721,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   );
                                 }),
 
-                              if (openPolls.isNotEmpty) ...[
-                                const SizedBox(height: 20),
-                                Row(
-                                  children: [
-                                    Text(
-                                      'OPEN POLLS',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: context.appColors.inkMuted,
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: calHue.bg,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '${openPolls.length}',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            color: calHue.ink,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                ...openPolls.asMap().entries.map((e) {
-                                  final poll = e.value;
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: e.key < openPolls.length - 1
-                                          ? 10
-                                          : 0,
-                                    ),
-                                    child: _PollCard(
-                                      poll: poll,
-                                      calHue: calHue,
-                                      onTap: () => context.go(
-                                        '/calendar/${widget.calendarId}/polls/${poll.id}',
-                                        extra: poll,
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              ],
                             ],
                           ),
                         ),
@@ -785,7 +728,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     );
                   }
 
-                  // ── Tab 2: Photos grid ─────────────────────────────────────
+                  // ── Tab 2: Polls ───────────────────────────────────────────
+                  if (_tabIndex == 2) {
+                    if (polls.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppImages.poll(size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No polls yet.\nTap + Add to start one!',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: context.appColors.inkMuted,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: polls.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) {
+                        final poll = polls[i];
+                        return _PollCard(
+                          poll: poll,
+                          calHue: calHue,
+                          onTap: () => context.go(
+                            '/calendar/${widget.calendarId}/polls/${poll.id}',
+                            extra: poll,
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  // ── Tab 3: Photos grid ─────────────────────────────────────
                   if (photos.isEmpty) {
                     return Center(
                       child: Column(
@@ -944,146 +927,143 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ],
         ),
       ),
-      floatingActionButton: _tabIndex == 1
-          ? DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.appColors.ink.withOpacity(0.33),
-                    offset: const Offset(0, 4),
-                    blurRadius: 0,
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: _showCreateSheet,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: Text(
-                  '+ Add',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            )
-          : null,
+      floatingActionButton: null,
     );
   }
 
   Widget _buildTabIsland(BuildContext context, CalendarModel? cal) {
     final hasPhotos = cal?.photoMode == true;
-    final unread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
-    final tabCount = hasPhotos ? 3 : 2;
-    final totalWidth = tabCount * _kTabW + 8.0;
+    final chatUnread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
+    final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
+    final currentUserId = ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
+    final unansweredPolls = polls.where((p) =>
+      !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
+    ).length;
 
-    // Map logical tab positions: Chat=0, Calendar=1, Photos=2
-    final tabs = [
-      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Chat', index: 0),
-      (icon: Icons.calendar_today_rounded, activeIcon: Icons.calendar_month_rounded, label: 'Calendar', index: 1),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final tabs = <({IconData icon, IconData activeIcon, String label, int index, int badge})>[
+      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded,     label: 'Chat',     index: 0, badge: chatUnread),
+      (icon: Icons.calendar_today_outlined,      activeIcon: Icons.calendar_today_rounded,  label: 'Calendar', index: 1, badge: 0),
+      (icon: Icons.how_to_vote_outlined,          activeIcon: Icons.how_to_vote_rounded,     label: 'Polls',    index: 2, badge: unansweredPolls),
       if (hasPhotos)
-        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 2),
+        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 3, badge: 0),
     ];
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 6 : 10),
-        child: Container(
-          width: totalWidth,
-          decoration: BoxDecoration(
-            color: context.appColors.surface,
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: context.appColors.line, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: context.appColors.ink.withOpacity(0.06),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 8 : 14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.black.withOpacity(0.42)
+                  : Colors.white.withOpacity(0.72),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.10)
+                    : Colors.white.withOpacity(0.75),
+                width: 1,
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                left: 4.0 + _tabIndex * _kTabW,
-                top: 4,
-                width: _kTabW,
-                bottom: 4,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0E6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: tabs.map((t) {
-                    final isSelected = _tabIndex == t.index;
-                    return SizedBox(
-                      width: _kTabW,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          _buildTabItem(
-                            context: context,
-                            icon: isSelected ? t.activeIcon : t.icon,
-                            label: t.label,
-                            selected: isSelected,
-                            onTap: () {
-                              setState(() => _tabIndex = t.index);
-                              if (t.index == 0) {
-                                ref.read(chatProvider(widget.calendarId).notifier).markAsRead();
-                              }
-                            },
-                          ),
-                          // Unread badge on Chat tab
-                          if (t.index == 0 && unread > 0)
-                            Positioned(
-                              top: 4,
-                              right: 18,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                constraints: const BoxConstraints(
-                                    minWidth: 16, minHeight: 16),
-                                child: Text(
-                                  unread > 9 ? '9+' : '$unread',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.2,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tabW = (constraints.maxWidth - 8) / tabs.length;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Sliding glass pill indicator
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      left: 4.0 + _tabIndex * tabW,
+                      top: 4,
+                      width: tabW,
+                      bottom: 4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.16)
+                              : Colors.white.withOpacity(0.92),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
+                    ),
+                    // Tabs
+                    Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Row(
+                        children: tabs.map((t) {
+                          final isSelected = _tabIndex == t.index;
+                          return SizedBox(
+                            width: tabW,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                _buildTabItem(
+                                  context: context,
+                                  icon: isSelected ? t.activeIcon : t.icon,
+                                  label: t.label,
+                                  selected: isSelected,
+                                  onTap: () {
+                                    setState(() => _tabIndex = t.index);
+                                    if (t.index == 0) {
+                                      ref.read(chatProvider(widget.calendarId).notifier).markAsRead();
+                                    }
+                                  },
+                                ),
+                                if (t.badge > 0)
+                                  Positioned(
+                                    top: kIsWeb ? 4 : 5,
+                                    right: tabW * 0.12,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade500,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? Colors.black.withOpacity(0.3)
+                                              : Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 16, minHeight: 16),
+                                      child: Text(
+                                        t.badge > 9 ? '9+' : '${t.badge}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.2,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

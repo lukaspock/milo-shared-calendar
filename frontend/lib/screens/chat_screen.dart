@@ -409,8 +409,10 @@ class _InputBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              maxLines: null,
+              maxLines: 5,
+              minLines: 1,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.send,
               style: GoogleFonts.plusJakartaSans(
                 color: context.appColors.ink,
                 fontSize: 14,
