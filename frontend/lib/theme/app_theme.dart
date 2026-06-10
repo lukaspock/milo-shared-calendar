@@ -448,6 +448,29 @@ Future<void> clearPersistedCalendarIcon(String calendarId) async {
   await prefs.remove('cal_icon_$calendarId');
 }
 
+// ─── Calendar view mode ──────────────────────────────────────────────────────
+
+final Map<String, String> _calendarViewOverrides = {};
+
+String calendarViewFor(String calendarId) =>
+    _calendarViewOverrides[calendarId] ?? 'monthly';
+
+Future<void> loadCalendarViews() async {
+  final prefs = await SharedPreferences.getInstance();
+  final keys = prefs.getKeys().where((k) => k.startsWith('cal_view_'));
+  for (final k in keys) {
+    final id = k.substring('cal_view_'.length);
+    final view = prefs.getString(k);
+    if (view != null) _calendarViewOverrides[id] = view;
+  }
+}
+
+Future<void> persistCalendarView(String calendarId, String mode) async {
+  _calendarViewOverrides[calendarId] = mode;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('cal_view_$calendarId', mode);
+}
+
 // ─── StickerTile ────────────────────────────────────────────────────────────
 
 class StickerTile extends StatelessWidget {
