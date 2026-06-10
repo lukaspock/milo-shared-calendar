@@ -242,11 +242,27 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       // A member uploaded their device calendar events — re-fetch so they
       // become visible to all members immediately.
       fetch();
+    } else if (type == 'member_color_updated') {
+      final cal = msg['calendar_id'] as String?;
+      if (cal != calendarId) return;
+      final userId = msg['user_id'] as String?;
+      final color = msg['color'] as String?;
+      if (userId != null && color != null) {
+        _updateCreatorColor(userId, color);
+      }
     } else if (type == 'event_starting' || type == 'event_ended') {
       final cal = msg['calendar_id'] as String?;
       if (cal != calendarId) return;
       _setMergedState();
     }
+  }
+
+  void _updateCreatorColor(String userId, String color) {
+    _apiEvents = _apiEvents.map((e) {
+      if (e.createdBy == userId) return e.copyWith(creatorColor: color);
+      return e;
+    }).toList();
+    _setMergedState();
   }
 
   /// Adds an event that arrived via a non-WebSocket path (e.g. poll confirmation
