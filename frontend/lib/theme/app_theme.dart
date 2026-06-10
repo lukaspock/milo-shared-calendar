@@ -471,6 +471,28 @@ Future<void> persistCalendarView(String calendarId, String mode) async {
   await prefs.setString('cal_view_$calendarId', mode);
 }
 
+// ─── Color-prompt state ──────────────────────────────────────────────────────
+
+final Set<String> _colorPromptedCalendars = {};
+
+Future<void> loadColorPrompted() async {
+  final prefs = await SharedPreferences.getInstance();
+  final keys = prefs.getKeys().where((k) => k.startsWith('cal_color_prompted_'));
+  for (final k in keys) {
+    final id = k.substring('cal_color_prompted_'.length);
+    if (prefs.getBool(k) == true) _colorPromptedCalendars.add(id);
+  }
+}
+
+bool isColorPromptedFor(String calendarId) =>
+    _colorPromptedCalendars.contains(calendarId);
+
+Future<void> markColorPrompted(String calendarId) async {
+  _colorPromptedCalendars.add(calendarId);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('cal_color_prompted_$calendarId', true);
+}
+
 // ─── StickerTile ────────────────────────────────────────────────────────────
 
 class StickerTile extends StatelessWidget {

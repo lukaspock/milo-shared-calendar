@@ -283,10 +283,11 @@ describe("updateProfile", () => {
 
   test("updates color only and returns updated user", async () => {
     mockDb
-      .mockResolvedValueOnce([{ id: fakeUser.id }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ ...updatedUser, color: "#FF6584" }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: fakeUser.id }])            // user exists check
+      .mockResolvedValueOnce([])                                // UPDATE
+      .mockResolvedValueOnce([])                                // calendar_members broadcast query
+      .mockResolvedValueOnce([{ ...updatedUser, color: "#FF6584" }]) // SELECT after update
+      .mockResolvedValueOnce([]);                               // gcal tokens
     const ctx = makeCtx({ color: "#FF6584" }, authCtx);
     const res = await updateProfile(ctx);
     expect(res.status).toBe(200);
@@ -324,10 +325,11 @@ describe("updateProfile", () => {
   test("updates all three fields at once", async () => {
     const url = "https://res.cloudinary.com/dvlvgosxk/image/upload/v1/avatars/xyz.jpg";
     mockDb
-      .mockResolvedValueOnce([{ id: fakeUser.id }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ ...updatedUser, name: "Charlie", color: "#2ECC71", avatar_url: url }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: fakeUser.id }])            // user exists check
+      .mockResolvedValueOnce([])                                // UPDATE
+      .mockResolvedValueOnce([])                                // calendar_members broadcast query
+      .mockResolvedValueOnce([{ ...updatedUser, name: "Charlie", color: "#2ECC71", avatar_url: url }]) // SELECT after update
+      .mockResolvedValueOnce([]);                               // gcal tokens
     const ctx = makeCtx({ name: "Charlie", color: "#2ECC71", avatar_url: url }, authCtx);
     const res = await updateProfile(ctx);
     expect(res.status).toBe(200);

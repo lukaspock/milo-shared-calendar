@@ -69,6 +69,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void initState() {
     super.initState();
     _viewMode = calendarViewFor(widget.calendarId);
+    if (!isColorPromptedFor(widget.calendarId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showColorPromptSheet();
+      });
+    }
   }
 
   String _fmt(DateTime dt) =>
@@ -96,6 +101,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         viewMode: _viewMode,
         onViewModeChanged: (mode) => setState(() => _viewMode = mode),
       ),
+    );
+  }
+
+  void _showColorPromptSheet() {
+    markColorPrompted(widget.calendarId);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      isDismissible: true,
+      builder: (_) => const _ColorPickerSheet(),
     );
   }
 
@@ -3070,6 +3086,139 @@ class _CalendarSettingsSheet extends ConsumerWidget {
                   }).toList(),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── First-open color picker sheet ────────────────────────────────────────────
+
+class _ColorPickerSheet extends ConsumerStatefulWidget {
+  const _ColorPickerSheet();
+
+  @override
+  ConsumerState<_ColorPickerSheet> createState() => _ColorPickerSheetState();
+}
+
+class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
+  String? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = ref.read(authProvider.select((s) => s.user?.color));
+  }
+
+  Future<void> _save() async {
+    if (_selected != null) {
+      await ref.read(authProvider.notifier).updateProfile(color: _selected);
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: context.appColors.line, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.line.withOpacity(0.5),
+            offset: const Offset(0, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Wähle deine Farbe',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.ink,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Diese Farbe sehen andere Mitglieder bei deinen importierten Events aus Google Kalender und Gerätekalender.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.inkSoft,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: _profileColors.map((hex) {
+              final c = Color(
+                  int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+              final isSelected = _selected == hex;
+              return GestureDetector(
+                onTap: () => setState(() => _selected = hex),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: c,
+                    shape: BoxShape.circle,
+                    border: isSelected
+                        ? Border.all(color: context.appColors.ink, width: 3)
+                        : Border.all(color: Colors.transparent, width: 3),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: c.withOpacity(0.45),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check_rounded,
+                          size: 18, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _save,
+              style: FilledButton.styleFrom(
+                backgroundColor: _selected != null
+                    ? Color(int.parse(
+                        'FF${_selected!.replaceFirst('#', '')}',
+                        radix: 16))
+                    : context.appColors.ink,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                'Speichern',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ],

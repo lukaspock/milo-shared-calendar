@@ -6,6 +6,7 @@ import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email
 import { google } from "googleapis";
 import { generateCalendarConnectUrl, handleCalendarCallback } from "../services/google_calendar";
 import { cleanupAssets } from "../services/cloudinary";
+import { broadcastToCalendar } from "../ws/websocket";
 
 export async function register(ctx: RequestContext): Promise<Response> {
   let body: { email?: string; password?: string; name?: string; notification_type?: string };
@@ -210,6 +211,22 @@ export async function updateProfile(ctx: RequestContext): Promise<Response> {
   // Clean up old Cloudinary avatar if it changed or was removed
   if (avatar_url !== undefined && oldAvatarUrl && oldAvatarUrl !== avatar_url) {
     cleanupAssets([oldAvatarUrl]);
+  }
+
+  // Broadcast color change to all calendars this user belongs to so other
+  // members see the updated creator color on imported events in real-time.
+  if (color) {
+    const memberships = await db`
+      SELECT calendar_id FROM calendar_members WHERE user_id = ${userId}
+    `;
+    for (const row of memberships) {
+      broadcastToCalendar(row.calendar_id as string, {
+        type: "member_color_updated",
+        calendar_id: row.calendar_id,
+        user_id: userId,
+        color,
+      });
+    }
   }
 
   const updated = await db`
