@@ -197,23 +197,29 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
   `;
 
   console.log("[gcal-debug]   imported_gcal_events from cache: %d row(s)", importedRows.length);
-  const importedEvents = (importedRows as Record<string, unknown>[]).map((row) => ({
-    id: row.id,
-    calendar_id: row.calendar_id,
-    created_by: null,
-    title: row.title,
-    description: row.description ?? null,
-    start_time: row.start_time,
-    end_time: row.end_time,
-    color: "#6C63FF",
-    created_at: row.last_synced_at,
-    updated_at: row.last_synced_at,
-    source: "google_import",
+  const importedEvents = (importedRows as Record<string, unknown>[]).map((row) => {
     // Defensive: Bun SQL may return JSONB as a raw string — parse it if so.
-    imported_by: typeof row.imported_by === 'string'
-      ? JSON.parse(row.imported_by as string)
-      : (row.imported_by ?? []),
-  }));
+    const importedBy: { user_id: string; name: string; color: string }[] =
+      typeof row.imported_by === 'string'
+        ? JSON.parse(row.imported_by as string)
+        : (row.imported_by as { user_id: string; name: string; color: string }[] ?? []);
+    const firstContributor = importedBy[0] ?? null;
+    return {
+      id: row.id,
+      calendar_id: row.calendar_id,
+      created_by: firstContributor?.user_id ?? null,
+      creator_color: firstContributor?.color ?? null,
+      title: row.title,
+      description: row.description ?? null,
+      start_time: row.start_time,
+      end_time: row.end_time,
+      color: firstContributor?.color ?? "#6C63FF",
+      created_at: row.last_synced_at,
+      updated_at: row.last_synced_at,
+      source: "google_import",
+      imported_by: importedBy,
+    };
+  });
 
   // Read device calendar events uploaded by members
   const deviceRows = await db`
@@ -247,6 +253,7 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     id: `device_${row.device_event_id as string}`,
     calendar_id: row.calendar_id,
     created_by: row.user_id,
+    creator_color: row.contributed_by_color ?? null,
     title: row.title,
     description: row.description ?? null,
     start_time: row.start_time,
