@@ -8,6 +8,7 @@ import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/rout
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { addEventPhoto, listCalendarPhotos, deleteEventPhoto } from "./src/routes/photos";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
+import { getMessages, postMessage, deleteMessage } from "./src/routes/chat";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { deleteAsset } from "./src/routes/assets";
 import { websocketHandler, startNotifyListener } from "./src/ws/websocket";
@@ -91,6 +92,11 @@ router.get("/polls/:id", getPoll, [authMiddleware]);
 router.post("/polls/:id/vote", votePoll, [authMiddleware]);
 router.post("/polls/:id/confirm", confirmPoll, [authMiddleware]);
 router.delete("/polls/:id", deletePoll, [authMiddleware]);
+
+// --- Chat (protected) ---
+router.get("/calendars/:id/messages", getMessages, [authMiddleware]);
+router.post("/calendars/:id/messages", postMessage, [authMiddleware]);
+router.delete("/calendars/:id/messages/:msgId", deleteMessage, [authMiddleware]);
 
 const PORT = Number(process.env.PORT ?? 3000);
 

@@ -179,5 +179,21 @@ export async function runMigrations(): Promise<void> {
     )
   `;
 
+  // Real-time group chat messages per calendar.
+  await db`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
+      user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content     TEXT NOT NULL,
+      deleted_at  TIMESTAMPTZ DEFAULT NULL,
+      created_at  TIMESTAMPTZ DEFAULT now()
+    )
+  `;
+  await db`
+    CREATE INDEX IF NOT EXISTS chat_messages_calendar_created
+      ON chat_messages(calendar_id, created_at DESC)
+  `;
+
   console.log("[db] migrations applied");
 }

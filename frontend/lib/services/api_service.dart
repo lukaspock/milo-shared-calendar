@@ -1,6 +1,7 @@
 import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/chat_message.dart';
 import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../models/reaction.dart';
@@ -216,6 +217,28 @@ class ApiService {
 
   Future<void> removeReaction(String eventId, String emoji) async {
     await delete('/events/$eventId/reactions/${Uri.encodeComponent(emoji)}');
+  }
+
+  // ── Chat ───────────────────────────────────────────────────────────────────
+
+  Future<List<ChatMessage>> getChatMessages(String calendarId, {String? before}) async {
+    final query = before != null ? '?before=${Uri.encodeComponent(before)}' : '';
+    final resp = await _dio.get<List<dynamic>>('/calendars/$calendarId/messages$query');
+    return (resp.data as List)
+        .map((j) => ChatMessage.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<ChatMessage> sendChatMessage(String calendarId, String content) async {
+    final resp = await _dio.post<Map<String, dynamic>>(
+      '/calendars/$calendarId/messages',
+      data: {'content': content},
+    );
+    return ChatMessage.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteChatMessage(String calendarId, String messageId) async {
+    await _dio.delete<void>('/calendars/$calendarId/messages/$messageId');
   }
 }
 
