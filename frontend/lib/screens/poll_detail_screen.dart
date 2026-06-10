@@ -112,6 +112,18 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     }
   }
 
+  Future<void> _suggestTime() async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _SuggestTimeSheet(
+        calendarId: widget.calendarId,
+        pollId: widget.pollId,
+      ),
+    );
+  }
+
   Future<void> _delete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -387,6 +399,44 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
                         ),
                       );
                     }),
+
+                    if (!poll.closed) ...[
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: _suggestTime,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: context.appColors.surfaceSoft,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: context.appColors.line,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline_rounded,
+                                size: 16,
+                                color: calHue.deep,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Suggest a time',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: calHue.deep,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -790,6 +840,251 @@ class _VoteChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Suggest time bottom sheet ─────────────────────────────────────────────────
+
+class _SuggestTimeSheet extends ConsumerStatefulWidget {
+  const _SuggestTimeSheet({
+    required this.calendarId,
+    required this.pollId,
+  });
+  final String calendarId;
+  final String pollId;
+
+  @override
+  ConsumerState<_SuggestTimeSheet> createState() => _SuggestTimeSheetState();
+}
+
+class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, now.day + 1, 10, 0);
+    _end = _start.add(const Duration(hours: 1));
+  }
+
+  Future<void> _pickDateTime({required bool isStart}) async {
+    final initial = isStart ? _start : _end;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: ctx.appColors.ink,
+            onPrimary: Colors.white,
+            surface: ctx.appColors.surface,
+            onSurface: ctx.appColors.ink,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: ctx.appColors.ink,
+            onPrimary: Colors.white,
+            surface: ctx.appColors.surface,
+            onSurface: ctx.appColors.ink,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (time == null || !mounted) return;
+    final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    setState(() {
+      if (isStart) {
+        _start = dt;
+        if (_end.isBefore(_start)) _end = _start.add(const Duration(hours: 1));
+      } else {
+        _end = dt;
+      }
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_end.isBefore(_start) || _end.isAtSameMomentAs(_start)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('End time must be after start time.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    final ok = await ref.read(pollsProvider(widget.calendarId).notifier).addOption(
+      pollId: widget.pollId,
+      start: _start,
+      end: _end,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not add option. Try again.')),
+      );
+    }
+  }
+
+  String _fmt(DateTime dt) {
+    const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}  '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 16, 24,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.appColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                'Suggest a time',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.ink,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'START',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.9,
+              color: context.appColors.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => _pickDateTime(isStart: true),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.appColors.line, width: 1.5),
+              ),
+              child: Text(
+                _fmt(_start),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.ink,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'END',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.9,
+              color: context.appColors.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => _pickDateTime(isStart: false),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.appColors.line, width: 1.5),
+              ),
+              child: Text(
+                _fmt(_end),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.ink,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _saving ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      'Add suggestion',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

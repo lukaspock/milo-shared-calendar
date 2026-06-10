@@ -118,6 +118,28 @@ class PollsNotifier extends StateNotifier<AsyncValue<List<EventPoll>>> {
     }
   }
 
+  Future<bool> addOption({
+    required String pollId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    try {
+      final updated = await _api.addPollOption(
+        pollId: pollId,
+        startTime: start,
+        endTime: end,
+      );
+      state.whenData((list) {
+        state = AsyncValue.data(
+          list.map((p) => p.id == pollId ? updated : p).toList(),
+        );
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> deletePoll(String pollId) async {
     try {
       await _api.deletePoll(pollId);

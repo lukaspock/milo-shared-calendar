@@ -195,6 +195,18 @@ class ApiService {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<EventPoll> addPollOption({
+    required String pollId,
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    final res = await post('/polls/$pollId/options', data: {
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
+    });
+    return EventPoll.fromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<void> deletePoll(String pollId) async {
     await delete('/polls/$pollId');
   }

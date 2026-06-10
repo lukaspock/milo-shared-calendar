@@ -7,7 +7,7 @@ import { listCalendars, createCalendar, joinCalendar, getCalendarEvents, listMem
 import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/routes/events";
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { addEventPhoto, listCalendarPhotos, deleteEventPhoto } from "./src/routes/photos";
-import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll } from "./src/routes/polls";
+import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll, addPollOption } from "./src/routes/polls";
 import { getMessages, postMessage, deleteMessage } from "./src/routes/chat";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { deleteAsset } from "./src/routes/assets";
@@ -91,6 +91,7 @@ router.get("/calendars/:calendarId/polls", listPolls, [authMiddleware]);
 router.get("/polls/:id", getPoll, [authMiddleware]);
 router.post("/polls/:id/vote", votePoll, [authMiddleware]);
 router.post("/polls/:id/confirm", confirmPoll, [authMiddleware]);
+router.post("/polls/:id/options", addPollOption, [authMiddleware]);
 router.delete("/polls/:id", deletePoll, [authMiddleware]);
 
 // --- Chat (protected) ---

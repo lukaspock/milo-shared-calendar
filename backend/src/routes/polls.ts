@@ -314,6 +314,46 @@ export async function confirmPoll(ctx: RequestContext): Promise<Response> {
   return json({ poll: full, event });
 }
 
+export async function addPollOption(ctx: RequestContext): Promise<Response> {
+  const userId = ctx.user!.sub;
+  const { id } = ctx.params;
+
+  let body: { start_time?: string; end_time?: string };
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { start_time, end_time } = body;
+  if (!start_time || !end_time) return error("start_time and end_time are required");
+
+  const polls = await db`SELECT * FROM event_polls WHERE id = ${id}`;
+  if (polls.length === 0) return error("Poll not found", 404);
+  const poll = polls[0];
+
+  if (poll.closed) return error("Poll is closed", 400);
+
+  const membership = await db`
+    SELECT 1 FROM calendar_members
+    WHERE user_id = ${userId} AND calendar_id = ${poll.calendar_id}
+  `;
+  if (membership.length === 0) return error("Not a member of this calendar", 403);
+
+  await db`
+    INSERT INTO poll_options (poll_id, start_time, end_time)
+    VALUES (${id}, ${start_time}, ${end_time})
+  `;
+
+  broadcastToCalendar(poll.calendar_id, {
+    type: "poll_update",
+    poll_id: id,
+    calendar_id: poll.calendar_id,
+  });
+
+  return json(await assemblePoll(poll));
+}
+
 export async function deletePoll(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const { id } = ctx.params;
