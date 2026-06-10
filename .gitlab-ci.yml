@@ -124,6 +124,7 @@ frontend:test:
     - exit $TEST_EXIT
   artifacts:
     when: always
+    expire_in: 7 days
     reports:
       junit: frontend/junit-report.xml
     paths:
@@ -161,6 +162,7 @@ pages:
     - flutter build web --release
     - mv build/web $CI_PROJECT_DIR/public
   artifacts:
+    expire_in: 7 days
     paths:
       - public
 
