@@ -123,6 +123,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (visible) markAsRead();
   }
 
+  Future<void> ensureLoaded() async {
+    if (state.messages.isEmpty && !state.isLoading) {
+      await loadMessages();
+    }
+  }
+
   Future<void> markAsRead() async {
     state = state.copyWith(unreadCount: 0);
     final prefs = await SharedPreferences.getInstance();
