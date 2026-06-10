@@ -8,11 +8,18 @@ import '../widgets/app_text_field.dart';
 import '../widgets/app_button.dart';
 import '../widgets/google_sign_in_button.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  bool _emailSheetOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
     final isLoading =
         ref.watch(authProvider).status == AuthStatus.loading;
 
@@ -82,13 +89,19 @@ class LoginScreen extends ConsumerWidget {
               const Spacer(flex: 3),
 
               // ── Continue with Google ─────────────────────────────────────
-              GoogleSignInButton(
-                isLoading: isLoading,
-                onSignedIn: (idToken) =>
-                    ref.read(authProvider.notifier).googleSignIn(idToken),
-                onError: (e) => ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(e))),
-              ),
+              // When the email sheet is open the GIS platform view is replaced
+              // with a plain Flutter widget so its native overlay doesn't sit
+              // above the sheet and intercept taps on the email input.
+              if (_emailSheetOpen)
+                _GooglePlaceholderButton(isLoading: isLoading)
+              else
+                GoogleSignInButton(
+                  isLoading: isLoading,
+                  onSignedIn: (idToken) =>
+                      ref.read(authProvider.notifier).googleSignIn(idToken),
+                  onError: (e) => ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(e))),
+                ),
 
               const SizedBox(height: 10),
 
@@ -108,7 +121,7 @@ class LoginScreen extends ConsumerWidget {
               SizedBox(
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: isLoading ? null : () => _showEmailSignIn(context, ref),
+                  onPressed: isLoading ? null : () => _showEmailSignIn(context),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.appColors.line, width: 1.5),
                     shape: RoundedRectangleBorder(
@@ -172,7 +185,8 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  void _showEmailSignIn(BuildContext context, WidgetRef ref) {
+  void _showEmailSignIn(BuildContext context) {
+    setState(() => _emailSheetOpen = true);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -181,7 +195,9 @@ class LoginScreen extends ConsumerWidget {
         parent: ProviderScope.containerOf(context),
         child: _EmailSignInSheet(),
       ),
-    );
+    ).whenComplete(() {
+      if (mounted) setState(() => _emailSheetOpen = false);
+    });
   }
 }
 
@@ -589,6 +605,54 @@ void _showAppleComingSoon(BuildContext context) {
       ],
     ),
   );
+}
+
+// Plain Flutter button shown in place of GoogleSignInButton while the email
+// sheet is open, so the GIS platform view overlay doesn't block the sheet.
+class _GooglePlaceholderButton extends StatelessWidget {
+  const _GooglePlaceholderButton({required this.isLoading});
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: OutlinedButton(
+        onPressed: null,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: context.appColors.line, width: 1.5),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28)),
+          backgroundColor: context.appColors.surface,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'G',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                foreground: Paint()
+                  ..shader = const LinearGradient(
+                    colors: [Color(0xFF4285F4), Color(0xFFEA4335)],
+                  ).createShader(const Rect.fromLTWH(0, 0, 20, 20)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Continue with Google',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: context.appColors.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _HeroTiles extends StatelessWidget {
