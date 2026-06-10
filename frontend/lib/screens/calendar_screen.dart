@@ -1,3 +1,4 @@
+import 'dart:math' show max;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -39,6 +40,15 @@ Widget _calIconChild(String icon, double tileSize, Color fallbackColor) {
   return Text(icon, style: TextStyle(fontSize: tileSize * 0.45, height: 1.0));
 }
 
+Color? _hexToColor(String? hex) {
+  if (hex == null || hex.isEmpty) return null;
+  try {
+    return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+  } catch (_) {
+    return null;
+  }
+}
+
 class CalendarScreen extends ConsumerStatefulWidget {
   final String calendarId;
   const CalendarScreen({super.key, required this.calendarId});
@@ -52,7 +62,14 @@ const double _kTabW = 96.0;
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _selectedDay;
+  String _viewMode = 'monthly';
   int _tabIndex = 0; // 0 = Calendar, 1 = Photos
+
+  @override
+  void initState() {
+    super.initState();
+    _viewMode = calendarViewFor(widget.calendarId);
+  }
 
   String _fmt(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -65,6 +82,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       builder: (_) => _CreateChoiceSheet(
         calendarId: widget.calendarId,
         selectedDay: _selectedDay,
+      ),
+    );
+  }
+
+  void _showSettingsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _CalendarSettingsSheet(
+        calendarId: widget.calendarId,
+        viewMode: _viewMode,
+        onViewModeChanged: (mode) => setState(() => _viewMode = mode),
       ),
     );
   }
@@ -320,6 +350,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   const SizedBox(width: 8),
                   GestureDetector(
+                    onTap: _showSettingsSheet,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: context.appColors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: context.appColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
                     onTap: () {
                       ref
                           .read(eventsProvider(widget.calendarId).notifier)
@@ -427,6 +478,56 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                   // ── Tab 0: Calendar ────────────────────────────────────
                   if (_tabIndex == 0) {
+                    if (_viewMode == 'weekly') {
+                      return Column(
+                        children: [
+                          if (activeEvent != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: _PhotoBanner(
+                                icon: '📸',
+                                color: const Color(0xFFFFF3E0),
+                                borderColor: const Color(0xFFE8A020),
+                                iconColor: const Color(0xFFB07000),
+                                message: 'Don\'t forget to take a photo!',
+                                eventTitle: activeEvent.title,
+                                actionLabel: 'Add photo',
+                                onAction: () => _showUploadSheet(
+                                  context,
+                                  activeEvent!.id,
+                                  activeEvent.title,
+                                ),
+                              ),
+                            ),
+                          if (activeEvent == null &&
+                              recentlyEndedEvents.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: _PhotoBanner(
+                                icon: '🖼',
+                                color: const Color(0xFFE8F4FD),
+                                borderColor: const Color(0xFF2196F3),
+                                iconColor: const Color(0xFF1565C0),
+                                message: 'Heb dir eine Erinnerung auf!',
+                                eventTitle: recentlyEndedEvents.first.title,
+                                actionLabel: 'Foto hochladen',
+                                onAction: () => _showUploadSheet(
+                                  context,
+                                  recentlyEndedEvents.first.id,
+                                  recentlyEndedEvents.first.title,
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: _WeeklyView(
+                              events: events,
+                              calendarId: widget.calendarId,
+                              calHue: calHue,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                     return Column(
                       children: [
                         // Photo memory banners
@@ -472,24 +573,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Container(
-                            decoration: BoxDecoration(
-                              color: context.appColors.surface,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: context.appColors.line,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.appColors.line.withOpacity(
-                                    0.5,
+                            decoration: calendar?.photoMode == true
+                                ? null
+                                : BoxDecoration(
+                                    color: context.appColors.surface,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: context.appColors.line,
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.appColors.line.withOpacity(
+                                          0.5,
+                                        ),
+                                        offset: const Offset(0, 4),
+                                        blurRadius: 0,
+                                      ),
+                                    ],
                                   ),
-                                  offset: const Offset(0, 4),
-                                  blurRadius: 0,
-                                ),
-                              ],
-                            ),
-                            padding: EdgeInsets.all(kIsWeb ? 18 : 12),
+                            padding: calendar?.photoMode == true
+                                ? EdgeInsets.zero
+                                : EdgeInsets.all(kIsWeb ? 18 : 12),
                             child: _CalendarGrid(
                               month: _focusedMonth,
                               selectedDay: _selectedDay,
@@ -1578,8 +1683,15 @@ class _DayCellBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isSelected ? calHue.dot.withOpacity(0.25) : calHue.bg;
     final single = events.length == 1;
+    final creatorColor = (single && events[0].source != EventSource.sharedcal)
+        ? _hexToColor(events[0].creatorColor)
+        : null;
+    final bg = creatorColor != null
+        ? creatorColor.withOpacity(isSelected ? 0.35 : 0.22)
+        : isSelected
+            ? calHue.dot.withOpacity(0.25)
+            : calHue.bg;
     final icon = single ? events[0].icon : null;
 
     if (single && icon != null && _isIconUrl(icon)) {
@@ -1644,8 +1756,11 @@ class _EventRowIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = event.icon;
+    final creatorColor = event.source != EventSource.sharedcal
+        ? _hexToColor(event.creatorColor)
+        : null;
     final decoration = BoxDecoration(
-      color: hue.bg,
+      color: creatorColor != null ? creatorColor.withOpacity(0.2) : hue.bg,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
@@ -2151,6 +2266,812 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Profile colors (same palette as home screen) ──────────────────────────────
+
+const _profileColors = [
+  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
+  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+];
+
+// ── Event layout info ─────────────────────────────────────────────────────────
+
+class _EventLayoutInfo {
+  const _EventLayoutInfo({
+    required this.event,
+    required this.col,
+    required this.totalCols,
+  });
+  final CalendarEvent event;
+  final int col;
+  final int totalCols;
+}
+
+// ── Weekly view ───────────────────────────────────────────────────────────────
+
+class _WeeklyView extends StatefulWidget {
+  const _WeeklyView({
+    required this.events,
+    required this.calendarId,
+    required this.calHue,
+  });
+  final List<CalendarEvent> events;
+  final String calendarId;
+  final CalHue calHue;
+
+  @override
+  State<_WeeklyView> createState() => _WeeklyViewState();
+}
+
+class _WeeklyViewState extends State<_WeeklyView> {
+  static const double _hourH = 60.0;
+  static const double _labelW = 44.0;
+  static const int _initialPage = 500;
+
+  late PageController _pageController;
+  final _scrollController = ScrollController();
+  late DateTime _weekStart;
+
+  @override
+  void initState() {
+    super.initState();
+    _weekStart = _mondayOf(DateTime.now());
+    _pageController = PageController(initialPage: _initialPage);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(7 * _hourH);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  DateTime _mondayOf(DateTime date) {
+    final d = date.weekday - 1;
+    return DateTime(date.year, date.month, date.day - d);
+  }
+
+  DateTime _weekStartForPage(int page) {
+    final offset = page - _initialPage;
+    return _mondayOf(DateTime.now()).add(Duration(days: 7 * offset));
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  String _weekLabel(DateTime monday) {
+    final sunday = monday.add(const Duration(days: 6));
+    if (monday.month == sunday.month) {
+      return '${DateFormat('MMM d').format(monday)} – ${DateFormat('d, yyyy').format(sunday)}';
+    }
+    return '${DateFormat('MMM d').format(monday)} – ${DateFormat('MMM d, yyyy').format(sunday)}';
+  }
+
+  String _hourLabel(int hour) {
+    if (hour == 0) return '12 AM';
+    if (hour < 12) return '$hour AM';
+    if (hour == 12) return '12 PM';
+    return '${hour - 12} PM';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Column(
+      children: [
+        // Week navigation
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => _pageController.previousPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.appColors.line),
+                  ),
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    size: 18,
+                    color: context.appColors.inkMuted,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    _weekLabel(_weekStart),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.ink,
+                    ),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _pageController.nextPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.appColors.line),
+                  ),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: context.appColors.inkMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Day header aligned with grid columns
+        Padding(
+          padding: const EdgeInsets.only(left: _labelW),
+          child: Row(
+            children: List.generate(7, (i) {
+              final day = _weekStart.add(Duration(days: i));
+              final isToday = _isSameDay(day, now);
+              return Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      dayLetters[i],
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: context.appColors.inkMuted,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: isToday
+                          ? BoxDecoration(
+                              color: widget.calHue.deep,
+                              shape: BoxShape.circle,
+                            )
+                          : null,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${day.day}',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight:
+                              isToday ? FontWeight.w800 : FontWeight.w500,
+                          color:
+                              isToday ? Colors.white : context.appColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(height: 1, color: context.appColors.line),
+        // Scrollable time grid
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: SizedBox(
+              height: 24 * _hourH,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Hour label column
+                  SizedBox(
+                    width: _labelW,
+                    child: Stack(
+                      children: List.generate(24, (hour) {
+                        return Positioned(
+                          top: hour * _hourH - 7,
+                          left: 0,
+                          right: 0,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Text(
+                              _hourLabel(hour),
+                              textAlign: TextAlign.right,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9,
+                                color: context.appColors.inkMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                  // Week pages (horizontal PageView)
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (page) {
+                        setState(() => _weekStart = _weekStartForPage(page));
+                      },
+                      itemBuilder: (ctx, page) {
+                        final weekStart = _weekStartForPage(page);
+                        return _WeekGridPage(
+                          weekStart: weekStart,
+                          events: widget.events,
+                          calendarId: widget.calendarId,
+                          hourH: _hourH,
+                          appColors: context.appColors,
+                          calHue: widget.calHue,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── One page of the weekly grid (7 day columns) ───────────────────────────────
+
+class _WeekGridPage extends StatelessWidget {
+  const _WeekGridPage({
+    required this.weekStart,
+    required this.events,
+    required this.calendarId,
+    required this.hourH,
+    required this.appColors,
+    required this.calHue,
+  });
+
+  final DateTime weekStart;
+  final List<CalendarEvent> events;
+  final String calendarId;
+  final double hourH;
+  final AppColors appColors;
+  final CalHue calHue;
+
+  bool _isCurrentWeek(DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    final sunday = weekStart.add(const Duration(days: 6));
+    return !today.isBefore(weekStart) && !today.isAfter(sunday);
+  }
+
+  List<CalendarEvent> _eventsForDay(DateTime day) {
+    final dayKey = DateTime(day.year, day.month, day.day);
+    return events.where((e) {
+      final eStart =
+          DateTime(e.startTime.year, e.startTime.month, e.startTime.day);
+      final eEnd = DateTime(e.endTime.year, e.endTime.month, e.endTime.day);
+      return !dayKey.isBefore(eStart) && !dayKey.isAfter(eEnd);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final colW = constraints.maxWidth / 7;
+
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            // Horizontal hour lines
+            ...List.generate(
+              24,
+              (hour) => Positioned(
+                top: hour * hourH,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 1,
+                  color: appColors.line.withOpacity(0.5),
+                ),
+              ),
+            ),
+            // Vertical day dividers
+            ...List.generate(
+              6,
+              (i) => Positioned(
+                left: (i + 1) * colW,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 1,
+                  color: appColors.line.withOpacity(0.4),
+                ),
+              ),
+            ),
+            // Events per day column
+            ...List.generate(7, (dayIndex) {
+              final day = weekStart.add(Duration(days: dayIndex));
+              final dayEvents = _eventsForDay(day);
+              return Positioned(
+                left: dayIndex * colW,
+                width: colW,
+                top: 0,
+                bottom: 0,
+                child: _DayColumn(
+                  date: day,
+                  events: dayEvents,
+                  calendarId: calendarId,
+                  hourH: hourH,
+                  colW: colW,
+                  calHue: calHue,
+                ),
+              );
+            }),
+            // Current time indicator
+            if (_isCurrentWeek(now)) (() {
+              final dayIdx = now.weekday - 1;
+              final minuteOfDay = now.hour * 60 + now.minute;
+              final top = minuteOfDay * (hourH / 60.0);
+              return Positioned(
+                top: top,
+                left: dayIdx * colW + 2,
+                width: colW - 4,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: const Color(0xFFE53935),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            })(),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Single day column ─────────────────────────────────────────────────────────
+
+class _DayColumn extends StatelessWidget {
+  const _DayColumn({
+    required this.date,
+    required this.events,
+    required this.calendarId,
+    required this.hourH,
+    required this.colW,
+    required this.calHue,
+  });
+
+  final DateTime date;
+  final List<CalendarEvent> events;
+  final String calendarId;
+  final double hourH;
+  final double colW;
+  final CalHue calHue;
+
+  DateTime _effectiveStart(CalendarEvent e) {
+    final startDay =
+        DateTime(e.startTime.year, e.startTime.month, e.startTime.day);
+    final targetDay = DateTime(date.year, date.month, date.day);
+    if (startDay.isBefore(targetDay)) {
+      return DateTime(date.year, date.month, date.day, 0, 0);
+    }
+    return e.startTime;
+  }
+
+  DateTime _effectiveEnd(CalendarEvent e) {
+    final endDay = DateTime(e.endTime.year, e.endTime.month, e.endTime.day);
+    final targetDay = DateTime(date.year, date.month, date.day);
+    if (endDay.isAfter(targetDay)) {
+      return DateTime(date.year, date.month, date.day, 23, 59);
+    }
+    return e.endTime;
+  }
+
+  List<_EventLayoutInfo> _assignColumns(List<CalendarEvent> sorted) {
+    final cols = <int, List<CalendarEvent>>{};
+    final assigned = <CalendarEvent, int>{};
+
+    for (final e in sorted) {
+      final eStart = _effectiveStart(e);
+      final eEnd = _effectiveEnd(e);
+      int col = 0;
+      while (true) {
+        final colEvents = cols[col] ?? [];
+        final overlaps = colEvents.any((other) {
+          final oStart = _effectiveStart(other);
+          final oEnd = _effectiveEnd(other);
+          return oStart.isBefore(eEnd) && oEnd.isAfter(eStart);
+        });
+        if (!overlaps) break;
+        col++;
+      }
+      assigned[e] = col;
+      cols.putIfAbsent(col, () => []).add(e);
+    }
+
+    return sorted.map((e) {
+      final col = assigned[e]!;
+      final eStart = _effectiveStart(e);
+      final eEnd = _effectiveEnd(e);
+      int maxCol = col;
+      for (final other in sorted) {
+        if (other != e) {
+          final oStart = _effectiveStart(other);
+          final oEnd = _effectiveEnd(other);
+          if (oStart.isBefore(eEnd) && oEnd.isAfter(eStart)) {
+            maxCol = max(maxCol, assigned[other]!);
+          }
+        }
+      }
+      return _EventLayoutInfo(event: e, col: col, totalCols: maxCol + 1);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...events]
+      ..sort((a, b) => _effectiveStart(a).compareTo(_effectiveStart(b)));
+    final layouts = _assignColumns(sorted);
+
+    return Stack(
+      children: layouts.map((layout) {
+        final e = layout.event;
+        final start = _effectiveStart(e);
+        final end = _effectiveEnd(e);
+        final startMinutes = start.hour * 60 + start.minute;
+        final endMinutes = end.hour * 60 + end.minute;
+        final durationMins =
+            (endMinutes - startMinutes).clamp(15, 24 * 60).toDouble();
+        final top = startMinutes * (hourH / 60.0);
+        final height = durationMins * (hourH / 60.0);
+
+        final usableW = colW - 4;
+        final eventW = usableW / layout.totalCols;
+        final left = 2.0 + layout.col * eventW;
+
+        return Positioned(
+          top: top + 1,
+          left: left,
+          width: eventW - 1,
+          height: height - 2,
+          child: _WeekEventBox(
+            event: e,
+            height: height,
+            calendarId: calendarId,
+            calHue: calHue,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ── Event box in the weekly grid ──────────────────────────────────────────────
+
+class _WeekEventBox extends StatelessWidget {
+  const _WeekEventBox({
+    required this.event,
+    required this.height,
+    required this.calendarId,
+    required this.calHue,
+  });
+
+  final CalendarEvent event;
+  final double height;
+  final String calendarId;
+  final CalHue calHue;
+
+  Color _eventColor() {
+    if (event.source != EventSource.sharedcal) {
+      final c = _hexToColor(event.creatorColor);
+      if (c != null) return c.withOpacity(0.85);
+    }
+    return calHue.deep.withOpacity(0.85);
+  }
+
+  String _fmt(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _eventColor();
+    final showTime = height >= 36;
+
+    return GestureDetector(
+      onTap: () => context.go(
+        '/calendar/$calendarId/event/${event.id}',
+        extra: event,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              event.title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (showTime)
+              Text(
+                '${_fmt(event.startTime)}–${_fmt(event.endTime)}',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 8,
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── View mode tile ────────────────────────────────────────────────────────────
+
+class _ViewModeTile extends StatelessWidget {
+  const _ViewModeTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? context.appColors.surfaceSoft : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? context.appColors.ink : context.appColors.line,
+              width: selected ? 2.0 : 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected
+                    ? context.appColors.ink
+                    : context.appColors.inkMuted,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? context.appColors.ink
+                      : context.appColors.inkMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Calendar settings bottom sheet ───────────────────────────────────────────
+
+class _CalendarSettingsSheet extends ConsumerWidget {
+  const _CalendarSettingsSheet({
+    required this.calendarId,
+    required this.viewMode,
+    required this.onViewModeChanged,
+  });
+
+  final String calendarId;
+  final String viewMode;
+  final ValueChanged<String> onViewModeChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider.select((s) => s.user));
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: context.appColors.line, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.line.withOpacity(0.5),
+            offset: const Offset(0, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Text(
+              'Calendar Settings',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: context.appColors.ink,
+              ),
+            ),
+          ),
+          Container(height: 1, color: context.appColors.line),
+          // View mode section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'VIEW',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.inkMuted,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _ViewModeTile(
+                      label: 'Monthly',
+                      icon: Icons.calendar_view_month_rounded,
+                      selected: viewMode == 'monthly',
+                      onTap: () {
+                        onViewModeChanged('monthly');
+                        persistCalendarView(calendarId, 'monthly');
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    _ViewModeTile(
+                      label: 'Weekly',
+                      icon: Icons.calendar_view_week_rounded,
+                      selected: viewMode == 'weekly',
+                      onTap: () {
+                        onViewModeChanged('weekly');
+                        persistCalendarView(calendarId, 'weekly');
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            color: context.appColors.line,
+          ),
+          // Event color section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MY EVENT COLOR',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.inkMuted,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: _profileColors.map((hex) {
+                    final c = Color(
+                        int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+                    final isSelected = user?.color == hex;
+                    return GestureDetector(
+                      onTap: () => ref
+                          .read(authProvider.notifier)
+                          .updateProfile(color: hex),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(
+                                  color: context.appColors.ink,
+                                  width: 2.5,
+                                )
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
