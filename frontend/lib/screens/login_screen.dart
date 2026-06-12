@@ -418,9 +418,11 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
   Future<void> _submit() async {
     final email = _emailCtrl.text.trim();
     if (!email.contains('@')) {
+      if (!mounted) return;
       setState(() => _error = 'Enter a valid email');
       return;
     }
+    if (!mounted) return;
     setState(() { _loading = true; _error = null; });
     try {
       await ref.read(authProvider.notifier).forgotPassword(email);

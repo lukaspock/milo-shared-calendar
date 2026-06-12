@@ -20,8 +20,8 @@ export async function register(ctx: RequestContext): Promise<Response> {
   if (!email || !password || !name) {
     return error("email, password and name are required");
   }
-  if (password.length < 6) {
-    return error("Password must be at least 6 characters");
+  if (password.length < 8) {
+    return error("Password must be at least 8 characters");
   }
   const notificationType = body.notification_type === "push" ? "push" : "email";
 
@@ -371,13 +371,20 @@ export async function forgotPassword(ctx: RequestContext): Promise<Response> {
   const { email } = body;
   if (!email) return error("email is required");
 
-  // Always return 200 — don't reveal whether the email exists
+  // Always return 200 — don't reveal whether the email exists.
+  // Consistent artificial delay prevents timing-based email enumeration.
   const users = await db`SELECT id, name, password_hash FROM users WHERE email = ${email}`;
-  if (users.length === 0) return json({ message: "If that email exists, a reset link has been sent." });
+  if (users.length === 0) {
+    await new Promise(r => setTimeout(r, 200));
+    return json({ message: "If that email exists, a reset link has been sent." });
+  }
 
   const user = users[0];
   // Google-only accounts have no password — can't reset what doesn't exist
-  if (!user.password_hash) return json({ message: "If that email exists, a reset link has been sent." });
+  if (!user.password_hash) {
+    await new Promise(r => setTimeout(r, 200));
+    return json({ message: "If that email exists, a reset link has been sent." });
+  }
 
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -386,6 +393,7 @@ export async function forgotPassword(ctx: RequestContext): Promise<Response> {
 
   sendPasswordResetEmail(email, user.name, token).catch(console.error);
 
+  await new Promise(r => setTimeout(r, 200));
   return json({ message: "If that email exists, a reset link has been sent." });
 }
 

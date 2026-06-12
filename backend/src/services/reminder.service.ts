@@ -2,11 +2,20 @@ import db from "../db/client";
 import { broadcastToCalendar } from "../ws/websocket";
 import { sendReminderEmail, sendEventStartingEmail, sendEventEndedEmail } from "./email";
 
-// In-memory set of event IDs we've already sent reminders for.
-// Resets on server restart (acceptable — worst case is a duplicate reminder).
-const remindedEventIds = new Set<string>();
+// In-memory dedup map for reminder emails.
+// Uses a 2-hour TTL so that on restart, duplicates can only occur within the
+// current reminder window (25–35 min), not for all historical events ever seen.
+const remindedEventIds = new Map<string, Date>();
 
-/** Clears the in-memory dedup set. Only call from tests. */
+/** Prunes entries older than 2 hours. Call before checking membership. */
+function pruneRemindedEvents(): void {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60_000);
+  for (const [id, sentAt] of remindedEventIds) {
+    if (sentAt < cutoff) remindedEventIds.delete(id);
+  }
+}
+
+/** Clears the in-memory dedup map. Only call from tests. */
 export function _resetRemindedEvents(): void { remindedEventIds.clear(); }
 
 type ReminderEmailFn = typeof sendReminderEmail;
@@ -28,10 +37,12 @@ export async function checkAndSendReminders(
                             AND now() + interval '35 minutes'
   `;
 
+  pruneRemindedEvents();
+
   for (const event of events) {
     const eventId = event.id as string;
     if (remindedEventIds.has(eventId)) continue;
-    remindedEventIds.add(eventId);
+    remindedEventIds.set(eventId, new Date());
 
     const calendarId = event.calendar_id as string;
 

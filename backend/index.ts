@@ -169,7 +169,7 @@ router.post("/auth/register", register, [authRateLimit]);
 router.post("/auth/login", login, [authRateLimit]);
 router.post("/auth/google", googleAuth, [authRateLimit]);
 router.get("/auth/verify/:token", verifyEmail);
-router.post("/auth/forgot-password", forgotPassword);
+router.post("/auth/forgot-password", forgotPassword, [authRateLimit]);
 router.get("/auth/reset-password/:token", showResetPasswordForm);
 router.post("/auth/reset-password/:token", submitResetPassword);
 router.post("/auth/resend-verification", resendVerification, [authMiddleware, rateLimit(3, 60 * 60_000, "resend-verification")]);

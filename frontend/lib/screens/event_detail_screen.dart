@@ -137,6 +137,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         _existingEvent!.source != EventSource.sharedcal) {
       return;
     }
+    if (!mounted) return;
     setState(() => _reactionsLoading = true);
     try {
       final list = await ApiService().fetchReactions(widget.eventId);

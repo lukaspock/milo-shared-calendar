@@ -7,7 +7,9 @@ import { fetchAndCacheGoogleEventsForCalendar } from "../services/google_calenda
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => chars[b % chars.length]).join("");
 }
 
 export async function listCalendars(ctx: RequestContext): Promise<Response> {
@@ -36,6 +38,7 @@ export async function createCalendar(ctx: RequestContext): Promise<Response> {
   }
 
   if (!body.name?.trim()) return error("name is required");
+  if (body.name.trim().length > 100) return error("name must be at most 100 characters");
   const photoMode = body.photo_mode === true;
   const hueIndex = typeof body.hue_index === 'number' ? Math.max(0, Math.min(7, Math.round(body.hue_index))) : 0;
   const icon = typeof body.icon === 'string' ? body.icon : null;
@@ -126,6 +129,16 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
   `;
   if (membership.length === 0) return error("Not a member of this calendar", 403);
 
+  // Date window: accept optional `from` and `to` query params (ISO date strings).
+  // Defaults to current month ±6 months to prevent unbounded memory use.
+  const now = new Date();
+  const fromDate = ctx.query.from
+    ? new Date(ctx.query.from)
+    : new Date(now.getFullYear(), now.getMonth() - 6, 1);
+  const toDate = ctx.query.to
+    ? new Date(ctx.query.to)
+    : new Date(now.getFullYear(), now.getMonth() + 7, 0);
+
   // Recurring instances are stored as DB rows (parent_event_id set), so a simple
   // query returns both the root event and all its generated instances.
   const events = await db`
@@ -133,17 +146,18 @@ export async function getCalendarEvents(ctx: RequestContext): Promise<Response> 
     FROM events e
     LEFT JOIN users u ON u.id = e.created_by
     WHERE e.calendar_id = ${id}
+      AND e.start_time >= ${fromDate}
+      AND e.start_time <= ${toDate}
     ORDER BY e.start_time ASC
   `;
 
-  // Date window for Google import (defaults to ±1 year when frontend sends no params)
-  const now = new Date();
+  // Date window for Google import (reuse fromDate/toDate computed above)
   const startDate = ctx.query.start
     ? new Date(ctx.query.start)
-    : new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    : fromDate;
   const endDate = ctx.query.end
     ? new Date(ctx.query.end)
-    : new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+    : toDate;
 
   // Only run the Google Calendar import pipeline when at least one calendar member
   // has connected their Google Calendar. Avoids an infinite needsRefresh=true loop
@@ -305,20 +319,22 @@ async function cleanupImportedDeviceEvents(calendarId: string, departedUserId: s
 }
 
 async function cleanupImportedGcalEvents(calendarId: string, departedUserId: string): Promise<void> {
-  await db`
-    UPDATE imported_gcal_events
-    SET imported_by = (
-      SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
-      FROM jsonb_array_elements(imported_by) AS elem
-      WHERE elem->>'user_id' != ${departedUserId}
-    )
-    WHERE calendar_id = ${calendarId}
-  `;
-  await db`
-    DELETE FROM imported_gcal_events
-    WHERE calendar_id = ${calendarId}
-      AND jsonb_array_length(imported_by) = 0
-  `;
+  await db.begin(async (tx) => {
+    await tx`
+      UPDATE imported_gcal_events
+      SET imported_by = (
+        SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
+        FROM jsonb_array_elements(imported_by) AS elem
+        WHERE elem->>'user_id' != ${departedUserId}
+      )
+      WHERE calendar_id = ${calendarId}
+    `;
+    await tx`
+      DELETE FROM imported_gcal_events
+      WHERE calendar_id = ${calendarId}
+        AND jsonb_array_length(imported_by) = 0
+    `;
+  });
 }
 
 export async function removeMember(ctx: RequestContext): Promise<Response> {
@@ -399,8 +415,9 @@ export async function patchCalendar(ctx: RequestContext): Promise<Response> {
   const userId = ctx.user!.sub;
   const { id } = ctx.params;
 
-  const membership = await db`SELECT 1 FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}`;
+  const membership = await db`SELECT role FROM calendar_members WHERE user_id = ${userId} AND calendar_id = ${id}`;
   if (membership.length === 0) return error("Not a member of this calendar", 403);
+  if (membership[0].role !== 'owner') return error("Only the calendar owner can edit this calendar", 403);
 
   let body: { hue_index?: number; icon?: string | null };
   try {

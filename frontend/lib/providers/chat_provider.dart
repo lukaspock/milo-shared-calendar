@@ -45,6 +45,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final _api = ApiService();
   final _ws = WebSocketService();
   bool _isVisible = false;
+  bool _disposed = false;
 
   late final void Function(Map<String, dynamic>) _wsListener;
 
@@ -164,14 +165,20 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (user.notificationType != NotificationType.push) return;
     if (msg.userId == user.id) return;
 
-    _buildNotificationIcon(msg).then((bytes) {
+    _showLocalNotificationAsync(msg);
+  }
+
+  Future<void> _showLocalNotificationAsync(ChatMessage msg) async {
+    try {
+      final bytes = await _buildNotificationIcon(msg);
+      if (_disposed) return;
       LocalNotificationService().showChatNotification(
         calendarId: calendarId,
         title: msg.senderName,
         body: msg.content,
         largeIconBytes: bytes,
       );
-    });
+    } catch (_) {}
   }
 
   Future<Uint8List?> _buildNotificationIcon(ChatMessage msg) async {
@@ -230,6 +237,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   @override
   void dispose() {
+    _disposed = true;
     _ws.removeListener(_wsListener);
     super.dispose();
   }

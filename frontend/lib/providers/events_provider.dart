@@ -145,8 +145,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       debugPrint(
         '[DeviceSync] _periodicDeviceSync(): change detected — uploading ${events.length} events',
       );
+      await _uploadDeviceEvents(events);
       _lastUploadedDeviceIds = currentIds;
-      _uploadDeviceEvents(events);
     } catch (e, st) {
       debugPrint('[DeviceSync] _periodicDeviceSync() ERROR: $e\n$st');
     }

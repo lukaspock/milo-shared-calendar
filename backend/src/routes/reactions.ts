@@ -40,6 +40,14 @@ export async function addReaction(ctx: RequestContext): Promise<Response> {
 
   const { emoji } = body;
   if (!emoji) return error("emoji is required");
+  if (
+    typeof emoji !== "string" ||
+    emoji.length < 1 ||
+    emoji.length > 10 ||
+    Array.from(emoji).some((ch) => ch.charCodeAt(0) < 32)
+  ) {
+    return error("Invalid emoji", 400);
+  }
 
   const events = await db`SELECT calendar_id FROM events WHERE id = ${id}`;
   if (events.length === 0) return error("Event not found", 404);

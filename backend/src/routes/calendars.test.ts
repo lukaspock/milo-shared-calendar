@@ -3,6 +3,9 @@ import { describe, test, expect, mock, beforeEach } from "bun:test";
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockDb = mock((): Promise<Record<string, unknown>[]> => Promise.resolve([]));
+Object.assign(mockDb, {
+  begin: async (fn: (tx: unknown) => Promise<void>) => fn(mockDb),
+});
 mock.module("../db/client", () => ({ default: mockDb }));
 
 const mockBroadcast = mock(() => {});

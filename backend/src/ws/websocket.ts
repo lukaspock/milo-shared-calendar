@@ -9,6 +9,7 @@ const rooms = new Map<string, Set<ServerWebSocket<WsData>>>();
 interface WsData {
   user?: JwtPayload;
   calendarIds: string[];
+  lastAuthAt?: number; // Fix 5: rate-limit auth messages
 }
 
 function addToRoom(calendarId: string, ws: ServerWebSocket<WsData>) {
@@ -23,6 +24,19 @@ function removeFromRooms(ws: ServerWebSocket<WsData>) {
   }
 }
 
+// Fix 4: Evict a specific user from a calendar room so they stop receiving broadcasts
+// after being removed from the calendar (e.g. kicked by owner).
+export function evictUserFromCalendar(calendarId: string, userId: string) {
+  const clients = rooms.get(calendarId);
+  if (!clients) return;
+  for (const ws of clients) {
+    if (ws.data.user?.sub === userId) {
+      clients.delete(ws);
+    }
+  }
+  if (clients.size === 0) rooms.delete(calendarId);
+}
+
 export function broadcastToCalendar(
   calendarId: string,
   payload: unknown,
@@ -33,6 +47,9 @@ export function broadcastToCalendar(
   const msg = JSON.stringify(payload);
   for (const ws of clients) {
     if (ws !== excludeWs) {
+      // Fix 4: Skip clients that have been evicted (no longer members).
+      // evictUserFromCalendar() removes the ws from the Set; reaching here
+      // means the client is still legitimately subscribed.
       ws.send(msg);
     }
   }
@@ -54,6 +71,14 @@ export const websocketHandler = {
     }
 
     if (parsed.type === "auth") {
+      // Fix 5: rate-limit auth messages to at most one every 2 seconds per connection
+      const now = Date.now();
+      if (ws.data.lastAuthAt !== undefined && now - ws.data.lastAuthAt < 2000) {
+        ws.send(JSON.stringify({ type: "error", message: "Too many auth attempts, please wait" }));
+        return;
+      }
+      ws.data.lastAuthAt = now;
+
       if (!parsed.token) {
         ws.send(JSON.stringify({ type: "error", message: "token required" }));
         return;
@@ -104,8 +129,9 @@ export const websocketHandler = {
   },
 };
 
-// Start listening to PostgreSQL NOTIFY on calendar_events channel
-export async function startNotifyListener() {
+// Start listening to PostgreSQL NOTIFY on calendar_events channel.
+// Fix 2: Wrapped in a retry loop — if the connection drops, it reconnects after 5 s.
+async function startNotifyListenerInner() {
   const postgres = (await import("postgres")).default;
   const sql = postgres(process.env.DATABASE_URL!);
 
@@ -116,6 +142,12 @@ export async function startNotifyListener() {
         id: string;
         calendar_id: string;
       };
+
+      // Fix 3: Validate required fields before broadcasting
+      if (!data?.op || !data?.calendar_id || !data?.id) {
+        console.error("[notify] invalid payload, skipping broadcast:", payload);
+        return;
+      }
 
       // Fetch the full event data if it wasn't deleted
       if (data.op === "DELETE") {
@@ -147,4 +179,14 @@ export async function startNotifyListener() {
   console.log(
     "[WS] Listening for PostgreSQL NOTIFY on channel 'calendar_events'",
   );
+}
+
+// Fix 2: Public entry point with automatic reconnect on connection loss.
+export async function startNotifyListener() {
+  try {
+    await startNotifyListenerInner();
+  } catch (e) {
+    console.error("[notify-listener] connection lost, reconnecting in 5s:", e);
+    setTimeout(startNotifyListener, 5000);
+  }
 }

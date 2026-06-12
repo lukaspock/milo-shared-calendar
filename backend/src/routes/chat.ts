@@ -63,6 +63,7 @@ export async function getMessages(ctx: RequestContext): Promise<Response> {
         FROM chat_messages cm
         JOIN users u ON u.id = cm.user_id
         WHERE cm.calendar_id = ${calendarId}
+          AND cm.deleted_at IS NULL
           AND cm.created_at < ${before}::timestamptz
         ORDER BY cm.created_at DESC
         LIMIT 50
@@ -74,6 +75,7 @@ export async function getMessages(ctx: RequestContext): Promise<Response> {
         FROM chat_messages cm
         JOIN users u ON u.id = cm.user_id
         WHERE cm.calendar_id = ${calendarId}
+          AND cm.deleted_at IS NULL
         ORDER BY cm.created_at DESC
         LIMIT 50
       `;

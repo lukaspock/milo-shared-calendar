@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS calendars (
 CREATE TABLE IF NOT EXISTS calendar_members (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   calendar_id UUID REFERENCES calendars(id) ON DELETE CASCADE,
-  role TEXT DEFAULT 'member',
+  role TEXT NOT NULL DEFAULT 'member',
   joined_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (user_id, calendar_id)
 );
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
   title TEXT NOT NULL,
   description TEXT,
   start_time TIMESTAMP NOT NULL,
-  end_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL CHECK (end_time >= start_time),
   color TEXT DEFAULT '#6C63FF',
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
