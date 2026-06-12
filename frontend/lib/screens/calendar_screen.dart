@@ -1016,33 +1016,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       photoBadge = (hasActiveEvent ? 1 : 0) + recentlyEndedCount;
     }
 
-    final calHue = cal != null ? hueFor(cal) : stickerHues[0];
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final tabs = <({IconData icon, IconData activeIcon, String label, int index, int badge})>[
-      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded,     label: 'Chat',     index: 0, badge: chatUnread),
-      (icon: Icons.calendar_today_outlined,      activeIcon: Icons.calendar_today_rounded,  label: 'Calendar', index: 1, badge: 0),
-      (icon: Icons.how_to_vote_outlined,          activeIcon: Icons.how_to_vote_rounded,     label: 'Polls',    index: 2, badge: unansweredPolls),
+    final tabs = <({IconData icon, IconData activeIcon, int index, int badge})>[
+      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded,    index: 0, badge: chatUnread),
+      (icon: Icons.calendar_today_outlined,     activeIcon: Icons.calendar_today_rounded, index: 1, badge: 0),
+      (icon: Icons.how_to_vote_outlined,        activeIcon: Icons.how_to_vote_rounded,    index: 2, badge: unansweredPolls),
       if (hasPhotos)
-        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 3, badge: photoBadge),
+        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, index: 3, badge: photoBadge),
     ];
+
+    // Instagram-style: always-dark pill, icon-only
+    const islandBg = Color(0xFF1C1C1E);
+    const activeBg = Color(0xFF3A3A3C);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, kIsWeb ? 4 : 6, 16, kIsWeb ? 8 : 14),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.black.withOpacity(0.42)
-                  : Colors.white.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(28),
+              color: islandBg.withOpacity(0.94),
+              borderRadius: BorderRadius.circular(32),
               border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.10)
-                    : Colors.white.withOpacity(0.75),
+                color: Colors.white.withOpacity(0.08),
                 width: 1,
               ),
             ),
@@ -1052,9 +1049,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // Sliding glass pill indicator
+                    // Sliding active indicator
                     AnimatedPositioned(
-                      duration: const Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 280),
                       curve: Curves.easeInOutCubic,
                       left: 4.0 + _tabIndex * tabW,
                       top: 4,
@@ -1062,17 +1059,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       bottom: 4,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.16)
-                              : Colors.white.withOpacity(0.92),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          color: activeBg,
+                          borderRadius: BorderRadius.circular(26),
                         ),
                       ),
                     ),
@@ -1088,18 +1076,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               clipBehavior: Clip.none,
                               alignment: Alignment.center,
                               children: [
-                                _buildTabItem(
-                                  context: context,
-                                  icon: isSelected ? t.activeIcon : t.icon,
-                                  label: t.label,
-                                  selected: isSelected,
-                                  accentColor: calHue.deep,
+                                GestureDetector(
                                   onTap: () {
                                     setState(() => _tabIndex = t.index);
                                     if (t.index == 0) {
                                       ref.read(chatProvider(widget.calendarId).notifier).markAsRead();
                                     }
                                   },
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: kIsWeb ? 10 : 12,
+                                    ),
+                                    child: Icon(
+                                      isSelected ? t.activeIcon : t.icon,
+                                      size: 22,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white.withOpacity(0.45),
+                                    ),
+                                  ),
                                 ),
                                 if (t.badge > 0)
                                   Positioned(
@@ -1112,9 +1107,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         color: Colors.red.shade500,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                          color: isDark
-                                              ? Colors.black.withOpacity(0.3)
-                                              : Colors.white,
+                                          color: islandBg,
                                           width: 1.5,
                                         ),
                                       ),
@@ -1143,41 +1136,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               },
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required bool selected,
-    required Color accentColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: kIsWeb ? 8 : 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected ? accentColor : context.appColors.inkMuted,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? accentColor : context.appColors.inkMuted,
-              ),
-            ),
-          ],
         ),
       ),
     );
