@@ -34,7 +34,7 @@ Both the backend API and PostgreSQL database are hosted on Render.com.
 
 The internal DB hostname only works from within Render. Use the external hostname for local psql access or `backend/.env`.
 
-**Render Free Tier caveat:** The backend sleeps after 15 min of inactivity. First request after sleep takes 30–60 s. This is the main cause of perceived slowness on physical devices.
+**Render Free Tier note:** A ping bot keeps the backend awake continuously — cold starts are not a concern in normal operation.
 
 ## Running on a physical device
 
@@ -166,13 +166,13 @@ Callback URL must be registered: `https://api.milocalendar.tech/auth/google-cale
 
 - PostgreSQL `COUNT(*)` returns `bigint` — cast to `::integer` in all queries or `JSON.stringify` will throw.
 - `JWT_SECRET` mismatch between `.env` and docker-compose causes silent 401s. Symptom: "Could not load calendars" immediately after login — clear app data and re-login.
-- Render Free Tier cold starts take 30–60 s. Always test performance with `flutter run --release`.
+- A ping bot keeps the Render backend awake — cold starts are not normally a problem. Always test performance with `flutter run --release`.
 - `.claude/worktrees/` is in `.gitignore` — these are temporary Claude Code working directories.
 - The Render internal DB hostname (`dpg-...`) only resolves from within Render's network.
 - **`ENCRYPTION_KEY` must be set on Render** (exactly 32 ASCII chars). If missing, `encrypt()` throws inside `handleCalendarCallback`, which is swallowed by the catch and returns `false` → users see "Invalid or expired session" on Google Calendar connect. Set it once in the Render dashboard under Environment Variables.
 - Google Calendar connect requires `APP_URL` to be set correctly on the backend — the OAuth callback redirects to `$APP_URL/auth/google-calendar/callback`. Locally this won't work unless you expose the backend via a tunnel.
 - After schema changes locally: `docker compose down -v && docker compose up --build` (migrations auto-run but new tables in `schema.sql` need a volume reset).
 - Cloudinary uploads use an **unsigned** preset (`avatars`, cloud `dvlvgosxk`) — the cloud name and preset name are safe to commit. The API secret is never used or stored in the app. Avatar photos go to the `avatars/` folder; event icon photos go to `event_icons/`, and photo memories go to `event_photos/`. All use the same preset.
-- **`startGoogleCalendarSyncScheduler`** fires every 5 min in the backend. It runs `fetchAndCacheGoogleEventsForCalendar` for every calendar that has at least one gcal-connected member. A running-flag prevents overlapping runs. On Render Free Tier the process sleeps after inactivity — the scheduler resumes on the next wake-up.
+- **`startGoogleCalendarSyncScheduler`** fires every 5 min in the backend. It runs `fetchAndCacheGoogleEventsForCalendar` for every calendar that has at least one gcal-connected member. A running-flag prevents overlapping runs. The ping bot keeps the process awake, so the scheduler runs continuously.
 - **Device Calendar periodic sync** runs as a `Timer.periodic` (5 min) inside each `EventsNotifier`. It only uploads when the set of device event IDs changes. The timer is cancelled in `dispose()`, so it stops when the user leaves the calendar screen.
 - **Imported events are never written back** to other members' Google/Device Calendars — `syncEvent` is only called for native Milo events (`event_created` WS), never for `source: google_import` or `source: device_import` events.

@@ -22,7 +22,7 @@ import 'screens/onboarding/onboarding_ready_screen.dart';
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 
-final _router = GoRouter(
+final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (_, _s) => const SplashScreen()),
@@ -133,7 +133,7 @@ class _MiloAppState extends ConsumerState<MiloApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      routerConfig: _router,
+      routerConfig: appRouter,
     );
   }
 }

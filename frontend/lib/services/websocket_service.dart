@@ -21,6 +21,7 @@ class WebSocketService {
   Timer? _reconnectTimer;
   bool _shouldReconnect = false;
   bool _authed = false;
+  int _reconnectDelay = 3; // seconds; doubles on each failure, caps at 60
   final List<WsMessageCallback> _listeners = [];
 
   // Accumulated set of calendar IDs to subscribe to
@@ -59,6 +60,7 @@ class WebSocketService {
 
           if (type == 'auth_ok') {
             _authed = true;
+            _reconnectDelay = 3; // reset backoff on successful connection
             // Subscribe to all accumulated calendar IDs
             if (_calendarIds.isNotEmpty) {
               _send({'type': 'subscribe', 'calendarIds': _calendarIds});
@@ -87,7 +89,8 @@ class WebSocketService {
     _authed = false;
     if (_shouldReconnect) {
       _reconnectTimer?.cancel();
-      _reconnectTimer = Timer(const Duration(seconds: 3), _connect);
+      _reconnectTimer = Timer(Duration(seconds: _reconnectDelay), _connect);
+      _reconnectDelay = (_reconnectDelay * 2).clamp(3, 60);
     }
   }
 
@@ -98,6 +101,7 @@ class WebSocketService {
   void disconnect() {
     _shouldReconnect = false;
     _authed = false;
+    _reconnectDelay = 3;
     _calendarIds.clear();
     _reconnectTimer?.cancel();
     _channel?.sink.close();
