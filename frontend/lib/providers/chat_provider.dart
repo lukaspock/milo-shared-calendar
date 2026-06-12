@@ -166,6 +166,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     _buildNotificationIcon(msg).then((bytes) {
       LocalNotificationService().showChatNotification(
+        calendarId: calendarId,
         title: msg.senderName,
         body: msg.content,
         largeIconBytes: bytes,

@@ -185,7 +185,7 @@ Google Calendar connection happens separately via the web OAuth flow — see the
 ## Known gotchas
 
 - **Debug builds are 5–10× slower** than release. Always use `--release` for performance testing.
-- **Render cold starts** cause the first API call to take 30–60 s. Not a Flutter bug.
+- **Render cold starts** are kept at bay by a ping bot — not normally a concern.
 - `withOpacity()` is deprecated in Flutter 3.x — use `.withValues(alpha: ...)`. The codebase still uses `withOpacity` in many places; it still works but triggers analyzer warnings.
 - Multi-day events are displayed on every spanned day by iterating from `startDate` to `endDate` in `calendar_screen.dart`. Don't replace this with a single-day key lookup.
 - `extra:` in GoRouter is not type-safe — always null-check before casting (`widget.extra is EventPoll ? widget.extra as EventPoll : null`).

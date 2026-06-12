@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../app.dart';
 import '../models/event.dart';
 import '../models/user.dart';
 import 'auth_service.dart';
@@ -18,9 +20,10 @@ import 'websocket_service.dart';
 /// (set up once in [init]) and, when an event created by *someone else* arrives,
 /// pops a local notification via flutter_local_notifications.
 ///
-/// This is purely local — no push servers (FCM/APNs) involved. The app must be
-/// running (foreground or background, depending on OS) to receive the WS
-/// message and surface the notification.
+/// Notification ID ranges (to avoid cancellation collisions):
+///   0 – 16 777 215  scheduled reminders (derived from event UUID hex)
+///   20 000 000 – 29 999 999  chat notifications (stable per calendar)
+///   timestamp-based  ephemeral event/reminder alerts (never collide with above)
 class LocalNotificationService {
   static final LocalNotificationService _instance =
       LocalNotificationService._();
@@ -31,12 +34,23 @@ class LocalNotificationService {
   final _ws = WebSocketService();
 
   bool _initialized = false;
-  int _nextId = 0;
+
+  // Pending navigation route queued from a notification tap that launched the
+  // app from terminated state (router not ready yet at that point).
+  static String? _pendingRoute;
 
   static const _channelId = 'event_notifications';
   static const _channelName = 'Event notifications';
   static const _channelDescription =
       'Notifies you when a new event is added to one of your calendars.';
+
+  /// Consume a route stored from a notification tap that launched the app from
+  /// terminated state. Call this once from HomeScreen / SplashScreen.
+  static String? consumePendingRoute() {
+    final r = _pendingRoute;
+    _pendingRoute = null;
+    return r;
+  }
 
   /// Initializes the plugin and wires up the global WebSocket listener.
   /// Safe to call multiple times — only the first call does work.
@@ -64,13 +78,47 @@ class LocalNotificationService {
     tz.initializeTimeZones();
 
     try {
-      await _plugin.initialize(settings);
+      await _plugin.initialize(
+        settings,
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+      );
+
+      // Handle tap that launched the app from terminated state.
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp == true) {
+        _handlePayload(launchDetails!.notificationResponse?.payload);
+      }
     } catch (_) {
-      // Plugin not available on this platform (e.g. some desktop builds) — the
-      // WS listener stays harmless because show() will simply no-op.
+      // Plugin not available on this platform (e.g. some desktop builds).
     }
 
     _ws.addListener(_onWsMessage);
+  }
+
+  /// Routes a notification tap payload to the correct screen.
+  static void _onNotificationTapped(NotificationResponse response) {
+    _handlePayload(response.payload);
+  }
+
+  static void _handlePayload(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final calendarId = data['calendarId'] as String?;
+      final eventId = data['eventId'] as String?;
+      if (calendarId == null) return;
+
+      final route = eventId != null
+          ? '/calendar/$calendarId/event/$eventId'
+          : '/calendar/$calendarId';
+
+      try {
+        appRouter.go(route);
+      } catch (_) {
+        // Router not ready yet (terminated-state launch) — store for later.
+        _pendingRoute = route;
+      }
+    } catch (_) {}
   }
 
   /// Requests OS permission to show notifications. Returns true if granted.
@@ -118,8 +166,33 @@ class LocalNotificationService {
     return false;
   }
 
+  /// Returns a notification ID that won't collide with scheduled reminders
+  /// (which live in [0, 16 777 215]) or chat notifications ([20M, 30M)).
+  /// Timestamp-based — effectively unique for human-scale usage.
+  static int _ephemeralId() =>
+      DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF;
+
+  /// Stable notification ID for a calendar's chat notifications.
+  /// All messages from the same calendar share one ID so new messages
+  /// replace the old notification rather than stacking up.
+  static int _chatIdFor(String calendarId) {
+    final hex = calendarId.replaceAll('-', '');
+    return 20_000_000 + int.parse(hex.substring(0, 5), radix: 16) % 10_000_000;
+  }
+
+  /// Stable ID for a scheduled event reminder, derived from the event UUID.
+  /// Lives in [0, 16 777 215] — well within int32 range.
+  static int _reminderIdFor(String eventId) {
+    final hex = eventId.replaceAll('-', '');
+    return int.parse(hex.substring(0, 6), radix: 16);
+  }
+
   /// Displays a local notification immediately.
-  Future<void> show(String title, String body) async {
+  Future<void> show(
+    String title,
+    String body, {
+    String? payload,
+  }) async {
     await init();
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -133,7 +206,7 @@ class LocalNotificationService {
       macOS: DarwinNotificationDetails(),
     );
     try {
-      await _plugin.show(_nextId++, title, body, details);
+      await _plugin.show(_ephemeralId(), title, body, details, payload: payload);
     } catch (_) {
       // Never let notification failures bubble into the app flow.
     }
@@ -141,6 +214,7 @@ class LocalNotificationService {
 
   /// Displays a chat message notification with optional sender avatar as large icon.
   Future<void> showChatNotification({
+    required String calendarId,
     required String title,
     required String body,
     Uint8List? largeIconBytes,
@@ -149,7 +223,7 @@ class LocalNotificationService {
     final androidDetails = AndroidNotificationDetails(
       'chat_messages',
       'Chat',
-      channelDescription: 'Neue Chat-Nachrichten',
+      channelDescription: 'New chat messages',
       importance: Importance.high,
       priority: Priority.high,
       styleInformation: BigTextStyleInformation(body),
@@ -159,9 +233,10 @@ class LocalNotificationService {
     );
     const iosDetails = DarwinNotificationDetails();
     const macosDetails = DarwinNotificationDetails();
+    final payload = jsonEncode({'calendarId': calendarId});
     try {
       await _plugin.show(
-        body.hashCode.abs() % 100000,
+        _chatIdFor(calendarId),
         title,
         body,
         NotificationDetails(
@@ -169,6 +244,7 @@ class LocalNotificationService {
           iOS: iosDetails,
           macOS: macosDetails,
         ),
+        payload: payload,
       );
     } catch (_) {}
   }
@@ -203,7 +279,6 @@ class LocalNotificationService {
     int? reminderMinutes = 30,
   }) async {
     if (reminderMinutes == null) {
-      // User chose "No reminder" — persist the preference and bail out.
       await saveReminderPreference(event.id, null);
       return;
     }
@@ -217,10 +292,10 @@ class LocalNotificationService {
     );
     if (!reminderTime.isAfter(DateTime.now())) return;
 
-    // Persist so the edit form can pre-fill the value
     await saveReminderPreference(event.id, reminderMinutes);
 
     final label = _reminderLabel(reminderMinutes);
+    final payload = jsonEncode({'calendarId': event.calendarId, 'eventId': event.id});
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'event_reminders',
@@ -233,16 +308,14 @@ class LocalNotificationService {
       macOS: DarwinNotificationDetails(),
     );
 
-    // Use a stable int ID derived from the event UUID so we can cancel it later
-    final id = event.id.hashCode.abs() % 100000;
-
     try {
       await _plugin.zonedSchedule(
-        id,
+        _reminderIdFor(event.id),
         label,
         event.title,
         tz.TZDateTime.from(reminderTime, tz.local),
         details,
+        payload: payload,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -262,50 +335,70 @@ class LocalNotificationService {
 
   /// Cancels a previously scheduled reminder for the given event ID.
   Future<void> cancelEventReminder(String eventId) async {
-    final id = eventId.hashCode.abs() % 100000;
     try {
-      await _plugin.cancel(id);
+      await _plugin.cancel(_reminderIdFor(eventId));
     } catch (_) {}
   }
 
   void _onWsMessage(Map<String, dynamic> msg) {
     final type = msg['type'] as String?;
 
-    // Backend-sent reminder (30 min before) → show immediately for push users
     if (type == 'event_reminder') {
       final user = AuthService().cachedUser;
-      if (user == null || user.notificationType != NotificationType.push) {
-        return;
-      }
+      if (user == null || user.notificationType != NotificationType.push) return;
+
       final title = (msg['event_title'] as String?)?.trim();
-      if (title != null && title.isNotEmpty) {
-        show('Starting in 30 minutes', title);
+      if (title == null || title.isEmpty) return;
+
+      // Compute lead-time label from the actual start_time if available,
+      // falling back to "30 minutes" if the field is missing.
+      String label = 'Starting in 30 minutes';
+      final startTimeStr = msg['start_time'] as String?;
+      if (startTimeStr != null) {
+        try {
+          final startTime = DateTime.parse(startTimeStr).toLocal();
+          final mins = startTime.difference(DateTime.now()).inMinutes;
+          if (mins > 0) label = _reminderLabel(mins);
+        } catch (_) {}
       }
+
+      final calendarId = msg['calendar_id'] as String?;
+      final eventId = msg['event_id'] as String?;
+      final payload = calendarId != null
+          ? jsonEncode({'calendarId': calendarId, if (eventId != null) 'eventId': eventId})
+          : null;
+
+      show(label, title, payload: payload);
       return;
     }
 
     if (type != 'event_created') return;
 
     final user = AuthService().cachedUser;
-    // Only users who opted into on-device notifications get a popup.
     if (user == null || user.notificationType != NotificationType.push) return;
 
     final event = msg['event'];
     if (event is! Map) return;
 
-    // Don't notify the creator about their own event.
     final createdBy = event['created_by'];
     if (createdBy != null && createdBy == user.id) return;
 
     final title = (event['title'] as String?)?.trim();
     if (title == null || title.isEmpty) return;
     final creator = (event['creator_name'] as String?)?.trim();
+    final calendarId = event['calendar_id'] as String?;
+    final eventId = event['id'] as String?;
+
+    final payload = calendarId != null
+        ? jsonEncode({'calendarId': calendarId, if (eventId != null) 'eventId': eventId})
+        : null;
 
     show(
       'New event',
       creator != null && creator.isNotEmpty
           ? '$creator added "$title"'
           : '"$title" was added to your calendar',
+      payload: payload,
     );
   }
 }
