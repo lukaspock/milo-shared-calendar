@@ -57,6 +57,7 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           .toList();
       _apiEvents = list;
       _cache.saveEvents(calendarId, list);
+      _rescheduleReminders(list);
 
       debugPrint(
         '[DeviceSync] fetch(): API returned ${list.length} events '
@@ -199,6 +200,21 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
     _ws.subscribeToCalendar(calendarId);
   }
 
+  /// Re-schedules OS reminders for all upcoming Milo events after a fetch.
+  /// This recovers reminders lost on phone restart or app reinstall, and picks
+  /// up events created by other members while the app was closed.
+  void _rescheduleReminders(List<CalendarEvent> events) {
+    final notifService = LocalNotificationService();
+    final now = DateTime.now();
+    for (final event in events) {
+      if (event.source != EventSource.sharedcal) continue;
+      if (!event.startTime.isAfter(now)) continue;
+      notifService.loadReminderPreference(event.id).then((saved) {
+        notifService.scheduleEventReminder(event, reminderMinutes: saved ?? 30);
+      });
+    }
+  }
+
   void _onWsMessage(Map<String, dynamic> msg) {
     final type = msg['type'] as String?;
     if (type == 'event_created') {
@@ -214,6 +230,11 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       // Sync to device calendar for ANY new event via WebSocket — covers
       // poll-confirmed events and events created by other members.
       DeviceCalendarService().syncEvent(event);
+      // Schedule a local reminder for events created by others — they won't
+      // have one yet since scheduleEventReminder is only called on self-creation.
+      if (event.source == EventSource.sharedcal && event.startTime.isAfter(DateTime.now())) {
+        LocalNotificationService().scheduleEventReminder(event);
+      }
     } else if (type == 'event_updated') {
       final event = CalendarEvent.fromJson(
         msg['event'] as Map<String, dynamic>,
@@ -221,12 +242,23 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       if (event.calendarId != calendarId) return;
       _apiEvents = _apiEvents.map((e) => e.id == event.id ? event : e).toList();
       _setMergedState();
+      // Keep the scheduled reminder in sync with the (possibly new) start time.
+      LocalNotificationService().cancelEventReminder(event.id);
+      if (event.source == EventSource.sharedcal && event.startTime.isAfter(DateTime.now())) {
+        LocalNotificationService().loadReminderPreference(event.id).then((saved) {
+          LocalNotificationService().scheduleEventReminder(
+            event,
+            reminderMinutes: saved ?? 30,
+          );
+        });
+      }
     } else if (type == 'event_deleted') {
       final eventId = msg['event_id'] as String;
       final cal = msg['calendar_id'] as String;
       if (cal != calendarId) return;
       _apiEvents = _apiEvents.where((e) => e.id != eventId).toList();
       _setMergedState();
+      LocalNotificationService().cancelEventReminder(eventId);
     } else if (type == 'gcal_synced') {
       final cal = msg['calendar_id'] as String?;
       if (cal != calendarId) return;
