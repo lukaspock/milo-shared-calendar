@@ -39,7 +39,7 @@ export async function generateCalendarConnectUrl(userId: string): Promise<string
     INSERT INTO pending_calendar_connects (state, user_id, expires_at)
     VALUES (${state}, ${userId}, ${expiresAt})
   `;
-  db`DELETE FROM pending_calendar_connects WHERE expires_at < now()`.catch(() => {});
+  db`DELETE FROM pending_calendar_connects WHERE expires_at < now()`.catch(console.error);
   const redirectUri = `${APP_URL}/auth/google-calendar/callback`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", CLIENT_ID);
@@ -357,7 +357,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
           console.log(`[gcal import] refreshed token persisted for user ${member.user_id}`);
         } catch (e) {
           D(`      ✗ failed to persist refreshed token:`, e);
-          console.error(`[gcal import] failed to persist refreshed token for user ${member.user_id}:`, e); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
+          console.error(`[gcal-token-refresh] calendar=${calendarId} user=${member.user_id as string}:`, e); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
         }
       });
 
@@ -465,6 +465,8 @@ export function startGoogleCalendarSyncScheduler(): void {
       D("[gcal-scheduler] previous run still in progress — skipping tick");
       return;
     }
+    // Flag is set inside the function body and always cleared in the finally block,
+    // so an error or rejected promise can never leave it permanently stuck at true.
     _schedulerRunning = true;
     try {
       const now = new Date();

@@ -70,8 +70,11 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
 
   const { title, description, options, vote_options, icon, color } = body;
   if (!title) return error("title is required");
+  if (title.length > 200) return error("title too long (max 200 characters)", 400);
   if (!options || options.length === 0)
     return error("At least one option is required");
+  if (options.length > 20)
+    return error("Too many options (max 20)", 400);
 
   const membership = await db`
     SELECT 1 FROM calendar_members
@@ -87,21 +90,24 @@ export async function createPoll(ctx: RequestContext): Promise<Response> {
   `;
   const poll = polls[0];
 
-  for (const opt of options) {
-    await db`
-      INSERT INTO poll_options (poll_id, start_time, end_time)
-      VALUES (${poll.id}, ${opt.start_time}, ${opt.end_time})
-    `;
-  }
+  await Promise.all(
+    options.map((opt) =>
+      db`
+        INSERT INTO poll_options (poll_id, start_time, end_time)
+        VALUES (${poll.id}, ${opt.start_time}, ${opt.end_time})
+      `
+    )
+  );
 
   if (vote_options && vote_options.length >= 2) {
-    for (let i = 0; i < vote_options.length; i++) {
-      const vo = vote_options[i];
-      await db`
-        INSERT INTO poll_vote_options (poll_id, label, color, position)
-        VALUES (${poll.id}, ${vo.label}, ${vo.color ?? "#6C63FF"}, ${i})
-      `;
-    }
+    await Promise.all(
+      vote_options.map((vo, i) =>
+        db`
+          INSERT INTO poll_vote_options (poll_id, label, color, position)
+          VALUES (${poll.id}, ${vo.label}, ${vo.color ?? "#6C63FF"}, ${i})
+        `
+      )
+    );
   }
 
   const full = await assemblePoll(poll);
@@ -174,6 +180,14 @@ export async function votePoll(ctx: RequestContext): Promise<Response> {
 
   if (poll.closed) return error("Poll is closed", 400);
 
+  // Membership check BEFORE any further poll/option lookups to prevent cross-calendar access
+  const membership = await db`
+    SELECT 1 FROM calendar_members
+    WHERE user_id = ${userId} AND calendar_id = ${poll.calendar_id}
+  `;
+  if (membership.length === 0)
+    return error("Not a member of this calendar", 403);
+
   // Validate vote value: against custom options if defined, else legacy yes/no/maybe
   const customOpts = await db`SELECT label FROM poll_vote_options WHERE poll_id = ${id}`;
   if (customOpts.length > 0) {
@@ -183,13 +197,6 @@ export async function votePoll(ctx: RequestContext): Promise<Response> {
     if (!["yes", "no", "maybe"].includes(vote))
       return error("vote must be yes, no, or maybe");
   }
-
-  const membership = await db`
-    SELECT 1 FROM calendar_members
-    WHERE user_id = ${userId} AND calendar_id = ${poll.calendar_id}
-  `;
-  if (membership.length === 0)
-    return error("Not a member of this calendar", 403);
 
   const opts = await db`
     SELECT 1 FROM poll_options WHERE id = ${option_id} AND poll_id = ${id}

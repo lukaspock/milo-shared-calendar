@@ -73,7 +73,7 @@ describe("register", () => {
     const res = await register(ctx);
     expect(res.status).toBe(400);
     const body = await res.json() as { error: string };
-    expect(body.error).toContain("6 characters");
+    expect(body.error).toContain("8 characters");
   });
 
   test("returns 409 when email already exists", async () => {

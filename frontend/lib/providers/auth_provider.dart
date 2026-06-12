@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/cache_service.dart';
+import '../services/websocket_service.dart';
 
 enum AuthStatus { loading, authenticated, unauthenticated }
 
@@ -90,6 +91,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    WebSocketService().disconnect();
     await _authService.logout();
     await CacheService().clearAll();
     state = const AuthState(status: AuthStatus.unauthenticated);

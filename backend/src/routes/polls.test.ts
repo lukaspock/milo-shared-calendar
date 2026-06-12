@@ -61,8 +61,9 @@ describe("votePoll", () => {
   test("returns 400 when vote value is invalid", async () => {
     const ctx = makeCtx(USER_ID, { option_id: OPTION_ID, vote: "maybe_not" }, { id: POLL_ID });
     mockDb
-      .mockResolvedValueOnce([fakePoll]) // poll lookup
-      .mockResolvedValueOnce([]);        // poll_vote_options → empty (legacy yes/no/maybe mode)
+      .mockResolvedValueOnce([fakePoll])           // poll lookup
+      .mockResolvedValueOnce([{ role: "member" }]) // membership (checked before poll_vote_options)
+      .mockResolvedValueOnce([]);                  // poll_vote_options → empty (legacy yes/no/maybe mode)
     const res = await votePoll(ctx);
     expect(res.status).toBe(400);
     const body = await res.json() as { error: string };
@@ -98,8 +99,8 @@ describe("votePoll", () => {
   test("returns 404 when option does not belong to poll", async () => {
     mockDb
       .mockResolvedValueOnce([fakePoll])           // poll
+      .mockResolvedValueOnce([{ role: "member" }]) // membership (checked before poll_vote_options)
       .mockResolvedValueOnce([])                   // poll_vote_options → empty
-      .mockResolvedValueOnce([{ role: "member" }]) // membership
       .mockResolvedValueOnce([]);                  // option lookup → empty
     const ctx = makeCtx(USER_ID, { option_id: "wrong-id", vote: "yes" }, { id: POLL_ID });
     const res = await votePoll(ctx);
@@ -109,8 +110,8 @@ describe("votePoll", () => {
   test("records vote and returns updated poll", async () => {
     mockDb
       .mockResolvedValueOnce([fakePoll])           // poll
+      .mockResolvedValueOnce([{ role: "member" }]) // membership (checked before poll_vote_options)
       .mockResolvedValueOnce([])                   // poll_vote_options → empty
-      .mockResolvedValueOnce([{ role: "member" }]) // membership
       .mockResolvedValueOnce([fakeOption])          // option lookup
       .mockResolvedValueOnce([])                   // upsert vote
       // assemblePoll queries:

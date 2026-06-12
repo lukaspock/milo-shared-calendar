@@ -1,5 +1,14 @@
 import { google } from "googleapis";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
@@ -66,7 +75,7 @@ function btn(href: string, label: string): string {
 export async function sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
   const link = `${APP_URL}/auth/verify/${token}`;
   const html = base(`
-    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 8px;">Hi ${name}! 👋</h2>
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 8px;">Hi ${escapeHtml(name)}! 👋</h2>
     <p style="color:#6B6357;font-size:15px;line-height:1.6;margin:0 0 4px;">
       Thanks for signing up. Please verify your email address to get started.
     </p>
@@ -85,7 +94,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
   const html = base(`
     <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 8px;">Reset your password 🔑</h2>
     <p style="color:#6B6357;font-size:15px;line-height:1.6;margin:0 0 4px;">
-      Hi ${name}, we received a request to reset your Milo password.
+      Hi ${escapeHtml(name)}, we received a request to reset your Milo password.
       Tap the button below to choose a new one.
     </p>
     ${btn(link, "Reset password")}
@@ -118,10 +127,10 @@ export async function sendReminderEmail(params: {
     <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">⏰ Event in 30 minutes</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${escapeHtml(eventTitle)}</p>
         <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">📅 ${dateStr}</p>
         <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">⏰ ${timeStr}</p>
-        <p style="margin:8px 0 0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+        <p style="margin:8px 0 0;color:#A39A8C;font-size:13px;">in ${escapeHtml(calendarName)}</p>
       </td></tr>
     </table>
   `);
@@ -147,13 +156,13 @@ export async function sendEventNotification(params: {
   const timeStr = startTime.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
 
   const html = base(`
-    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">New event in ${calendarName} 🗓️</h2>
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">New event in ${escapeHtml(calendarName)} 🗓️</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${escapeHtml(eventTitle)}</p>
         <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">📅 ${dateStr}</p>
         <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">⏰ ${timeStr}</p>
-        <p style="margin:8px 0 0;color:#A39A8C;font-size:13px;">Added by ${creatorName}</p>
+        <p style="margin:8px 0 0;color:#A39A8C;font-size:13px;">Added by ${escapeHtml(creatorName)}</p>
       </td></tr>
     </table>
   `);
@@ -175,8 +184,8 @@ export async function sendEventStartingEmail(params: {
     <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">📸 Vergiss nicht, ein Foto zu machen!</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
-        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${escapeHtml(eventTitle)}</p>
+        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${escapeHtml(calendarName)}</p>
       </td></tr>
     </table>
     <p style="color:#6B6357;font-size:14px;line-height:1.6;margin:16px 0 0;">
@@ -201,8 +210,8 @@ export async function sendEventEndedEmail(params: {
     <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">🖼 Heb dir eine Erinnerung auf!</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
-        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${calendarName}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${escapeHtml(eventTitle)}</p>
+        <p style="margin:0;color:#A39A8C;font-size:13px;">in ${escapeHtml(calendarName)}</p>
       </td></tr>
     </table>
     <p style="color:#6B6357;font-size:14px;line-height:1.6;margin:16px 0 0;">
@@ -230,13 +239,13 @@ export async function sendPollConfirmedNotification(params: {
   const timeStr = startTime.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
 
   const html = base(`
-    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">Poll confirmed in ${calendarName} ✅</h2>
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">Poll confirmed in ${escapeHtml(calendarName)} ✅</h2>
     <p style="color:#6B6357;font-size:15px;line-height:1.6;margin:0 0 16px;">
       A poll result has been confirmed as a new event:
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${eventTitle}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1F1B16;">${escapeHtml(eventTitle)}</p>
         <p style="margin:0 0 4px;color:#6B6357;font-size:14px;">📅 ${dateStr}</p>
         <p style="margin:0;color:#6B6357;font-size:14px;">⏰ ${timeStr}</p>
       </td></tr>
@@ -257,11 +266,11 @@ export async function sendChatMessageNotification(
   if (recipients.length === 0) return;
   const preview = content.length > 200 ? content.slice(0, 200) + "…" : content;
   const html = base(`
-    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">Neue Nachricht in ${calendarName} 💬</h2>
+    <h2 style="color:#1F1B16;font-size:22px;font-weight:800;margin:0 0 16px;">Neue Nachricht in ${escapeHtml(calendarName)} 💬</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E4;border-radius:14px;border:1.5px solid #EFE4D2;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#A39A8C;text-transform:uppercase;letter-spacing:0.5px;">${senderName}</p>
-        <p style="margin:0;font-size:15px;color:#1F1B16;line-height:1.6;">${preview}</p>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#A39A8C;text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(senderName)}</p>
+        <p style="margin:0;font-size:15px;color:#1F1B16;line-height:1.6;">${escapeHtml(preview)}</p>
       </td></tr>
     </table>
     <p style="color:#A39A8C;font-size:12px;margin:16px 0 0;">Öffne Milo um zu antworten.</p>

@@ -82,6 +82,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
   if (!calendar_id || !title || !start_time || !end_time) {
     return error("calendar_id, title, start_time and end_time are required");
   }
+  if (title.length > 200) return error("title must be at most 200 characters");
   const validRules = [undefined, null, "daily", "weekly", "monthly"];
   if (recurrence_rule !== undefined && !validRules.includes(recurrence_rule)) {
     return error("recurrence_rule must be 'daily', 'weekly', or 'monthly'");
@@ -109,9 +110,10 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
 
   const event = events[0];
 
-  // Generate recurring instances in the DB (fire-and-forget to not block response)
+  // Generate recurring instances in the DB before responding so the series is
+  // fully created as part of the event creation.
   if (recurrence_rule) {
-    insertRecurringInstances(
+    await insertRecurringInstances(
       event.id as string,
       calendar_id,
       userId,
@@ -122,7 +124,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
       eventColor!,
       recurrence_rule,
       recurrence_end ?? null,
-    ).catch(console.error);
+    );
   }
 
   // Fire-and-forget: email notifications + Google Calendar sync
@@ -175,6 +177,10 @@ export async function updateEvent(ctx: RequestContext): Promise<Response> {
     body = await ctx.req.json();
   } catch {
     return error("Invalid JSON body");
+  }
+
+  if (body.title !== undefined && body.title.length > 200) {
+    return error("title must be at most 200 characters");
   }
 
   // Fetch event to verify existence and membership
