@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calendar.dart';
 import '../models/event.dart' show CalendarEvent, EventSource;
 import '../models/event_photo.dart';
@@ -68,15 +69,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime? _selectedDay;
   String _viewMode = 'monthly';
   int _tabIndex = 1; // 0 = Chat, 1 = Calendar, 2 = Polls, 3 = Photos
+  Set<String> _ignoredPhotoEventIds = {};
 
   @override
   void initState() {
     super.initState();
     _viewMode = calendarViewFor(widget.calendarId);
+    _loadIgnoredPhotoEvents();
     if (!isColorPromptedFor(widget.calendarId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _showColorPromptSheet();
       });
+    }
+  }
+
+  Future<void> _loadIgnoredPhotoEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ignored = prefs.getStringList('photo_ignored_${widget.calendarId}') ?? [];
+    if (mounted) setState(() => _ignoredPhotoEventIds = Set.from(ignored));
+  }
+
+  Future<void> _ignorePhotoEvent(String eventId) async {
+    setState(() => _ignoredPhotoEventIds.add(eventId));
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'photo_ignored_${widget.calendarId}';
+    final existing = prefs.getStringList(key) ?? [];
+    if (!existing.contains(eventId)) {
+      existing.add(eventId);
+      await prefs.setStringList(key, existing);
     }
   }
 
@@ -473,6 +493,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   if (calendar?.photoMode == true) {
                     for (final e in events) {
                       if (e.source != EventSource.sharedcal) continue;
+                      if (_ignoredPhotoEventIds.contains(e.id)) continue;
                       if (e.startTime.isBefore(now) && e.endTime.isAfter(now)) {
                         activeEvent = e;
                         break;
@@ -480,6 +501,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     }
                     recentlyEndedEvents = events.where((e) {
                       if (e.source != EventSource.sharedcal) return false;
+                      if (_ignoredPhotoEventIds.contains(e.id)) return false;
                       final age = now.difference(e.endTime);
                       return age.inHours >= 0 &&
                           age.inHours < 48 &&
@@ -522,6 +544,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   activeEvent!.id,
                                   activeEvent.title,
                                 ),
+                                onIgnore: () => _ignorePhotoEvent(activeEvent!.id),
                               ),
                             ),
                           if (activeEvent == null &&
@@ -533,14 +556,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 color: const Color(0xFFE8F4FD),
                                 borderColor: const Color(0xFF2196F3),
                                 iconColor: const Color(0xFF1565C0),
-                                message: 'Heb dir eine Erinnerung auf!',
+                                message: 'Add a photo memory!',
                                 eventTitle: recentlyEndedEvents.first.title,
-                                actionLabel: 'Foto hochladen',
+                                actionLabel: 'Add photo',
                                 onAction: () => _showUploadSheet(
                                   context,
                                   recentlyEndedEvents.first.id,
                                   recentlyEndedEvents.first.title,
                                 ),
+                                onIgnore: () => _ignorePhotoEvent(recentlyEndedEvents.first.id),
                               ),
                             ),
                           Expanded(
@@ -572,6 +596,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 activeEvent!.id,
                                 activeEvent.title,
                               ),
+                              onIgnore: () => _ignorePhotoEvent(activeEvent!.id),
                             ),
                           ),
                         if (activeEvent == null &&
@@ -583,14 +608,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               color: const Color(0xFFE8F4FD),
                               borderColor: const Color(0xFF2196F3),
                               iconColor: const Color(0xFF1565C0),
-                              message: 'Heb dir eine Erinnerung auf!',
+                              message: 'Add a photo memory!',
                               eventTitle: recentlyEndedEvents.first.title,
-                              actionLabel: 'Foto hochladen',
+                              actionLabel: 'Add photo',
                               onAction: () => _showUploadSheet(
                                 context,
                                 recentlyEndedEvents.first.id,
                                 recentlyEndedEvents.first.title,
                               ),
+                              onIgnore: () => _ignorePhotoEvent(recentlyEndedEvents.first.id),
                             ),
                           ),
 
@@ -791,6 +817,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          if (calendar?.photoMode == true) ...[
+                            const SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: () => _showSelectEventSheet(context, events),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.appColors.surfaceSoft,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: context.appColors.line,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  '+ Add Photo',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.appColors.ink,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     );
@@ -940,6 +994,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
     ).length;
 
+    int photoBadge = 0;
+    if (hasPhotos) {
+      final events = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+      final photos = ref.watch(photosProvider(widget.calendarId)).valueOrNull ?? [];
+      final now = DateTime.now();
+      final hasActiveEvent = events.any((e) =>
+        e.source == EventSource.sharedcal &&
+        e.startTime.isBefore(now) && e.endTime.isAfter(now) &&
+        !_ignoredPhotoEventIds.contains(e.id),
+      );
+      final recentlyEndedCount = events.where((e) {
+        if (e.source != EventSource.sharedcal) return false;
+        if (_ignoredPhotoEventIds.contains(e.id)) return false;
+        final age = now.difference(e.endTime);
+        return age.inHours >= 0 &&
+            age.inHours < 48 &&
+            e.endTime.isBefore(now) &&
+            !photos.any((p) => p.eventId == e.id && p.uploadedBy == currentUserId);
+      }).length;
+      photoBadge = (hasActiveEvent ? 1 : 0) + recentlyEndedCount;
+    }
+
     final calHue = cal != null ? hueFor(cal) : stickerHues[0];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -948,7 +1024,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       (icon: Icons.calendar_today_outlined,      activeIcon: Icons.calendar_today_rounded,  label: 'Calendar', index: 1, badge: 0),
       (icon: Icons.how_to_vote_outlined,          activeIcon: Icons.how_to_vote_rounded,     label: 'Polls',    index: 2, badge: unansweredPolls),
       if (hasPhotos)
-        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 3, badge: 0),
+        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, label: 'Photos', index: 3, badge: photoBadge),
     ];
 
     return Padding(
@@ -1888,6 +1964,7 @@ class _PhotoBanner extends StatelessWidget {
     required this.eventTitle,
     required this.actionLabel,
     required this.onAction,
+    this.onIgnore,
   });
 
   final String icon;
@@ -1898,6 +1975,7 @@ class _PhotoBanner extends StatelessWidget {
   final String eventTitle;
   final String actionLabel;
   final VoidCallback onAction;
+  final VoidCallback? onIgnore;
 
   @override
   Widget build(BuildContext context) {
@@ -1938,6 +2016,26 @@ class _PhotoBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (onIgnore != null)
+            GestureDetector(
+              onTap: onIgnore,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: borderColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Ignore',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                ),
+              ),
+            ),
+          if (onIgnore != null) const SizedBox(width: 6),
           GestureDetector(
             onTap: onAction,
             child: Container(
