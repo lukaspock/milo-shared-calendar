@@ -61,7 +61,7 @@ class _OnboardingPasswordScreenState
       illustration: AppImages.lock(size: 72),
       illustrationHue: stickerHues[4],
       title: 'Create a password',
-      subtitle: 'At least 6 characters. You can always change it later.',
+      subtitle: 'At least 8 characters. You can always change it later.',
       buttonLabel: 'Create account',
       isLoading: isLoading,
       onContinue: isLoading ? null : _continue,
@@ -86,7 +86,7 @@ class _OnboardingPasswordScreenState
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => isLoading ? null : _continue(),
           validator: (v) =>
-              v != null && v.length >= 6 ? null : 'Min 6 characters',
+              v != null && v.length >= 8 ? null : 'Min 8 characters',
         ),
       ),
     );
