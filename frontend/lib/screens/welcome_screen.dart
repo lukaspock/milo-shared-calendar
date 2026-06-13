@@ -149,36 +149,80 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final wide = constraints.maxWidth > 700;
+      return wide ? _buildWide(context) : _buildNarrow(context);
+    });
+  }
+
+  Widget _buildWide(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 56, 40, 48),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: text + CTA
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEyebrow(),
+                const SizedBox(height: 24),
+                Text(
+                  'Stay in sync with\nyour people.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 52, fontWeight: FontWeight.w800,
+                    color: _txt(context), letterSpacing: -2.5, height: 1.04,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Milo makes it effortless to share your schedule — so you always know when your friends are free, and never miss a plan.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17, fontWeight: FontWeight.w500,
+                    color: _txt2(context), height: 1.65,
+                  ),
+                ),
+                const SizedBox(height: 36),
+                Row(
+                  children: [
+                    _PillButton(
+                      label: 'Get Started — it\'s free',
+                      large: true,
+                      onTap: onGetStarted,
+                    ),
+                    const SizedBox(width: 20),
+                    GestureDetector(
+                      onTap: onSignIn,
+                      child: Text(
+                        'Sign in →',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15, fontWeight: FontWeight.w600,
+                          color: _txt2(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 48),
+          // Right: phone + floating chips
+          _PhoneWithChips(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNarrow(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 48, 20, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Eyebrow
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            decoration: BoxDecoration(
-              color: _kAccent,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _emojiImg('📅', 14),
-                const SizedBox(width: 6),
-                Text(
-                  'Shared calendars for friends',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11, fontWeight: FontWeight.w800,
-                    letterSpacing: 0.7, color: _kText,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildEyebrow(),
           const SizedBox(height: 22),
-
-          // Heading
           Text(
             'Stay in sync with\nyour people.',
             textAlign: TextAlign.center,
@@ -188,8 +232,6 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Subtitle
           Text(
             'Milo makes it effortless to share your schedule — so you always know when your friends are free, and never miss a plan.',
             textAlign: TextAlign.center,
@@ -199,12 +241,8 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 40),
-
-          // Phone mockup
           _PhoneMockup(),
           const SizedBox(height: 40),
-
-          // CTA buttons
           SizedBox(
             width: double.infinity,
             child: _PillButton(
@@ -221,6 +259,114 @@ class _HeroSection extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15, fontWeight: FontWeight.w600, color: _txt2(context),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEyebrow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      decoration: BoxDecoration(
+        color: _kAccent,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _emojiImg('📅', 14),
+          const SizedBox(width: 6),
+          Text(
+            'Shared calendars for friends',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11, fontWeight: FontWeight.w800,
+              letterSpacing: 0.7, color: _kText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhoneWithChips extends StatelessWidget {
+  const _PhoneWithChips();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 340,
+      height: 600,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Phone mockup centered in the stack
+          const Positioned(
+            left: 38,
+            top: 40,
+            child: _PhoneMockup(),
+          ),
+          // Top-right chip: "Sarah is free Sunday!"
+          Positioned(
+            right: 0,
+            top: 30,
+            child: _NotifChip(
+              leading: Container(
+                width: 10, height: 10,
+                decoration: const BoxDecoration(
+                  color: _kGreen, shape: BoxShape.circle,
+                ),
+              ),
+              label: 'Sarah is free Sunday!',
+            ),
+          ),
+          // Bottom-left chip: "New event from Jake"
+          Positioned(
+            left: 0,
+            bottom: 28,
+            child: _NotifChip(
+              leading: _emojiImg('🔔', 14),
+              label: 'New event from Jake',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotifChip extends StatelessWidget {
+  const _NotifChip({required this.leading, required this.label});
+  final Widget leading;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: _isDark(context) ? _kSurfDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: _kText.withOpacity(0.10),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          leading,
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12, fontWeight: FontWeight.w700,
+              color: _txt(context),
             ),
           ),
         ],
