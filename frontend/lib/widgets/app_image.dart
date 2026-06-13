@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// A swappable "dummy" icon.
@@ -28,12 +29,17 @@ class AppImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On web, Image.asset fires an HTTP request for every missing PNG, which
+    // floods the browser console with 404s. Since the dummy_*.png files are
+    // optional design-time assets, jump straight to the emoji on web.
+    if (kIsWeb) {
+      return Text(fallbackEmoji, style: TextStyle(fontSize: size, height: 1.0));
+    }
     return Image.asset(
       'assets/images/$name.png',
       width: size,
       height: size,
       fit: BoxFit.contain,
-      // The PNG isn't bundled (it doesn't exist) → show the emoji instead.
       errorBuilder: (_, __, ___) => Text(
         fallbackEmoji,
         style: TextStyle(fontSize: size, height: 1.0),
