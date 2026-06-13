@@ -25,6 +25,7 @@ class _OnboardingVerifyScreenState
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
       ref.read(authProvider.notifier).refreshUser();
     });
   }

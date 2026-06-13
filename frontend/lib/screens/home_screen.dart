@@ -1867,6 +1867,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       ref.read(authProvider.notifier).refreshUser();
     }
