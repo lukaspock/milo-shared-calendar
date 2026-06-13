@@ -214,5 +214,17 @@ export async function runMigrations(): Promise<void> {
   await db`UPDATE calendar_members SET role = 'member' WHERE role IS NULL`;
   await db`ALTER TABLE calendar_members ALTER COLUMN role SET NOT NULL`;
 
+  // RSVP: per-event attendance voting (attending / not_attending / unsure per member)
+  await db`
+    CREATE TABLE IF NOT EXISTS event_rsvps (
+      event_id     UUID REFERENCES events(id) ON DELETE CASCADE,
+      user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
+      status       TEXT NOT NULL CHECK (status IN ('attending', 'not_attending', 'unsure')),
+      responded_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (event_id, user_id)
+    )
+  `;
+  await db`CREATE INDEX IF NOT EXISTS idx_event_rsvps_event_status ON event_rsvps(event_id, status)`;
+
   console.log("[db] migrations applied");
 }

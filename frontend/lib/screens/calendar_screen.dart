@@ -19,6 +19,8 @@ import '../providers/chat_provider.dart';
 import '../providers/events_provider.dart';
 import '../providers/photos_provider.dart';
 import '../providers/polls_provider.dart';
+import '../providers/rsvp_provider.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image.dart';
 import '../widgets/members_dialog.dart';
@@ -271,6 +273,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
+    final rsvpMap = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
 
     final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
@@ -283,6 +286,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         : <EventPhoto>[];
     final currentUserId =
         ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
+
+    // Events where the current user hasn't voted on RSVP yet (upcoming only)
+    final now = DateTime.now();
+    final events = eventsAsync.valueOrNull ?? [];
+    final pendingRsvpEvents = events.where((e) {
+      if (e.source != EventSource.sharedcal) return false;
+      if (e.endTime.isBefore(now)) return false;
+      final summary = rsvpMap[e.id];
+      return summary == null || summary.myStatus == null;
+    }).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Scaffold(
       backgroundColor: context.appColors.bg,
@@ -756,7 +770,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                   // ── Tab 2: Polls ───────────────────────────────────────────
                   if (_tabIndex == 2) {
-                    if (polls.isEmpty) {
+                    if (polls.isEmpty && pendingRsvpEvents.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -776,21 +790,58 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                       );
                     }
-                    return ListView.separated(
+                    return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      itemCount: polls.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) {
-                        final poll = polls[i];
-                        return _PollCard(
-                          poll: poll,
-                          calHue: calHue,
-                          onTap: () => context.go(
-                            '/calendar/${widget.calendarId}/polls/${poll.id}',
-                            extra: poll,
+                      children: [
+                        if (pendingRsvpEvents.isNotEmpty) ...[
+                          Text(
+                            'RSVP NEEDED',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: context.appColors.inkMuted,
+                              letterSpacing: 0.8,
+                            ),
                           ),
-                        );
-                      },
+                          const SizedBox(height: 8),
+                          ...pendingRsvpEvents.map((e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _RsvpEventCard(
+                              event: e,
+                              calendarId: widget.calendarId,
+                              calHue: calHue,
+                              onTap: () => context.go(
+                                '/calendar/${widget.calendarId}/event/${e.id}',
+                                extra: e,
+                              ),
+                            ),
+                          )),
+                          if (polls.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'POLLS',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: context.appColors.inkMuted,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ],
+                        ...polls.map((poll) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _PollCard(
+                            poll: poll,
+                            calHue: calHue,
+                            onTap: () => context.go(
+                              '/calendar/${widget.calendarId}/polls/${poll.id}',
+                              extra: poll,
+                            ),
+                          ),
+                        )),
+                      ],
                     );
                   }
 
@@ -993,6 +1044,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final unansweredPolls = polls.where((p) =>
       !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
     ).length;
+    final rsvpMapTab = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final eventsTab = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+    final nowTab = DateTime.now();
+    final pendingRsvpCount = eventsTab.where((e) {
+      if (e.source != EventSource.sharedcal) return false;
+      if (e.endTime.isBefore(nowTab)) return false;
+      final s = rsvpMapTab[e.id];
+      return s == null || s.myStatus == null;
+    }).length;
 
     int photoBadge = 0;
     if (hasPhotos) {
@@ -1019,7 +1079,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final tabs = <({IconData icon, IconData activeIcon, int index, int badge})>[
       (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded,    index: 0, badge: chatUnread),
       (icon: Icons.calendar_today_outlined,     activeIcon: Icons.calendar_today_rounded, index: 1, badge: 0),
-      (icon: Icons.how_to_vote_outlined,        activeIcon: Icons.how_to_vote_rounded,    index: 2, badge: unansweredPolls),
+      (icon: Icons.how_to_vote_outlined,        activeIcon: Icons.how_to_vote_rounded,    index: 2, badge: unansweredPolls + pendingRsvpCount),
       if (hasPhotos)
         (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, index: 3, badge: photoBadge),
     ];
@@ -1390,6 +1450,221 @@ class _PollCardState extends State<_PollCard> {
               size: 18,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── RSVP event card (shown in polls tab) ─────────────────────────────────────
+
+class _RsvpEventCard extends ConsumerStatefulWidget {
+  const _RsvpEventCard({
+    required this.event,
+    required this.calendarId,
+    required this.calHue,
+    required this.onTap,
+  });
+
+  final CalendarEvent event;
+  final String calendarId;
+  final CalHue calHue;
+  final VoidCallback onTap;
+
+  @override
+  ConsumerState<_RsvpEventCard> createState() => _RsvpEventCardState();
+}
+
+class _RsvpEventCardState extends ConsumerState<_RsvpEventCard> {
+  bool _voting = false;
+
+  Future<void> _vote(String status) async {
+    if (_voting) return;
+    setState(() => _voting = true);
+    try {
+      final api = ApiService();
+      final rsvpMap =
+          ref.read(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+      final current = rsvpMap[widget.event.id]?.myStatus;
+      if (current == status) {
+        await api.deleteRsvp(widget.event.id);
+      } else {
+        await api.setRsvp(widget.event.id, status);
+      }
+      // Provider refreshes via WS rsvp_update broadcast
+    } catch (_) {}
+    if (mounted) setState(() => _voting = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rsvpMap =
+        ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final summary = rsvpMap[widget.event.id];
+    final myStatus = summary?.myStatus;
+    final attendingCount = summary?.attendingCount ?? 0;
+
+    final startFmt = DateFormat('EEE, MMM d · HH:mm').format(widget.event.startTime);
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: context.appColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.appColors.line, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: context.appColors.line.withOpacity(0.5),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: widget.event.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.event.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.ink,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (attendingCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '$attendingCount ✅',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF28A745),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              startFmt,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: context.appColors.inkMuted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _QuickRsvpBtn(
+                  emoji: '✅',
+                  label: 'Going',
+                  value: 'attending',
+                  current: myStatus,
+                  loading: _voting,
+                  onTap: () => _vote('attending'),
+                ),
+                const SizedBox(width: 8),
+                _QuickRsvpBtn(
+                  emoji: '❌',
+                  label: 'No',
+                  value: 'not_attending',
+                  current: myStatus,
+                  loading: _voting,
+                  onTap: () => _vote('not_attending'),
+                ),
+                const SizedBox(width: 8),
+                _QuickRsvpBtn(
+                  emoji: '🤔',
+                  label: 'Unsure',
+                  value: 'unsure',
+                  current: myStatus,
+                  loading: _voting,
+                  onTap: () => _vote('unsure'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickRsvpBtn extends StatelessWidget {
+  const _QuickRsvpBtn({
+    required this.emoji,
+    required this.label,
+    required this.value,
+    required this.current,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final String value;
+  final String? current;
+  final bool loading;
+  final VoidCallback onTap;
+
+  static const _colors = {
+    'attending': (bg: Color(0xFFD4EDDA), border: Color(0xFF28A745)),
+    'not_attending': (bg: Color(0xFFF8D7DA), border: Color(0xFFDC3545)),
+    'unsure': (bg: Color(0xFFFFF3CD), border: Color(0xFFE5B130)),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = current == value;
+    final palette = _colors[value]!;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: loading ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? palette.bg : context.appColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? palette.border : context.appColors.line,
+              width: isSelected ? 2 : 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? palette.border : context.appColors.inkSoft,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
