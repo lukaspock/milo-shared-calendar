@@ -16,6 +16,7 @@ import '../providers/calendar_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/events_provider.dart';
 import '../providers/polls_provider.dart';
+import '../providers/rsvp_provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
@@ -422,7 +423,7 @@ class _UpcomingEventsRow extends ConsumerWidget {
   }
 }
 
-class _UpcomingEventCard extends StatelessWidget {
+class _UpcomingEventCard extends ConsumerWidget {
   const _UpcomingEventCard({
     required this.event,
     required this.calendar,
@@ -448,9 +449,13 @@ class _UpcomingEventCard extends StatelessWidget {
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hue = hueFor(calendar);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rsvpMap = ref.watch(rsvpProvider(calendar.id)).valueOrNull ?? {};
+    final rsvpSummary = rsvpMap[event.id];
+    final attendingCount = rsvpSummary?.attendingCount ?? 0;
+    final myStatus = rsvpSummary?.myStatus;
 
     return GestureDetector(
       onTap: onTap,
@@ -520,22 +525,60 @@ class _UpcomingEventCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: isDark ? hue.darkBg : hue.bg,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                calendar.name,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: hue.ink,
+            Row(
+              children: [
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? hue.darkBg : hue.bg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      calendar.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: hue.ink,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                if (attendingCount > 0 || myStatus != null) ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: myStatus == null
+                          ? const Color(0xFFFFF3CD)
+                          : myStatus == 'attending'
+                              ? const Color(0xFFD4EDDA)
+                              : myStatus == 'not_attending'
+                                  ? const Color(0xFFF8D7DA)
+                                  : const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      attendingCount > 0
+                          ? '$attendingCount ✅'
+                          : myStatus == null
+                              ? 'Vote?'
+                              : myStatus == 'attending'
+                                  ? '✅'
+                                  : myStatus == 'not_attending'
+                                      ? '❌'
+                                      : '🤔',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: context.appColors.ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -805,8 +848,19 @@ class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
     final unansweredPolls = polls.where((p) =>
       !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
     ).length;
+    final rsvpMap = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final events = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+    final now = DateTime.now();
+    final pendingRsvp = events.where((e) {
+      if (e.source != EventSource.sharedcal) return false;
+      if (e.endTime.isBefore(now)) return false;
+      final s = rsvpMap[e.id];
+      return s == null || s.myStatus == null;
+    }).length;
 
-    if (chatUnread == 0 && unansweredPolls == 0) return const SizedBox.shrink();
+    if (chatUnread == 0 && unansweredPolls == 0 && pendingRsvp == 0) {
+      return const SizedBox.shrink();
+    }
 
     return Wrap(
       spacing: 6,
@@ -823,6 +877,12 @@ class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
             icon: Icons.how_to_vote_rounded,
             label: '$unansweredPolls open poll${unansweredPolls == 1 ? '' : 's'}',
             color: const Color(0xFFE87A35),
+          ),
+        if (pendingRsvp > 0)
+          _BadgeChip(
+            icon: Icons.how_to_reg_rounded,
+            label: '$pendingRsvp event${pendingRsvp == 1 ? '' : 's'} need your RSVP',
+            color: const Color(0xFF28A745),
           ),
       ],
     );

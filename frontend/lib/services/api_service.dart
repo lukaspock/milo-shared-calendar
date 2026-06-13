@@ -5,6 +5,7 @@ import '../models/chat_message.dart';
 import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../models/reaction.dart';
+import '../models/rsvp.dart';
 
 // ── Cloudinary config ──────────────────────────────────────────────────────
 // Unsigned preset — cloud name and preset name are safe to commit.
@@ -251,6 +252,34 @@ class ApiService {
 
   Future<void> deleteChatMessage(String calendarId, String messageId) async {
     await _dio.delete<void>('/calendars/$calendarId/messages/$messageId');
+  }
+
+  // ── RSVPs ──────────────────────────────────────────────────────────────────
+
+  Future<Map<String, RsvpSummary>> getCalendarRsvps(String calendarId) async {
+    final res = await get<Map<String, dynamic>>('/calendars/$calendarId/rsvps');
+    final data = res.data as Map<String, dynamic>;
+    return data.map(
+      (k, v) => MapEntry(k, RsvpSummary.fromJson(v as Map<String, dynamic>)),
+    );
+  }
+
+  Future<EventRsvpDetail> getRsvpDetail(String eventId) async {
+    final res = await get<Map<String, dynamic>>('/events/$eventId/rsvps');
+    return EventRsvpDetail.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<EventRsvpDetail> setRsvp(String eventId, String status) async {
+    final res = await post<Map<String, dynamic>>(
+      '/events/$eventId/rsvp',
+      data: {'status': status},
+    );
+    return EventRsvpDetail.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<EventRsvpDetail> deleteRsvp(String eventId) async {
+    final res = await delete<Map<String, dynamic>>('/events/$eventId/rsvp');
+    return EventRsvpDetail.fromJson(res.data as Map<String, dynamic>);
   }
 }
 

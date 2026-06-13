@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart' show CalendarEvent, EventSource, RecurrenceRule;
 import '../models/reaction.dart';
+import '../models/rsvp.dart';
 import '../providers/auth_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/events_provider.dart';
@@ -87,6 +88,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   List<EventReaction> _reactions = [];
   bool _reactionsLoading = false;
 
+  EventRsvpDetail _rsvpDetail = const EventRsvpDetail.empty();
+  bool _rsvpLoading = false;
+
   bool get _isNew => widget.eventId == 'new';
   CalendarEvent? get _existingEvent =>
       widget.extra is CalendarEvent ? widget.extra as CalendarEvent : null;
@@ -103,6 +107,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _recurrenceEnd = _existingEvent!.recurrenceEnd;
       _selectedIcon = _existingEvent!.icon;
       _loadReactions();
+      _loadRsvpDetail();
       _loadSavedReminder();
     } else if (widget.extra is DateTime) {
       final d = widget.extra as DateTime;
@@ -144,6 +149,26 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       if (mounted) setState(() => _reactions = list);
     } catch (_) {}
     if (mounted) setState(() => _reactionsLoading = false);
+  }
+
+  Future<void> _loadRsvpDetail() async {
+    if (_existingEvent?.source != EventSource.sharedcal) return;
+    if (!mounted) return;
+    setState(() => _rsvpLoading = true);
+    try {
+      final detail = await ApiService().getRsvpDetail(widget.eventId);
+      if (mounted) setState(() => _rsvpDetail = detail);
+    } catch (_) {}
+    if (mounted) setState(() => _rsvpLoading = false);
+  }
+
+  Future<void> _setRsvp(String status) async {
+    try {
+      final updated = _rsvpDetail.myStatus == status
+          ? await ApiService().deleteRsvp(widget.eventId)
+          : await ApiService().setRsvp(widget.eventId, status);
+      if (mounted) setState(() => _rsvpDetail = updated);
+    } catch (_) {}
   }
 
   Future<void> _addReaction(String emoji) async {
@@ -828,8 +853,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
             ),
 
-            // Reactions section (edit mode, existing events)
+            // RSVP + Reactions section (edit mode, existing events)
             if (!_isNew) ...[
+              const SizedBox(height: 24),
+              _RsvpSection(
+                detail: _rsvpDetail,
+                loading: _rsvpLoading,
+                onVote: _setRsvp,
+              ),
               const SizedBox(height: 24),
               _ReactionsSection(
                 reactions: _reactions,
@@ -1082,8 +1113,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
           ],
 
-          // Reactions — only for native SharedCal events
+          // RSVP + Reactions — only for native SharedCal events
           if (event.source == EventSource.sharedcal) ...[
+            const SizedBox(height: 24),
+            _RsvpSection(
+              detail: _rsvpDetail,
+              loading: _rsvpLoading,
+              onVote: _setRsvp,
+            ),
             const SizedBox(height: 24),
             _ReactionsSection(
               reactions: _reactions,
@@ -1881,5 +1918,158 @@ class _EventIconDisplay extends StatelessWidget {
       );
     }
     return Text(icon, style: TextStyle(fontSize: size));
+  }
+}
+
+// ── RSVP section ──────────────────────────────────────────────────────────────
+
+class _RsvpSection extends StatelessWidget {
+  const _RsvpSection({
+    required this.detail,
+    required this.loading,
+    required this.onVote,
+  });
+
+  final EventRsvpDetail detail;
+  final bool loading;
+  final void Function(String status) onVote;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ATTENDANCE',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: context.appColors.inkMuted,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (loading)
+          Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: context.appColors.inkMuted,
+              ),
+            ),
+          )
+        else ...[
+          Row(
+            children: [
+              _RsvpButton(
+                emoji: '✅',
+                label: 'Going',
+                value: 'attending',
+                current: detail.myStatus,
+                count: detail.attending.length,
+                onTap: () => onVote('attending'),
+              ),
+              const SizedBox(width: 8),
+              _RsvpButton(
+                emoji: '❌',
+                label: 'Not going',
+                value: 'not_attending',
+                current: detail.myStatus,
+                count: detail.notAttending.length,
+                onTap: () => onVote('not_attending'),
+              ),
+              const SizedBox(width: 8),
+              _RsvpButton(
+                emoji: '🤔',
+                label: 'Unsure',
+                value: 'unsure',
+                current: detail.myStatus,
+                count: detail.unsure.length,
+                onTap: () => onVote('unsure'),
+              ),
+            ],
+          ),
+          if (detail.attending.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              '${detail.attending.length} going: ${detail.attending.take(3).map((u) => u.userName).join(', ')}${detail.attending.length > 3 ? ' +${detail.attending.length - 3}' : ''}',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: context.appColors.inkSoft,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _RsvpButton extends StatelessWidget {
+  const _RsvpButton({
+    required this.emoji,
+    required this.label,
+    required this.value,
+    required this.current,
+    required this.count,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final String value;
+  final String? current;
+  final int count;
+  final VoidCallback onTap;
+
+  static const _colors = {
+    'attending': (bg: Color(0xFFD4EDDA), border: Color(0xFF28A745)),
+    'not_attending': (bg: Color(0xFFF8D7DA), border: Color(0xFFDC3545)),
+    'unsure': (bg: Color(0xFFFFF3CD), border: Color(0xFFE5B130)),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = current == value;
+    final palette = _colors[value]!;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? palette.bg : context.appColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? palette.border : context.appColors.line,
+              width: isSelected ? 2 : 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 20)),
+              const SizedBox(height: 3),
+              Text(
+                count > 0 ? '$count' : label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? palette.border : context.appColors.inkMuted,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

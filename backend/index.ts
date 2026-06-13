@@ -8,6 +8,7 @@ import { createEvent, updateEvent, deleteEvent, notifyMembers } from "./src/rout
 import { getReactions, addReaction, removeReaction } from "./src/routes/reactions";
 import { addEventPhoto, listCalendarPhotos, deleteEventPhoto } from "./src/routes/photos";
 import { createPoll, listPolls, getPoll, votePoll, confirmPoll, deletePoll, addPollOption } from "./src/routes/polls";
+import { setRsvp, deleteRsvp, getRsvpDetail, getCalendarRsvps } from "./src/routes/rsvps";
 import { getMessages, postMessage, deleteMessage } from "./src/routes/chat";
 import { privacyPolicy, termsOfService } from "./src/routes/legal";
 import { deleteAsset } from "./src/routes/assets";
@@ -193,6 +194,7 @@ router.get("/calendars/:id/events", getCalendarEvents, [authMiddleware]);
 router.post("/calendars/:id/device-events", syncDeviceEvents, [authMiddleware]);
 router.get("/calendars/:id/members", listMembers, [authMiddleware]);
 router.delete("/calendars/:id/members/:userId", removeMember, [authMiddleware]);
+router.get("/calendars/:id/rsvps", getCalendarRsvps, [authMiddleware]);
 
 // --- Events (protected) ---
 router.post("/events", createEvent, [authMiddleware]);
@@ -202,6 +204,9 @@ router.post("/events/:id/notify", notifyMembers, [authMiddleware]);
 router.get("/events/:id/reactions", getReactions, [authMiddleware]);
 router.post("/events/:id/reactions", addReaction, [authMiddleware]);
 router.delete("/events/:id/reactions/:emoji", removeReaction, [authMiddleware]);
+router.post("/events/:id/rsvp", setRsvp, [authMiddleware]);
+router.delete("/events/:id/rsvp", deleteRsvp, [authMiddleware]);
+router.get("/events/:id/rsvps", getRsvpDetail, [authMiddleware]);
 
 // --- Photo memories (protected) ---
 router.post("/events/:eventId/photos", addEventPhoto, [authMiddleware]);
