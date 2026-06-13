@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calendar.dart';
 import '../models/event.dart' show CalendarEvent, EventSource;
+import '../models/member.dart';
 import '../models/event_photo.dart';
 import '../models/poll.dart';
 import '../providers/auth_provider.dart';
@@ -589,6 +590,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                           ),
                         ],
+                      );
+                    }
+                    if (_viewMode == 'availability') {
+                      return _AvailabilityView(
+                        calendarId: widget.calendarId,
+                        events: events,
                       );
                     }
                     return Column(
@@ -3374,7 +3381,7 @@ class _CalendarSettingsSheet extends ConsumerWidget {
                         Navigator.pop(context);
                       },
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _ViewModeTile(
                       label: 'Weekly',
                       icon: Icons.calendar_view_week_rounded,
@@ -3382,6 +3389,17 @@ class _CalendarSettingsSheet extends ConsumerWidget {
                       onTap: () {
                         onViewModeChanged('weekly');
                         persistCalendarView(calendarId, 'weekly');
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _ViewModeTile(
+                      label: 'Members',
+                      icon: Icons.people_outline_rounded,
+                      selected: viewMode == 'availability',
+                      onTap: () {
+                        onViewModeChanged('availability');
+                        persistCalendarView(calendarId, 'availability');
                         Navigator.pop(context);
                       },
                     ),
@@ -3619,6 +3637,369 @@ class _FullScreenPhotoView extends StatelessWidget {
               size: 60,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Availability view ─────────────────────────────────────────────────────────
+
+enum _AvailStatus { free, busy }
+
+class _AvailSlot {
+  final DateTime start;
+  final DateTime end;
+  final String dayLabel;
+  final String period;
+
+  const _AvailSlot({
+    required this.start,
+    required this.end,
+    required this.dayLabel,
+    required this.period,
+  });
+
+  bool overlaps(DateTime s, DateTime e) =>
+      s.isBefore(end) && e.isAfter(start);
+}
+
+class _AvailabilityView extends ConsumerStatefulWidget {
+  final String calendarId;
+  final List<CalendarEvent> events;
+
+  const _AvailabilityView({
+    required this.calendarId,
+    required this.events,
+  });
+
+  @override
+  ConsumerState<_AvailabilityView> createState() => _AvailabilityViewState();
+}
+
+class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
+  List<CalendarMember> _members = [];
+  bool _loading = true;
+  int _dayOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final members = await ref
+          .read(calendarProvider.notifier)
+          .getMembers(widget.calendarId);
+      if (mounted) {
+        setState(() {
+          _members = members;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<_AvailSlot> _buildSlots() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final slots = <_AvailSlot>[];
+
+    for (int d = _dayOffset; d < _dayOffset + 3; d++) {
+      final day = today.add(Duration(days: d));
+      final dayLabel = DateFormat('EEE').format(day);
+
+      void add(int startH, int endH, String period) {
+        final s = day.add(Duration(hours: startH));
+        final e = day.add(Duration(hours: endH));
+        if (e.isAfter(now)) {
+          slots.add(_AvailSlot(start: s, end: e, dayLabel: dayLabel, period: period));
+        }
+      }
+
+      add(6, 12, 'AM');
+      add(12, 18, 'PM');
+      add(18, 24, 'eve');
+    }
+    return slots;
+  }
+
+  _AvailStatus _statusFor(CalendarMember member, _AvailSlot slot) {
+    for (final event in widget.events) {
+      if (!slot.overlaps(event.startTime, event.endTime)) continue;
+      if (event.source == EventSource.sharedcal &&
+          event.createdBy == member.id) {
+        return _AvailStatus.busy;
+      }
+      if (event.source != EventSource.sharedcal &&
+          event.importedBy.any((u) => u.userId == member.id)) {
+        return _AvailStatus.busy;
+      }
+    }
+    return _AvailStatus.free;
+  }
+
+  String _dateRangeLabel() {
+    final base = DateTime.now();
+    final start = DateTime(base.year, base.month, base.day)
+        .add(Duration(days: _dayOffset));
+    final end = start.add(const Duration(days: 2));
+    return '${DateFormat('MMM d').format(start)} – ${DateFormat('MMM d').format(end)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_members.isEmpty) {
+      return Center(
+        child: Text(
+          'No members',
+          style: GoogleFonts.plusJakartaSans(color: context.appColors.inkMuted),
+        ),
+      );
+    }
+
+    final slots = _buildSlots();
+    const double leftW = 96.0;
+    const double slotW = 84.0;
+    const double rowH = 64.0;
+    const double headerH = 44.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Date navigation
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Row(
+            children: [
+              _AvailNavBtn(
+                icon: Icons.chevron_left_rounded,
+                enabled: _dayOffset > 0,
+                onTap: () => setState(() => _dayOffset--),
+              ),
+              Expanded(
+                child: Text(
+                  _dateRangeLabel(),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.ink,
+                  ),
+                ),
+              ),
+              _AvailNavBtn(
+                icon: Icons.chevron_right_rounded,
+                enabled: true,
+                onTap: () => setState(() => _dayOffset++),
+              ),
+            ],
+          ),
+        ),
+        // Grid
+        Expanded(
+          child: LayoutBuilder(
+            builder: (ctx, constraints) {
+              final rightW = constraints.maxWidth - leftW - 32.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Frozen member column
+                    SizedBox(
+                      width: leftW,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: headerH),
+                          ..._members.map((m) => _memberCell(m, rowH)),
+                        ],
+                      ),
+                    ),
+                    // Horizontally scrollable slot columns
+                    SizedBox(
+                      width: rightW > 0 ? rightW : 0,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: slots
+                                  .map((s) => _slotHeader(s, slotW, headerH))
+                                  .toList(),
+                            ),
+                            ..._members.map((m) => SizedBox(
+                              height: rowH,
+                              child: Row(
+                                children: slots
+                                    .map((s) => _statusCell(
+                                          _statusFor(m, s), slotW, rowH))
+                                    .toList(),
+                              ),
+                            )),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _memberCell(CalendarMember member, double rowH) {
+    final c = _hexToColor(member.color) ?? Colors.blue;
+    return SizedBox(
+      height: rowH,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+            child: member.avatarUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      member.avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _initial(member),
+                    ),
+                  )
+                : _initial(member),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              member.name.split(' ').first,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.appColors.ink,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _initial(CalendarMember member) => Center(
+        child: Text(
+          member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      );
+
+  Widget _slotHeader(_AvailSlot slot, double w, double h) {
+    return SizedBox(
+      width: w,
+      height: h,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            slot.dayLabel,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.inkMuted,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            slot.period,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.appColors.inkSoft,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusCell(_AvailStatus status, double w, double h) {
+    const freeBg = Color(0xFFD8EDD9);
+    const freeFg = Color(0xFF2E7D32);
+    final busyBg = context.appColors.surfaceSoft;
+    final busyFg = context.appColors.inkSoft;
+
+    final bg = status == _AvailStatus.free ? freeBg : busyBg;
+    final fg = status == _AvailStatus.free ? freeFg : busyFg;
+    final label = status == _AvailStatus.free ? 'Free' : 'Busy';
+
+    return SizedBox(
+      width: w,
+      height: h,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvailNavBtn extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _AvailNavBtn({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: context.appColors.surfaceSoft,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.appColors.line, width: 1.5),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? context.appColors.ink : context.appColors.inkMuted,
         ),
       ),
     );
