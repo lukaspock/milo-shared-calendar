@@ -192,7 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                     validator: (v) =>
-                        v != null && v.length >= 6 ? null : 'Min 6 characters',
+                        v != null && v.length >= 8 ? null : 'Min 8 characters',
                   ),
 
                   const SizedBox(height: 28),
