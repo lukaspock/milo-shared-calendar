@@ -202,11 +202,16 @@ export async function runMigrations(): Promise<void> {
   await db`CREATE INDEX IF NOT EXISTS idx_imported_gcal_events_calendar_start ON imported_gcal_events(calendar_id, start_time, end_time)`;
   await db`CREATE INDEX IF NOT EXISTS idx_imported_device_events_calendar_user ON imported_device_events(calendar_id, user_id)`;
 
-  // Fix 2 — CHECK constraint: end_time must be >= start_time
+  // Fix 2 — CHECK constraint: end_time must be >= start_time.
+  // Clamp any legacy bad rows first so the constraint never fails on existing data.
+  await db`UPDATE events SET end_time = start_time WHERE end_time < start_time`;
   await db`ALTER TABLE events DROP CONSTRAINT IF EXISTS events_time_order`;
   await db`ALTER TABLE events ADD CONSTRAINT events_time_order CHECK (end_time >= start_time)`;
 
-  // Fix 3 — Ensure calendar_members.role is NOT NULL (default already applied to existing rows)
+  // Fix 3 — Ensure calendar_members.role is NOT NULL.
+  // Backfill any NULL roles before tightening the column — avoids a migration failure
+  // on databases that had rows inserted before the DEFAULT was enforced.
+  await db`UPDATE calendar_members SET role = 'member' WHERE role IS NULL`;
   await db`ALTER TABLE calendar_members ALTER COLUMN role SET NOT NULL`;
 
   console.log("[db] migrations applied");

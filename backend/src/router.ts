@@ -11,9 +11,9 @@ interface Route {
 }
 
 // Lock to a specific origin in production by setting ALLOWED_ORIGIN env var.
-// Defaults to "*" for local dev — the Flutter app doesn't send an Origin header
-// from native builds, so this only matters for browser/web clients.
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? "http://localhost:3000";
+// Defaults to "*" — native Flutter builds don't send an Origin header so CORS
+// is moot there, but the GitLab Pages web build does and needs a permissive default.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? "*";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
