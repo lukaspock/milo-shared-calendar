@@ -65,6 +65,7 @@ class _WebOnboardingScreenState extends ConsumerState<WebOnboardingScreen> {
   String? _webAvatarUrl;
   bool _uploadingAvatar = false;
   Timer? _verifyTimer;
+  Timer? _calendarPollTimer;
   bool _resent = false;
 
   // Loading/error
@@ -77,6 +78,7 @@ class _WebOnboardingScreenState extends ConsumerState<WebOnboardingScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _verifyTimer?.cancel();
+    _calendarPollTimer?.cancel();
     super.dispose();
   }
 
@@ -166,11 +168,25 @@ class _WebOnboardingScreenState extends ConsumerState<WebOnboardingScreen> {
     setState(() => _loading = false);
     if (url != null && mounted) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      _startCalendarPollTimer();
+    }
+  }
+
+  void _startCalendarPollTimer() {
+    _calendarPollTimer?.cancel();
+    _calendarPollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (!mounted) {
+        _calendarPollTimer?.cancel();
+        return;
+      }
+      await ref.read(authProvider.notifier).refreshUser();
+      if (!mounted) return;
       final user = ref.read(authProvider).user;
-      if (mounted && user?.hasGoogleCalendar == true) {
+      if (user?.hasGoogleCalendar == true) {
+        _calendarPollTimer?.cancel();
         setState(() => _googleConnected = true);
       }
-    }
+    });
   }
 
   // ── S6: Save notification prefs ────────────────────────────────────────────
