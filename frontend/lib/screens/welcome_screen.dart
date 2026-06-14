@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +61,15 @@ class WelcomeScreen extends ConsumerWidget {
     ref.listen<AuthState>(authProvider, (_, state) {
       if (state.status == AuthStatus.authenticated) context.go('/home');
     });
+
+    final isMobile = MediaQuery.sizeOf(context).width < 700;
+
+    if (isMobile) {
+      return _MobileLanding(
+        onGetStarted: () => context.go('/onboarding/name'),
+        onSignIn: () => context.go('/login'),
+      );
+    }
 
     return Scaffold(
       backgroundColor: _bg(context),
@@ -1565,4 +1576,283 @@ class _PillButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Mobile landing ────────────────────────────────────────────────────────────
+
+class _MobileLanding extends StatelessWidget {
+  const _MobileLanding({required this.onGetStarted, required this.onSignIn});
+  final VoidCallback onGetStarted;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg(context),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              // App icon
+              ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: Image.asset('assets/icons/app_icon.png', width: 108, height: 108),
+              ),
+              const SizedBox(height: 28),
+              // Eyebrow
+              Text(
+                'SHARED CALENDARS FOR FRIENDS',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: _kAccent2, letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Title
+              Text(
+                'Welcome to milo',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 42, fontWeight: FontWeight.w800,
+                  color: _txt(context), letterSpacing: -1.5, height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Subtitle
+              Text(
+                'Plan together. See who\'s free.\nNever miss out again.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w500,
+                  color: _txt2(context), height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 28),
+              _MobileSocialProofPill(),
+              const Spacer(flex: 3),
+              SizedBox(
+                width: double.infinity,
+                child: _PillButton(
+                  label: 'Get Started — it\'s free',
+                  large: true,
+                  onTap: onGetStarted,
+                ),
+              ),
+              const SizedBox(height: 18),
+              GestureDetector(
+                onTap: onSignIn,
+                child: Text(
+                  'Sign in →',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15, fontWeight: FontWeight.w600,
+                    color: _txt2(context),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Mobile social proof pill ──────────────────────────────────────────────────
+
+class _MobileSocialProofPill extends StatelessWidget {
+  const _MobileSocialProofPill();
+
+  static const _avatars = [
+    ('S', Color(0xFF5BA87A)),
+    ('J', Color(0xFF4285F4)),
+    ('A', Color(0xFF9B59B6)),
+    ('L', Color(0xFFE07030)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 28.0;
+    const overlap = 18.0;
+    final totalWidth = size + (_avatars.length - 1) * overlap;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: _isDark(context) ? _kSurfDark : Colors.white,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: _kText.withOpacity(0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: totalWidth,
+            height: size,
+            child: Stack(
+              children: [
+                for (int i = 0; i < _avatars.length; i++)
+                  Positioned(
+                    left: i * overlap,
+                    child: Container(
+                      width: size, height: size,
+                      decoration: BoxDecoration(
+                        color: _avatars[i].$2,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _isDark(context) ? _kSurfDark : Colors.white,
+                          width: 2,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _avatars[i].$1,
+                        style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Sync your friend groups',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14, fontWeight: FontWeight.w600,
+              color: _txt(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Mobile auth button ────────────────────────────────────────────────────────
+
+enum _AuthBtnStyle { outlined, dark, muted }
+
+class _MobileAuthButton extends StatelessWidget {
+  const _MobileAuthButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.style,
+    required this.textColor,
+  });
+  final String label;
+  final Widget icon;
+  final VoidCallback onTap;
+  final _AuthBtnStyle style;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Border? border;
+    switch (style) {
+      case _AuthBtnStyle.outlined:
+        bg = _isDark(context) ? _kSurfDark : Colors.white;
+        border = Border.all(color: _surf2(context), width: 1.5);
+      case _AuthBtnStyle.dark:
+        bg = _isDark(context) ? const Color(0xFF2A2520) : const Color(0xFF1A1A1A);
+        border = null;
+      case _AuthBtnStyle.muted:
+        bg = _surf(context);
+        border = Border.all(color: _surf2(context), width: 1);
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(100),
+          border: border,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16, fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Google G icon ─────────────────────────────────────────────────────────────
+
+class _GoogleGIcon extends StatelessWidget {
+  const _GoogleGIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20, height: 20,
+      child: CustomPaint(painter: const _GoogleGPainter()),
+    );
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  const _GoogleGPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final sw = size.width * 0.28;
+    final r = (size.width / 2) - sw / 2;
+    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
+    const d = math.pi / 180;
+
+    void arc(Color c, double startDeg, double sweepDeg) {
+      canvas.drawArc(
+        rect, startDeg * d, sweepDeg * d, false,
+        Paint()
+          ..color = c
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = sw
+          ..strokeCap = StrokeCap.butt,
+      );
+    }
+
+    // Arcs covering ~320° leaving a ~40° gap at upper-right (the G's mouth)
+    arc(const Color(0xFF4285F4), 20, 100);  // blue:   20°→120°
+    arc(const Color(0xFF34A853), 120, 80);  // green: 120°→200°
+    arc(const Color(0xFFFBBC05), 200, 80);  // yellow:200°→280°
+    arc(const Color(0xFFEA4335), 280, 60);  // red:   280°→340°
+
+    // Horizontal crossbar (blue) from center going right
+    canvas.drawRect(
+      Rect.fromLTRB(cx - sw * 0.2, cy - sw / 2, size.width - sw * 0.1, cy + sw / 2),
+      Paint()..color = const Color(0xFF4285F4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GoogleGPainter o) => false;
 }
