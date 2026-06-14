@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +9,14 @@ import '../../theme/app_theme.dart';
 import 'onboarding_shell.dart';
 
 const _avatarColors = [
-  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
-  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+  '#6C63FF',
+  '#FF6584',
+  '#43B89C',
+  '#F5A623',
+  '#4A90E2',
+  '#E74C3C',
+  '#2ECC71',
+  '#9B59B6',
 ];
 
 class OnboardingAvatarScreen extends ConsumerStatefulWidget {
@@ -64,13 +69,18 @@ class _OnboardingAvatarScreenState
     setState(() => _uploading = true);
     try {
       final url = await ApiService().uploadAvatarToCloudinary(picked);
-      if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _avatarUrl = url;
+        });
+      }
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
         setState(() => _uploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: ${e.message}')));
       }
     }
   }
@@ -81,10 +91,12 @@ class _OnboardingAvatarScreenState
     final colorChanged = _selectedColor != user?.color;
     final hasPhoto = _avatarUrl != null;
     if (hasPhoto || colorChanged) {
-      await ref.read(authProvider.notifier).updateProfile(
-        color: colorChanged ? _selectedColor : null,
-        avatarUrl: hasPhoto ? _avatarUrl : null,
-      );
+      await ref
+          .read(authProvider.notifier)
+          .updateProfile(
+            color: colorChanged ? _selectedColor : null,
+            avatarUrl: hasPhoto ? _avatarUrl : null,
+          );
     }
     if (mounted) context.go('/onboarding/theme');
   }
@@ -132,19 +144,22 @@ class _OnboardingAvatarScreenState
                     ),
                   )
                 : _uploading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                            color: profileColor, strokeWidth: 2.5))
-                    : Center(
-                        child: Text(
-                          initials,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 38,
-                            fontWeight: FontWeight.w700,
-                            color: profileColor,
-                          ),
-                        ),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: profileColor,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      initials,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w700,
+                        color: profileColor,
                       ),
+                    ),
+                  ),
           ),
           Positioned(
             bottom: 2,
@@ -155,13 +170,13 @@ class _OnboardingAvatarScreenState
               decoration: BoxDecoration(
                 color: AppTheme.accent,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: context.appColors.bg,
-                  width: 2,
-                ),
+                border: Border.all(color: context.appColors.bg, width: 2),
               ),
-              child: const Icon(Icons.camera_alt_rounded,
-                  size: 16, color: Colors.white),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -189,8 +204,8 @@ class _OnboardingAvatarScreenState
             _uploading
                 ? 'Uploading…'
                 : _avatarUrl != null
-                    ? 'Tap to change your photo'
-                    : 'Tap to add a photo',
+                ? 'Tap to change your photo'
+                : 'Tap to add a photo',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -251,11 +266,21 @@ class _OnboardingAvatarScreenState
                       width: 2.5,
                     ),
                     boxShadow: selected
-                        ? [BoxShadow(color: c.withOpacity(0.4), blurRadius: 6, offset: const Offset(0, 2))]
+                        ? [
+                            BoxShadow(
+                              color: c.withOpacity(0.4),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
                         : [],
                   ),
                   child: selected
-                      ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        )
                       : null,
                 ),
               );

@@ -188,11 +188,7 @@ class LocalNotificationService {
   }
 
   /// Displays a local notification immediately.
-  Future<void> show(
-    String title,
-    String body, {
-    String? payload,
-  }) async {
+  Future<void> show(String title, String body, {String? payload}) async {
     await init();
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -206,7 +202,13 @@ class LocalNotificationService {
       macOS: DarwinNotificationDetails(),
     );
     try {
-      await _plugin.show(_ephemeralId(), title, body, details, payload: payload);
+      await _plugin.show(
+        _ephemeralId(),
+        title,
+        body,
+        details,
+        payload: payload,
+      );
     } catch (_) {
       // Never let notification failures bubble into the app flow.
     }
@@ -295,7 +297,10 @@ class LocalNotificationService {
     await saveReminderPreference(event.id, reminderMinutes);
 
     final label = _reminderLabel(reminderMinutes);
-    final payload = jsonEncode({'calendarId': event.calendarId, 'eventId': event.id});
+    final payload = jsonEncode({
+      'calendarId': event.calendarId,
+      'eventId': event.id,
+    });
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'event_reminders',
@@ -345,7 +350,9 @@ class LocalNotificationService {
 
     if (type == 'event_reminder') {
       final user = AuthService().cachedUser;
-      if (user == null || user.notificationType != NotificationType.push) return;
+      if (user == null || user.notificationType != NotificationType.push) {
+        return;
+      }
 
       final title = (msg['event_title'] as String?)?.trim();
       if (title == null || title.isEmpty) return;
@@ -365,7 +372,10 @@ class LocalNotificationService {
       final calendarId = msg['calendar_id'] as String?;
       final eventId = msg['event_id'] as String?;
       final payload = calendarId != null
-          ? jsonEncode({'calendarId': calendarId, if (eventId != null) 'eventId': eventId})
+          ? jsonEncode({
+              'calendarId': calendarId,
+              if (eventId != null) 'eventId': eventId,
+            })
           : null;
 
       show(label, title, payload: payload);
@@ -390,7 +400,10 @@ class LocalNotificationService {
     final eventId = event['id'] as String?;
 
     final payload = calendarId != null
-        ? jsonEncode({'calendarId': calendarId, if (eventId != null) 'eventId': eventId})
+        ? jsonEncode({
+            'calendarId': calendarId,
+            if (eventId != null) 'eventId': eventId,
+          })
         : null;
 
     show(

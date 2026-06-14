@@ -20,8 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading =
-        ref.watch(authProvider).status == AuthStatus.loading;
+    final isLoading = ref.watch(authProvider).status == AuthStatus.loading;
 
     ref.listen<AuthState>(authProvider, (_, state) {
       if (state.status == AuthStatus.authenticated) {
@@ -51,10 +50,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: BoxDecoration(
                       color: context.appColors.surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: context.appColors.line, width: 1.5),
+                      border: Border.all(
+                        color: context.appColors.line,
+                        width: 1.5,
+                      ),
                     ),
-                    child: Icon(Icons.arrow_back_rounded,
-                        size: 18, color: context.appColors.ink),
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: context.appColors.ink,
+                    ),
                   ),
                 ),
               ),
@@ -107,10 +112,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       else
                         GoogleSignInButton(
                           isLoading: isLoading,
-                          onSignedIn: (idToken) =>
-                              ref.read(authProvider.notifier).googleSignIn(idToken),
-                          onError: (e) => ScaffoldMessenger.of(context)
-                              .showSnackBar(SnackBar(content: Text(e))),
+                          onSignedIn: (idToken) => ref
+                              .read(authProvider.notifier)
+                              .googleSignIn(idToken),
+                          onError: (e) => ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(e))),
                         ),
 
                       const SizedBox(height: 10),
@@ -120,8 +127,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         label: 'Continue with Apple',
                         isLoading: isLoading,
                         onPressed: () => _showAppleComingSoon(context),
-                        leading: const Icon(Icons.apple,
-                            size: 20, color: Colors.white),
+                        leading: const Icon(
+                          Icons.apple,
+                          size: 20,
+                          color: Colors.white,
+                        ),
                         dark: true,
                       ),
 
@@ -131,18 +141,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       SizedBox(
                         height: 56,
                         child: OutlinedButton(
-                          onPressed: isLoading ? null : () => _showEmailSignIn(context),
+                          onPressed: isLoading
+                              ? null
+                              : () => _showEmailSignIn(context),
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: context.appColors.line, width: 1.5),
+                            side: BorderSide(
+                              color: context.appColors.line,
+                              width: 1.5,
+                            ),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28)),
+                              borderRadius: BorderRadius.circular(28),
+                            ),
                             backgroundColor: context.appColors.surface,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.mail_outline_rounded,
-                                  size: 17, color: context.appColors.inkSoft),
+                              Icon(
+                                Icons.mail_outline_rounded,
+                                size: 17,
+                                color: context.appColors.inkSoft,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Continue with email',
@@ -237,25 +256,23 @@ class _EmailSignInSheetState extends ConsumerState<_EmailSignInSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authProvider.notifier).login(
-          _emailCtrl.text.trim(),
-          _passwordCtrl.text,
-        );
+    await ref
+        .read(authProvider.notifier)
+        .login(_emailCtrl.text.trim(), _passwordCtrl.text);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading =
-        ref.watch(authProvider).status == AuthStatus.loading;
+    final isLoading = ref.watch(authProvider).status == AuthStatus.loading;
 
     ref.listen<AuthState>(authProvider, (_, state) {
       if (state.status == AuthStatus.authenticated && mounted) {
         Navigator.of(context).pop(); // close sheet
         // LoginScreen's listener handles going to /home
       } else if (state.error != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.error!)));
       }
     });
 
@@ -423,12 +440,25 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
       return;
     }
     if (!mounted) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       await ref.read(authProvider.notifier).forgotPassword(email);
-      if (mounted) setState(() { _sent = true; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _sent = true;
+          _loading = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _loading = false; _error = 'Something went wrong. Try again.'; });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Something went wrong. Try again.';
+        });
+      }
     }
   }
 
@@ -440,7 +470,9 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 20, 24,
+        24,
+        20,
+        24,
         MediaQuery.of(context).viewInsets.bottom + 28,
       ),
       child: Column(
@@ -449,7 +481,8 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
         children: [
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
@@ -460,8 +493,10 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
           Text(
             _sent ? 'Check your email' : 'Forgot password?',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 20, fontWeight: FontWeight.w700,
-              color: context.appColors.ink, letterSpacing: -0.5,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.ink,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
@@ -470,7 +505,9 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                 ? 'If an account exists for that address, we\'ve sent a reset link. It expires in 1 hour.'
                 : 'Enter your email and we\'ll send you a link to reset your password.',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 14, color: context.appColors.inkSoft, height: 1.5,
+              fontSize: 14,
+              color: context.appColors.inkSoft,
+              height: 1.5,
             ),
           ),
           if (!_sent) ...[
@@ -486,9 +523,13 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!,
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13, color: AppTheme.danger)),
+              Text(
+                _error!,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: AppTheme.danger,
+                ),
+              ),
             ],
             const SizedBox(height: 20),
             AppButton(
@@ -539,7 +580,8 @@ class _SocialButton extends StatelessWidget {
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
+                  borderRadius: BorderRadius.circular(28),
+                ),
                 elevation: 0,
                 shadowColor: Colors.transparent,
               ),
@@ -551,7 +593,8 @@ class _SocialButton extends StatelessWidget {
                 side: BorderSide(color: context.appColors.line, width: 1.5),
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
+                  borderRadius: BorderRadius.circular(28),
+                ),
                 backgroundColor: context.appColors.surface,
               ),
               child: _buttonContent(context),
@@ -560,20 +603,20 @@ class _SocialButton extends StatelessWidget {
   }
 
   Widget _buttonContent(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          leading,
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: dark ? Colors.white : context.appColors.ink,
-            ),
-          ),
-        ],
-      );
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      leading,
+      const SizedBox(width: 10),
+      Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: dark ? Colors.white : context.appColors.ink,
+        ),
+      ),
+    ],
+  );
 }
 
 // ── Apple coming soon ─────────────────────────────────────────────────────────
@@ -637,7 +680,8 @@ class _GooglePlaceholderButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: context.appColors.line, width: 1.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28)),
+            borderRadius: BorderRadius.circular(28),
+          ),
           backgroundColor: context.appColors.surface,
         ),
         child: Row(
@@ -673,10 +717,6 @@ class _GooglePlaceholderButton extends StatelessWidget {
 class _HeroTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/icons/app_icon.png',
-      width: 100,
-      height: 100,
-    );
+    return Image.asset('assets/icons/app_icon.png', width: 100, height: 100);
   }
 }
