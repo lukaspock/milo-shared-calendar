@@ -54,12 +54,8 @@ cd frontend && flutter run
 
 See [CLAUDE.md](CLAUDE.md) for full setup, environment variables, and production deployment details.
 
-> **Note:** The production backend runs on Render.com's free tier, which spins down after 15 minutes of inactivity. The first request after a cold start can take 30–60 seconds — subsequent requests are fast. If the app feels slow on first load, just give it a moment.
+> **Note:** The production backend runs on Render.com's free tier, which spins down after 15 minutes of inactivity. The first request after a cold start can take 30–60 seconds — subsequent requests are fast. If the app feels slow on first load, just give it a moment. A Ping Bot is set up to keep it allive, but permanent uptime **CAN NOT** be guaranteed!
 
-## Known Limitations
-
-- **Google Sign In / Sign Up is not yet functional for the WebApp.** A native iOS OAuth client ID needs to be configured in the app before Google authentication works. Use email + password registration for now.
-- Google Calendar sync (connecting your personal Google Calendar) is available and works independently of Google Sign-In.
 
 ---
 
