@@ -60,6 +60,15 @@ class WelcomeScreen extends ConsumerWidget {
       if (state.status == AuthStatus.authenticated) context.go('/home');
     });
 
+    final isMobile = MediaQuery.sizeOf(context).width < 700;
+
+    if (isMobile) {
+      return _MobileLanding(
+        onGetStarted: () => context.go('/onboarding/name'),
+        onSignIn: () => context.go('/login'),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _bg(context),
       body: SafeArea(
@@ -1569,3 +1578,167 @@ class _PillButton extends StatelessWidget {
     );
   }
 }
+
+// ── Mobile landing ────────────────────────────────────────────────────────────
+
+class _MobileLanding extends StatelessWidget {
+  const _MobileLanding({required this.onGetStarted, required this.onSignIn});
+  final VoidCallback onGetStarted;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg(context),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              // App icon
+              ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: Image.asset('assets/icons/app_icon.png', width: 108, height: 108),
+              ),
+              const SizedBox(height: 28),
+              // Eyebrow
+              Text(
+                'SHARED CALENDARS FOR FRIENDS',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: _kAccent2, letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Title
+              Text(
+                'Welcome to milo',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 42, fontWeight: FontWeight.w800,
+                  color: _txt(context), letterSpacing: -1.5, height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Subtitle
+              Text(
+                'Plan together. See who\'s free.\nNever miss out again.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w500,
+                  color: _txt2(context), height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 28),
+              _MobileSocialProofPill(),
+              const Spacer(flex: 3),
+              SizedBox(
+                width: double.infinity,
+                child: _PillButton(
+                  label: 'Get Started — it\'s free',
+                  large: true,
+                  onTap: onGetStarted,
+                ),
+              ),
+              const SizedBox(height: 18),
+              GestureDetector(
+                onTap: onSignIn,
+                child: Text(
+                  'Sign in →',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15, fontWeight: FontWeight.w600,
+                    color: _txt2(context),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Mobile social proof pill ──────────────────────────────────────────────────
+
+class _MobileSocialProofPill extends StatelessWidget {
+  const _MobileSocialProofPill();
+
+  static const _avatars = [
+    ('S', Color(0xFF5BA87A)),
+    ('J', Color(0xFF4285F4)),
+    ('A', Color(0xFF9B59B6)),
+    ('L', Color(0xFFE07030)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 28.0;
+    const overlap = 18.0;
+    final totalWidth = size + (_avatars.length - 1) * overlap;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: _isDark(context) ? _kSurfDark : Colors.white,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: _kText.withOpacity(0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: totalWidth,
+            height: size,
+            child: Stack(
+              children: [
+                for (int i = 0; i < _avatars.length; i++)
+                  Positioned(
+                    left: i * overlap,
+                    child: Container(
+                      width: size, height: size,
+                      decoration: BoxDecoration(
+                        color: _avatars[i].$2,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _isDark(context) ? _kSurfDark : Colors.white,
+                          width: 2,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _avatars[i].$1,
+                        style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Sync your friend groups',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14, fontWeight: FontWeight.w600,
+              color: _txt(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
