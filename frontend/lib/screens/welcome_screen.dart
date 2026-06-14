@@ -176,11 +176,14 @@ class _HeroSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  'Milo makes it effortless to share your schedule — so you always know when your friends are free, and never miss a plan.',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 17, fontWeight: FontWeight.w500,
-                    color: _txt2(context), height: 1.65,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Text(
+                    'Milo makes it effortless to share your schedule — so you always know when your friends are free, and never miss a plan.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17, fontWeight: FontWeight.w500,
+                      color: _txt2(context), height: 1.65,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 36),
