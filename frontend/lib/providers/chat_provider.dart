@@ -29,13 +29,12 @@ class ChatState {
     bool? isLoading,
     bool? hasMore,
     int? unreadCount,
-  }) =>
-      ChatState(
-        messages: messages ?? this.messages,
-        isLoading: isLoading ?? this.isLoading,
-        hasMore: hasMore ?? this.hasMore,
-        unreadCount: unreadCount ?? this.unreadCount,
-      );
+  }) => ChatState(
+    messages: messages ?? this.messages,
+    isLoading: isLoading ?? this.isLoading,
+    hasMore: hasMore ?? this.hasMore,
+    unreadCount: unreadCount ?? this.unreadCount,
+  );
 }
 
 class ChatNotifier extends StateNotifier<ChatState> {
@@ -50,12 +49,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
   late final void Function(Map<String, dynamic>) _wsListener;
 
   ChatNotifier(this.calendarId, this.ref)
-      : super(const ChatState(
+    : super(
+        const ChatState(
           messages: [],
           isLoading: false,
           hasMore: true,
           unreadCount: 0,
-        )) {
+        ),
+      ) {
     _wsListener = _handleWsMessage;
     _ws.addListener(_wsListener);
     _ws.subscribeToCalendar(calendarId);
@@ -71,10 +72,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final unread = lastRead == null
           ? 0
           : msgs
-              .where((m) =>
-                  m.userId != currentUserId &&
-                  m.createdAt.isAfter(lastRead))
-              .length;
+                .where(
+                  (m) =>
+                      m.userId != currentUserId &&
+                      m.createdAt.isAfter(lastRead),
+                )
+                .length;
       state = state.copyWith(
         messages: msgs,
         isLoading: false,
@@ -114,7 +117,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await _api.deleteChatMessage(calendarId, msgId);
     state = state.copyWith(
       messages: state.messages
-          .map((m) => m.id == msgId ? m.copyWith(isDeleted: true, content: '') : m)
+          .map(
+            (m) => m.id == msgId ? m.copyWith(isDeleted: true, content: '') : m,
+          )
           .toList(),
     );
   }
@@ -141,7 +146,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   void _handleWsMessage(Map<String, dynamic> msg) {
     if (msg['type'] == 'chat_message' && msg['calendar_id'] == calendarId) {
-      final newMsg = ChatMessage.fromJson(msg['message'] as Map<String, dynamic>);
+      final newMsg = ChatMessage.fromJson(
+        msg['message'] as Map<String, dynamic>,
+      );
       if (state.messages.any((m) => m.id == newMsg.id)) return;
       state = state.copyWith(messages: [newMsg, ...state.messages]);
       if (!_isVisible) {
@@ -153,7 +160,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final msgId = msg['message_id'] as String;
       state = state.copyWith(
         messages: state.messages
-            .map((m) => m.id == msgId ? m.copyWith(isDeleted: true, content: '') : m)
+            .map(
+              (m) =>
+                  m.id == msgId ? m.copyWith(isDeleted: true, content: '') : m,
+            )
             .toList(),
       );
     }
@@ -202,21 +212,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final paint = Paint()..color = color;
     canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, paint);
 
-    final paragraphBuilder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(textAlign: TextAlign.center),
-    )
-      ..pushStyle(ui.TextStyle(
-        color: const Color(0xFFFFFFFF),
-        fontSize: 36,
-        fontWeight: FontWeight.bold,
-      ))
-      ..addText(initial);
+    final paragraphBuilder =
+        ui.ParagraphBuilder(ui.ParagraphStyle(textAlign: TextAlign.center))
+          ..pushStyle(
+            ui.TextStyle(
+              color: const Color(0xFFFFFFFF),
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+            ),
+          )
+          ..addText(initial);
     final paragraph = paragraphBuilder.build()
       ..layout(const ui.ParagraphConstraints(width: size));
-    canvas.drawParagraph(
-      paragraph,
-      Offset(0, (size - paragraph.height) / 2),
-    );
+    canvas.drawParagraph(paragraph, Offset(0, (size - paragraph.height) / 2));
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());
@@ -254,5 +262,5 @@ Color? _hexToColor(String? hex) {
 
 final chatProvider =
     StateNotifierProvider.family<ChatNotifier, ChatState, String>(
-  (ref, calendarId) => ChatNotifier(calendarId, ref),
-);
+      (ref, calendarId) => ChatNotifier(calendarId, ref),
+    );

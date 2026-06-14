@@ -38,7 +38,9 @@ class AppButton extends StatelessWidget {
           child: TextButton(
             onPressed: onPressed,
             style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
               foregroundColor: context.appColors.ink,
             ),
             child: _label(),
@@ -66,7 +68,9 @@ class AppButton extends StatelessWidget {
             backgroundColor: context.appColors.ink,
             foregroundColor: context.appColors.bg,
             minimumSize: const Size(0, 56),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
             elevation: 0,
             shadowColor: Colors.transparent,
           ),
@@ -86,7 +90,10 @@ class AppButton extends StatelessWidget {
     }
     return Text(
       label,
-      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+      style: GoogleFonts.plusJakartaSans(
+        fontWeight: FontWeight.w700,
+        fontSize: 15,
+      ),
     );
   }
 }

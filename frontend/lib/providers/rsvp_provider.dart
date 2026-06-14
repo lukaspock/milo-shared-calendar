@@ -3,8 +3,7 @@ import '../models/rsvp.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
 
-class RsvpNotifier
-    extends StateNotifier<AsyncValue<Map<String, RsvpSummary>>> {
+class RsvpNotifier extends StateNotifier<AsyncValue<Map<String, RsvpSummary>>> {
   RsvpNotifier(this.calendarId) : super(const AsyncValue.loading()) {
     fetch();
     _ws.addListener(_onWsMessage);
@@ -37,7 +36,9 @@ class RsvpNotifier
   }
 }
 
-final rsvpProvider = StateNotifierProvider.family<
-    RsvpNotifier,
-    AsyncValue<Map<String, RsvpSummary>>,
-    String>((ref, calendarId) => RsvpNotifier(calendarId));
+final rsvpProvider =
+    StateNotifierProvider.family<
+      RsvpNotifier,
+      AsyncValue<Map<String, RsvpSummary>>,
+      String
+    >((ref, calendarId) => RsvpNotifier(calendarId));

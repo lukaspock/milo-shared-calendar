@@ -21,7 +21,9 @@ class CacheService {
       final raw = prefs.getString(_calendarsKey);
       if (raw == null) return null;
       final list = jsonDecode(raw) as List;
-      return list.map((e) => CalendarModel.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => CalendarModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
@@ -30,7 +32,10 @@ class CacheService {
   Future<void> saveCalendars(List<CalendarModel> calendars) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_calendarsKey, jsonEncode(calendars.map((c) => c.toJson()).toList()));
+      await prefs.setString(
+        _calendarsKey,
+        jsonEncode(calendars.map((c) => c.toJson()).toList()),
+      );
     } catch (_) {}
   }
 
@@ -49,7 +54,9 @@ class CacheService {
       final raw = prefs.getString(_eventsKey(calendarId));
       if (raw == null) return null;
       final list = jsonDecode(raw) as List;
-      return list.map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return null;
     }
@@ -58,7 +65,10 @@ class CacheService {
   Future<void> saveEvents(String calendarId, List<CalendarEvent> events) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_eventsKey(calendarId), jsonEncode(events.map((e) => e.toJson()).toList()));
+      await prefs.setString(
+        _eventsKey(calendarId),
+        jsonEncode(events.map((e) => e.toJson()).toList()),
+      );
     } catch (_) {}
   }
 
@@ -73,7 +83,10 @@ class CacheService {
   Future<void> clearAll() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((k) => k.startsWith('cache_v1_')).toList();
+      final keys = prefs
+          .getKeys()
+          .where((k) => k.startsWith('cache_v1_'))
+          .toList();
       for (final key in keys) {
         await prefs.remove(key);
       }

@@ -80,7 +80,9 @@ class PhotosNotifier extends StateNotifier<AsyncValue<List<EventPhoto>>> {
   }
 }
 
-final photosProvider = StateNotifierProvider.family<PhotosNotifier,
-    AsyncValue<List<EventPhoto>>, String>(
-  (_, calendarId) => PhotosNotifier(calendarId),
-);
+final photosProvider =
+    StateNotifierProvider.family<
+      PhotosNotifier,
+      AsyncValue<List<EventPhoto>>,
+      String
+    >((_, calendarId) => PhotosNotifier(calendarId));

@@ -18,7 +18,7 @@ class OnboardingPasswordScreen extends ConsumerStatefulWidget {
 
 class _OnboardingPasswordScreenState
     extends ConsumerState<OnboardingPasswordScreen> {
-  final _formKey      = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
 
@@ -45,7 +45,9 @@ class _OnboardingPasswordScreenState
   Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
     final data = ref.read(onboardingProvider);
-    await ref.read(authProvider.notifier).register(
+    await ref
+        .read(authProvider.notifier)
+        .register(
           data.email,
           _passwordCtrl.text,
           data.name,
@@ -62,9 +64,9 @@ class _OnboardingPasswordScreenState
       if (state.status == AuthStatus.authenticated && mounted) {
         context.go('/onboarding/verify');
       } else if (state.error != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.error!)));
       }
     });
 
@@ -121,8 +123,8 @@ class _StrengthMeter extends StatelessWidget {
   const _StrengthMeter({required this.strength});
   final int strength; // 0=empty, 1=weak, 2=good, 3=strong
 
-  static const _labels  = ['', 'Too short', 'Good', 'Strong'];
-  static const _colors  = [
+  static const _labels = ['', 'Too short', 'Good', 'Strong'];
+  static const _colors = [
     Colors.transparent,
     Color(0xFFEF5350),
     Color(0xFFF5A623),

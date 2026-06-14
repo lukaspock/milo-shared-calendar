@@ -47,7 +47,9 @@ class _AppTextFieldState extends State<AppTextField> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: _focused ? context.appColors.ink : context.appColors.inkMuted,
+              color: _focused
+                  ? context.appColors.ink
+                  : context.appColors.inkMuted,
               letterSpacing: 0.9,
             ),
           ),
@@ -59,7 +61,9 @@ class _AppTextFieldState extends State<AppTextField> {
               color: context.appColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _focused ? context.appColors.ink : context.appColors.line,
+                color: _focused
+                    ? context.appColors.ink
+                    : context.appColors.line,
                 width: 1.5,
               ),
             ),
@@ -82,7 +86,11 @@ class _AppTextFieldState extends State<AppTextField> {
                   fontWeight: FontWeight.w400,
                 ),
                 prefixIcon: widget.prefixIcon != null
-                    ? Icon(widget.prefixIcon, color: context.appColors.inkMuted, size: 18)
+                    ? Icon(
+                        widget.prefixIcon,
+                        color: context.appColors.inkMuted,
+                        size: 18,
+                      )
                     : null,
                 suffixIcon: widget.suffixIcon,
                 border: InputBorder.none,
@@ -90,9 +98,13 @@ class _AppTextFieldState extends State<AppTextField> {
                 focusedBorder: InputBorder.none,
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 errorStyle: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.danger, fontSize: 11,
+                  color: AppTheme.danger,
+                  fontSize: 11,
                 ),
               ),
             ),

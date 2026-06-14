@@ -88,7 +88,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Future<void> _loadIgnoredPhotoEvents() async {
     final prefs = await SharedPreferences.getInstance();
-    final ignored = prefs.getStringList('photo_ignored_${widget.calendarId}') ?? [];
+    final ignored =
+        prefs.getStringList('photo_ignored_${widget.calendarId}') ?? [];
     if (mounted) setState(() => _ignoredPhotoEventIds = Set.from(ignored));
   }
 
@@ -274,7 +275,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final eventsAsync = ref.watch(eventsProvider(widget.calendarId));
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
-    final rsvpMap = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final rsvpMap =
+        ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
 
     final calendarsAsync = ref.watch(calendarProvider);
     final calendar = calendarsAsync.valueOrNull
@@ -296,8 +298,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (e.endTime.isBefore(now)) return false;
       final summary = rsvpMap[e.id];
       return summary == null || summary.myStatus == null;
-    }).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Scaffold(
       backgroundColor: context.appColors.bg,
@@ -436,7 +437,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_rounded, size: 16, color: context.appColors.surface),
+                          Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: context.appColors.surface,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Add',
@@ -559,7 +564,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   activeEvent!.id,
                                   activeEvent.title,
                                 ),
-                                onIgnore: () => _ignorePhotoEvent(activeEvent!.id),
+                                onIgnore: () =>
+                                    _ignorePhotoEvent(activeEvent!.id),
                               ),
                             ),
                           if (activeEvent == null &&
@@ -579,7 +585,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   recentlyEndedEvents.first.id,
                                   recentlyEndedEvents.first.title,
                                 ),
-                                onIgnore: () => _ignorePhotoEvent(recentlyEndedEvents.first.id),
+                                onIgnore: () => _ignorePhotoEvent(
+                                  recentlyEndedEvents.first.id,
+                                ),
                               ),
                             ),
                           Expanded(
@@ -617,7 +625,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 activeEvent!.id,
                                 activeEvent.title,
                               ),
-                              onIgnore: () => _ignorePhotoEvent(activeEvent!.id),
+                              onIgnore: () =>
+                                  _ignorePhotoEvent(activeEvent!.id),
                             ),
                           ),
                         if (activeEvent == null &&
@@ -637,7 +646,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 recentlyEndedEvents.first.id,
                                 recentlyEndedEvents.first.title,
                               ),
-                              onIgnore: () => _ignorePhotoEvent(recentlyEndedEvents.first.id),
+                              onIgnore: () => _ignorePhotoEvent(
+                                recentlyEndedEvents.first.id,
+                              ),
                             ),
                           ),
 
@@ -656,9 +667,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: context.appColors.line.withOpacity(
-                                          0.5,
-                                        ),
+                                        color: context.appColors.line
+                                            .withOpacity(0.5),
                                         offset: const Offset(0, 4),
                                         blurRadius: 0,
                                       ),
@@ -767,7 +777,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     ),
                                   );
                                 }),
-
                             ],
                           ),
                         ),
@@ -811,18 +820,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          ...pendingRsvpEvents.map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _RsvpEventCard(
-                              event: e,
-                              calendarId: widget.calendarId,
-                              calHue: calHue,
-                              onTap: () => context.go(
-                                '/calendar/${widget.calendarId}/event/${e.id}',
-                                extra: e,
+                          ...pendingRsvpEvents.map(
+                            (e) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _RsvpEventCard(
+                                event: e,
+                                calendarId: widget.calendarId,
+                                calHue: calHue,
+                                onTap: () => context.go(
+                                  '/calendar/${widget.calendarId}/event/${e.id}',
+                                  extra: e,
+                                ),
                               ),
                             ),
-                          )),
+                          ),
                           if (polls.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
@@ -837,17 +848,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             const SizedBox(height: 8),
                           ],
                         ],
-                        ...polls.map((poll) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _PollCard(
-                            poll: poll,
-                            calHue: calHue,
-                            onTap: () => context.go(
-                              '/calendar/${widget.calendarId}/polls/${poll.id}',
-                              extra: poll,
+                        ...polls.map(
+                          (poll) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _PollCard(
+                              poll: poll,
+                              calHue: calHue,
+                              onTap: () => context.go(
+                                '/calendar/${widget.calendarId}/polls/${poll.id}',
+                                extra: poll,
+                              ),
                             ),
                           ),
-                        )),
+                        ),
                       ],
                     );
                   }
@@ -878,7 +891,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           if (calendar?.photoMode == true) ...[
                             const SizedBox(height: 20),
                             GestureDetector(
-                              onTap: () => _showSelectEventSheet(context, events),
+                              onTap: () =>
+                                  _showSelectEventSheet(context, events),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -1047,12 +1061,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final hasPhotos = cal?.photoMode == true;
     final chatUnread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
-    final currentUserId = ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
-    final unansweredPolls = polls.where((p) =>
-      !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
-    ).length;
-    final rsvpMapTab = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
-    final eventsTab = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+    final currentUserId =
+        ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
+    final unansweredPolls = polls
+        .where(
+          (p) =>
+              !p.closed &&
+              !p.options.any((o) => o.voteFor(currentUserId) != null),
+        )
+        .length;
+    final rsvpMapTab =
+        ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final eventsTab =
+        ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
     final nowTab = DateTime.now();
     final pendingRsvpCount = eventsTab.where((e) {
       if (e.source != EventSource.sharedcal) return false;
@@ -1063,13 +1084,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     int photoBadge = 0;
     if (hasPhotos) {
-      final events = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
-      final photos = ref.watch(photosProvider(widget.calendarId)).valueOrNull ?? [];
+      final events =
+          ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+      final photos =
+          ref.watch(photosProvider(widget.calendarId)).valueOrNull ?? [];
       final now = DateTime.now();
-      final hasActiveEvent = events.any((e) =>
-        e.source == EventSource.sharedcal &&
-        e.startTime.isBefore(now) && e.endTime.isAfter(now) &&
-        !_ignoredPhotoEventIds.contains(e.id),
+      final hasActiveEvent = events.any(
+        (e) =>
+            e.source == EventSource.sharedcal &&
+            e.startTime.isBefore(now) &&
+            e.endTime.isAfter(now) &&
+            !_ignoredPhotoEventIds.contains(e.id),
       );
       final recentlyEndedCount = events.where((e) {
         if (e.source != EventSource.sharedcal) return false;
@@ -1078,17 +1103,39 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         return age.inHours >= 0 &&
             age.inHours < 48 &&
             e.endTime.isBefore(now) &&
-            !photos.any((p) => p.eventId == e.id && p.uploadedBy == currentUserId);
+            !photos.any(
+              (p) => p.eventId == e.id && p.uploadedBy == currentUserId,
+            );
       }).length;
       photoBadge = (hasActiveEvent ? 1 : 0) + recentlyEndedCount;
     }
 
     final tabs = <({IconData icon, IconData activeIcon, int index, int badge})>[
-      (icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded,    index: 0, badge: chatUnread),
-      (icon: Icons.calendar_today_outlined,     activeIcon: Icons.calendar_today_rounded, index: 1, badge: 0),
-      (icon: Icons.how_to_vote_outlined,        activeIcon: Icons.how_to_vote_rounded,    index: 2, badge: unansweredPolls + pendingRsvpCount),
+      (
+        icon: Icons.chat_bubble_outline_rounded,
+        activeIcon: Icons.chat_bubble_rounded,
+        index: 0,
+        badge: chatUnread,
+      ),
+      (
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today_rounded,
+        index: 1,
+        badge: 0,
+      ),
+      (
+        icon: Icons.how_to_vote_outlined,
+        activeIcon: Icons.how_to_vote_rounded,
+        index: 2,
+        badge: unansweredPolls + pendingRsvpCount,
+      ),
       if (hasPhotos)
-        (icon: Icons.photo_library_outlined, activeIcon: Icons.photo_library_rounded, index: 3, badge: photoBadge),
+        (
+          icon: Icons.photo_library_outlined,
+          activeIcon: Icons.photo_library_rounded,
+          index: 3,
+          badge: photoBadge,
+        ),
     ];
 
     // Instagram-style: always-dark pill, icon-only
@@ -1147,7 +1194,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   onTap: () {
                                     setState(() => _tabIndex = t.index);
                                     if (t.index == 0) {
-                                      ref.read(chatProvider(widget.calendarId).notifier).markAsRead();
+                                      ref
+                                          .read(
+                                            chatProvider(
+                                              widget.calendarId,
+                                            ).notifier,
+                                          )
+                                          .markAsRead();
                                     }
                                   },
                                   child: Padding(
@@ -1169,7 +1222,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     right: tabW * 0.12,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 4, vertical: 1),
+                                        horizontal: 4,
+                                        vertical: 1,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.red.shade500,
                                         borderRadius: BorderRadius.circular(10),
@@ -1179,7 +1234,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         ),
                                       ),
                                       constraints: const BoxConstraints(
-                                          minWidth: 16, minHeight: 16),
+                                        minWidth: 16,
+                                        minHeight: 16,
+                                      ),
                                       child: Text(
                                         t.badge > 9 ? '9+' : '${t.badge}',
                                         style: const TextStyle(
@@ -1511,7 +1568,9 @@ class _RsvpEventCardState extends ConsumerState<_RsvpEventCard> {
     final myStatus = summary?.myStatus;
     final attendingCount = summary?.attendingCount ?? 0;
 
-    final startFmt = DateFormat('EEE, MMM d · HH:mm').format(widget.event.startTime);
+    final startFmt = DateFormat(
+      'EEE, MMM d · HH:mm',
+    ).format(widget.event.startTime);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1667,7 +1726,9 @@ class _QuickRsvpBtn extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? palette.border : context.appColors.inkSoft,
+                  color: isSelected
+                      ? palette.border
+                      : context.appColors.inkSoft,
                 ),
               ),
             ],
@@ -2051,8 +2112,8 @@ class _DayCellBadge extends StatelessWidget {
     final bg = creatorColor != null
         ? creatorColor.withOpacity(isSelected ? 0.35 : 0.22)
         : isSelected
-            ? calHue.dot.withOpacity(0.25)
-            : calHue.bg;
+        ? calHue.dot.withOpacity(0.25)
+        : calHue.bg;
     final icon = single ? events[0].icon : null;
 
     if (single && icon != null && _isIconUrl(icon)) {
@@ -2658,8 +2719,14 @@ class _PhotoUploadSheetState extends ConsumerState<_PhotoUploadSheet> {
 // ── Profile colors (same palette as home screen) ──────────────────────────────
 
 const _profileColors = [
-  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
-  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+  '#6C63FF',
+  '#FF6584',
+  '#43B89C',
+  '#F5A623',
+  '#4A90E2',
+  '#E74C3C',
+  '#2ECC71',
+  '#9B59B6',
 ];
 
 // ── Event layout info ─────────────────────────────────────────────────────────
@@ -2849,10 +2916,10 @@ class _WeeklyViewState extends State<_WeeklyView> {
                         '${day.day}',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          fontWeight:
-                              isToday ? FontWeight.w800 : FontWeight.w500,
-                          color:
-                              isToday ? Colors.white : context.appColors.ink,
+                          fontWeight: isToday
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: isToday ? Colors.white : context.appColors.ink,
                         ),
                       ),
                     ),
@@ -2956,8 +3023,11 @@ class _WeekGridPage extends StatelessWidget {
   List<CalendarEvent> _eventsForDay(DateTime day) {
     final dayKey = DateTime(day.year, day.month, day.day);
     return events.where((e) {
-      final eStart =
-          DateTime(e.startTime.year, e.startTime.month, e.startTime.day);
+      final eStart = DateTime(
+        e.startTime.year,
+        e.startTime.month,
+        e.startTime.day,
+      );
       final eEnd = DateTime(e.endTime.year, e.endTime.month, e.endTime.day);
       return !dayKey.isBefore(eStart) && !dayKey.isAfter(eEnd);
     }).toList();
@@ -3020,34 +3090,35 @@ class _WeekGridPage extends StatelessWidget {
               );
             }),
             // Current time indicator
-            if (_isCurrentWeek(now)) (() {
-              final dayIdx = now.weekday - 1;
-              final minuteOfDay = now.hour * 60 + now.minute;
-              final top = minuteOfDay * (hourH / 60.0);
-              return Positioned(
-                top: top,
-                left: dayIdx * colW + 2,
-                width: colW - 4,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE53935),
-                        shape: BoxShape.circle,
+            if (_isCurrentWeek(now))
+              (() {
+                final dayIdx = now.weekday - 1;
+                final minuteOfDay = now.hour * 60 + now.minute;
+                final top = minuteOfDay * (hourH / 60.0);
+                return Positioned(
+                  top: top,
+                  left: dayIdx * colW + 2,
+                  width: colW - 4,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: const Color(0xFFE53935),
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color: const Color(0xFFE53935),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            })(),
+                    ],
+                  ),
+                );
+              })(),
           ],
         );
       },
@@ -3075,8 +3146,11 @@ class _DayColumn extends StatelessWidget {
   final CalHue calHue;
 
   DateTime _effectiveStart(CalendarEvent e) {
-    final startDay =
-        DateTime(e.startTime.year, e.startTime.month, e.startTime.day);
+    final startDay = DateTime(
+      e.startTime.year,
+      e.startTime.month,
+      e.startTime.day,
+    );
     final targetDay = DateTime(date.year, date.month, date.day);
     if (startDay.isBefore(targetDay)) {
       return DateTime(date.year, date.month, date.day, 0, 0);
@@ -3146,8 +3220,9 @@ class _DayColumn extends StatelessWidget {
         final end = _effectiveEnd(e);
         final startMinutes = start.hour * 60 + start.minute;
         final endMinutes = end.hour * 60 + end.minute;
-        final durationMins =
-            (endMinutes - startMinutes).clamp(15, 24 * 60).toDouble();
+        final durationMins = (endMinutes - startMinutes)
+            .clamp(15, 24 * 60)
+            .toDouble();
         final top = startMinutes * (hourH / 60.0);
         final height = durationMins * (hourH / 60.0);
 
@@ -3204,10 +3279,8 @@ class _WeekEventBox extends StatelessWidget {
     final showTime = height >= 36;
 
     return GestureDetector(
-      onTap: () => context.go(
-        '/calendar/$calendarId/event/${event.id}',
-        extra: event,
-      ),
+      onTap: () =>
+          context.go('/calendar/$calendarId/event/${event.id}', extra: event),
       child: Container(
         decoration: BoxDecoration(
           color: color,
@@ -3271,7 +3344,9 @@ class _ViewModeTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? context.appColors.surfaceSoft : Colors.transparent,
+            color: selected
+                ? context.appColors.surfaceSoft
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected ? context.appColors.ink : context.appColors.line,
@@ -3433,7 +3508,8 @@ class _CalendarSettingsSheet extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: _profileColors.map((hex) {
                     final c = Color(
-                        int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+                      int.parse('FF${hex.replaceFirst('#', '')}', radix: 16),
+                    );
                     final isSelected = user?.color == hex;
                     return GestureDetector(
                       onTap: () => ref
@@ -3541,7 +3617,8 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: _profileColors.map((hex) {
               final c = Color(
-                  int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+                int.parse('FF${hex.replaceFirst('#', '')}', radix: 16),
+              );
               final isSelected = _selected == hex;
               return GestureDetector(
                 onTap: () => setState(() => _selected = hex),
@@ -3566,8 +3643,11 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
                         : null,
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check_rounded,
-                          size: 18, color: Colors.white)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        )
                       : null,
                 ),
               );
@@ -3580,9 +3660,12 @@ class _ColorPickerSheetState extends ConsumerState<_ColorPickerSheet> {
               onPressed: _save,
               style: FilledButton.styleFrom(
                 backgroundColor: _selected != null
-                    ? Color(int.parse(
-                        'FF${_selected!.replaceFirst('#', '')}',
-                        radix: 16))
+                    ? Color(
+                        int.parse(
+                          'FF${_selected!.replaceFirst('#', '')}',
+                          radix: 16,
+                        ),
+                      )
                     : context.appColors.ink,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -3660,18 +3743,14 @@ class _AvailSlot {
     required this.period,
   });
 
-  bool overlaps(DateTime s, DateTime e) =>
-      s.isBefore(end) && e.isAfter(start);
+  bool overlaps(DateTime s, DateTime e) => s.isBefore(end) && e.isAfter(start);
 }
 
 class _AvailabilityView extends ConsumerStatefulWidget {
   final String calendarId;
   final List<CalendarEvent> events;
 
-  const _AvailabilityView({
-    required this.calendarId,
-    required this.events,
-  });
+  const _AvailabilityView({required this.calendarId, required this.events});
 
   @override
   ConsumerState<_AvailabilityView> createState() => _AvailabilityViewState();
@@ -3717,7 +3796,9 @@ class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
         final s = day.add(Duration(hours: startH));
         final e = day.add(Duration(hours: endH));
         if (e.isAfter(now)) {
-          slots.add(_AvailSlot(start: s, end: e, dayLabel: dayLabel, period: period));
+          slots.add(
+            _AvailSlot(start: s, end: e, dayLabel: dayLabel, period: period),
+          );
         }
       }
 
@@ -3745,8 +3826,11 @@ class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
 
   String _dateRangeLabel() {
     final base = DateTime.now();
-    final start = DateTime(base.year, base.month, base.day)
-        .add(Duration(days: _dayOffset));
+    final start = DateTime(
+      base.year,
+      base.month,
+      base.day,
+    ).add(Duration(days: _dayOffset));
     final end = start.add(const Duration(days: 2));
     return '${DateFormat('MMM d').format(start)} – ${DateFormat('MMM d').format(end)}';
   }
@@ -3837,15 +3921,22 @@ class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
                                   .map((s) => _slotHeader(s, slotW, headerH))
                                   .toList(),
                             ),
-                            ..._members.map((m) => SizedBox(
-                              height: rowH,
-                              child: Row(
-                                children: slots
-                                    .map((s) => _statusCell(
-                                          _statusFor(m, s), slotW, rowH))
-                                    .toList(),
+                            ..._members.map(
+                              (m) => SizedBox(
+                                height: rowH,
+                                child: Row(
+                                  children: slots
+                                      .map(
+                                        (s) => _statusCell(
+                                          _statusFor(m, s),
+                                          slotW,
+                                          rowH,
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
                               ),
-                            )),
+                            ),
                           ],
                         ),
                       ),
@@ -3898,15 +3989,15 @@ class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
   }
 
   Widget _initial(CalendarMember member) => Center(
-        child: Text(
-          member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      );
+    child: Text(
+      member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+      ),
+    ),
+  );
 
   Widget _slotHeader(_AvailSlot slot, double w, double h) {
     return SizedBox(

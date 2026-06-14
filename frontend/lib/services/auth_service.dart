@@ -27,12 +27,15 @@ class AuthService {
     required String name,
     NotificationType notificationType = NotificationType.email,
   }) async {
-    final res = await _api.post('/auth/register', data: {
-      'email': email,
-      'password': password,
-      'name': name,
-      'notification_type': notificationType.apiValue,
-    });
+    final res = await _api.post(
+      '/auth/register',
+      data: {
+        'email': email,
+        'password': password,
+        'name': name,
+        'notification_type': notificationType.apiValue,
+      },
+    );
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
     final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
@@ -44,10 +47,10 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final res = await _api.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
+    final res = await _api.post(
+      '/auth/login',
+      data: {'email': email, 'password': password},
+    );
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
     final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
@@ -56,7 +59,8 @@ class AuthService {
   }
 
   Future<({String token, AppUser user})> signInWithGoogle(
-      String idToken) async {
+    String idToken,
+  ) async {
     final res = await _api.post('/auth/google', data: {'idToken': idToken});
     final data = res.data as Map<String, dynamic>;
     final token = data['token'] as String;
@@ -77,8 +81,10 @@ class AuthService {
   /// Persists the user's preferred notification delivery method on the backend
   /// and returns the refreshed user.
   Future<AppUser> updateNotificationType(NotificationType type) async {
-    await _api.put('/auth/notification-type',
-        data: {'notification_type': type.apiValue});
+    await _api.put(
+      '/auth/notification-type',
+      data: {'notification_type': type.apiValue},
+    );
     return refreshUser();
   }
 
@@ -126,7 +132,9 @@ class AuthService {
 
   Future<void> logout() async {
     cachedUser = null;
-    try { await _googleSignIn.signOut(); } catch (_) {}
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
@@ -135,7 +143,9 @@ class AuthService {
   Future<void> deleteAccount() async {
     await _api.delete('/users/me');
     cachedUser = null;
-    try { await _googleSignIn.signOut(); } catch (_) {}
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
@@ -186,8 +196,9 @@ class AuthService {
       color: p[3],
       emailVerified: p.length > 4 ? p[4] == 'true' : false,
       hasGoogleCalendar: p.length > 5 ? p[5] == 'true' : false,
-      notificationType:
-          p.length > 6 ? NotificationType.fromApi(p[6]) : NotificationType.email,
+      notificationType: p.length > 6
+          ? NotificationType.fromApi(p[6])
+          : NotificationType.email,
       avatarUrl: p.length > 7 && p[7].isNotEmpty ? p[7] : null,
     );
   }

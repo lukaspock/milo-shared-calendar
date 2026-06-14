@@ -30,7 +30,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
   }
@@ -46,7 +48,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authProvider.notifier).register(
+    await ref
+        .read(authProvider.notifier)
+        .register(
           _emailCtrl.text.trim(),
           _passwordCtrl.text,
           _nameCtrl.text.trim(),
@@ -62,9 +66,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       if (state.status == AuthStatus.authenticated) {
         context.go('/home');
       } else if (state.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.error!)));
       }
     });
 
@@ -161,8 +165,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     label: 'Full name',
                     hint: 'Jane Doe',
                     prefixIcon: Icons.badge_outlined,
-                    validator: (v) =>
-                        v != null && v.trim().isNotEmpty ? null : 'Name is required',
+                    validator: (v) => v != null && v.trim().isNotEmpty
+                        ? null
+                        : 'Name is required',
                   ),
                   const SizedBox(height: 14),
                   AppTextField(
@@ -171,8 +176,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     hint: 'you@example.com',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
-                    validator: (v) =>
-                        v != null && v.contains('@') ? null : 'Enter a valid email',
+                    validator: (v) => v != null && v.contains('@')
+                        ? null
+                        : 'Enter a valid email',
                   ),
                   const SizedBox(height: 14),
                   AppTextField(
@@ -205,16 +211,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                   const SizedBox(height: 16),
 
-                  Row(children: [
-                    Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('or', style: GoogleFonts.plusJakartaSans(
-                        color: context.appColors.inkMuted, fontSize: 13, fontWeight: FontWeight.w500,
-                      )),
-                    ),
-                    Expanded(child: Divider(color: context.appColors.line, thickness: 1.5)),
-                  ]),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: context.appColors.line,
+                          thickness: 1.5,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'or',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: context.appColors.inkMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: context.appColors.line,
+                          thickness: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
 
                   const SizedBox(height: 16),
 
@@ -223,10 +246,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       constraints: const BoxConstraints(maxWidth: 420),
                       child: GoogleSignInButton(
                         isLoading: isLoading,
-                        onSignedIn: (idToken) =>
-                            ref.read(authProvider.notifier).googleSignIn(idToken),
-                        onError: (e) => ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(e))),
+                        onSignedIn: (idToken) => ref
+                            .read(authProvider.notifier)
+                            .googleSignIn(idToken),
+                        onError: (e) => ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e))),
                       ),
                     ),
                   ),

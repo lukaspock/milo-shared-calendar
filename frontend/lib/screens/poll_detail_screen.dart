@@ -848,10 +848,7 @@ class _VoteChip extends StatelessWidget {
 // ── Suggest time bottom sheet ─────────────────────────────────────────────────
 
 class _SuggestTimeSheet extends ConsumerStatefulWidget {
-  const _SuggestTimeSheet({
-    required this.calendarId,
-    required this.pollId,
-  });
+  const _SuggestTimeSheet({required this.calendarId, required this.pollId});
   final String calendarId;
   final String pollId;
 
@@ -908,7 +905,13 @@ class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
       ),
     );
     if (time == null || !mounted) return;
-    final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     setState(() {
       if (isStart) {
         _start = dt;
@@ -927,11 +930,9 @@ class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
       return;
     }
     setState(() => _saving = true);
-    final ok = await ref.read(pollsProvider(widget.calendarId).notifier).addOption(
-      pollId: widget.pollId,
-      start: _start,
-      end: _end,
-    );
+    final ok = await ref
+        .read(pollsProvider(widget.calendarId).notifier)
+        .addOption(pollId: widget.pollId, start: _start, end: _end);
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
@@ -945,7 +946,20 @@ class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
 
   String _fmt(DateTime dt) {
     const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mo = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}  '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
@@ -958,7 +972,9 @@ class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24,
+        24,
+        16,
+        24,
         MediaQuery.of(context).viewInsets.bottom + 32,
       ),
       child: Column(
@@ -989,7 +1005,10 @@ class _SuggestTimeSheetState extends ConsumerState<_SuggestTimeSheet> {
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ],
           ),

@@ -15,8 +15,7 @@ class OnboardingEmailScreen extends ConsumerStatefulWidget {
       _OnboardingEmailScreenState();
 }
 
-class _OnboardingEmailScreenState
-    extends ConsumerState<OnboardingEmailScreen> {
+class _OnboardingEmailScreenState extends ConsumerState<OnboardingEmailScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _emailCtrl;
@@ -25,7 +24,7 @@ class _OnboardingEmailScreenState
   void initState() {
     super.initState();
     final saved = ref.read(onboardingProvider);
-    _nameCtrl  = TextEditingController(text: saved.name);
+    _nameCtrl = TextEditingController(text: saved.name);
     _emailCtrl = TextEditingController(text: saved.email);
   }
 
@@ -38,10 +37,9 @@ class _OnboardingEmailScreenState
 
   void _continue() {
     if (!_formKey.currentState!.validate()) return;
-    ref.read(onboardingProvider.notifier).setNameEmail(
-          _nameCtrl.text.trim(),
-          _emailCtrl.text.trim(),
-        );
+    ref
+        .read(onboardingProvider.notifier)
+        .setNameEmail(_nameCtrl.text.trim(), _emailCtrl.text.trim());
     context.go('/onboarding/password');
   }
 
@@ -71,9 +69,8 @@ class _OnboardingEmailScreenState
               hint: 'Jane Doe',
               prefixIcon: Icons.person_outline_rounded,
               textInputAction: TextInputAction.next,
-              validator: (v) => v != null && v.trim().isNotEmpty
-                  ? null
-                  : 'Name is required',
+              validator: (v) =>
+                  v != null && v.trim().isNotEmpty ? null : 'Name is required',
             ),
             const SizedBox(height: 12),
             AppTextField(

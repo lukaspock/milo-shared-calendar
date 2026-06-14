@@ -35,7 +35,8 @@ class OnboardingThemeScreen extends ConsumerWidget {
             leftColor: const Color(0xFFFAF3ED),
             rightColor: const Color(0xFF1A1208),
             selected: current == ThemeMode.system,
-            onTap: () => ref.read(themeProvider.notifier).setMode(ThemeMode.system),
+            onTap: () =>
+                ref.read(themeProvider.notifier).setMode(ThemeMode.system),
           ),
           const SizedBox(height: 10),
           _ThemeRow(
@@ -44,7 +45,8 @@ class OnboardingThemeScreen extends ConsumerWidget {
             leftColor: const Color(0xFFFAF3ED),
             rightColor: const Color(0xFFFAF3ED),
             selected: current == ThemeMode.light,
-            onTap: () => ref.read(themeProvider.notifier).setMode(ThemeMode.light),
+            onTap: () =>
+                ref.read(themeProvider.notifier).setMode(ThemeMode.light),
           ),
           const SizedBox(height: 10),
           _ThemeRow(
@@ -53,7 +55,8 @@ class OnboardingThemeScreen extends ConsumerWidget {
             leftColor: const Color(0xFF1A1208),
             rightColor: const Color(0xFF1A1208),
             selected: current == ThemeMode.dark,
-            onTap: () => ref.read(themeProvider.notifier).setMode(ThemeMode.dark),
+            onTap: () =>
+                ref.read(themeProvider.notifier).setMode(ThemeMode.dark),
           ),
         ],
       ),
@@ -150,7 +153,11 @@ class _ThemeRow extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: selected
-                  ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    )
                   : null,
             ),
           ],
