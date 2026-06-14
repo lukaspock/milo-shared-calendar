@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/onboarding_provider.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/app_image.dart';
 import '../../widgets/app_text_field.dart';
 import 'onboarding_shell.dart';
 
-/// Step 2 of the email path — collect full name + email address.
+/// S2 — Create your account (name + email).
 class OnboardingEmailScreen extends ConsumerStatefulWidget {
   const OnboardingEmailScreen({super.key});
 
@@ -26,7 +25,7 @@ class _OnboardingEmailScreenState
   void initState() {
     super.initState();
     final saved = ref.read(onboardingProvider);
-    _nameCtrl = TextEditingController(text: saved.name);
+    _nameCtrl  = TextEditingController(text: saved.name);
     _emailCtrl = TextEditingController(text: saved.email);
   }
 
@@ -48,14 +47,17 @@ class _OnboardingEmailScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Dot-progress: S2 is dot 1 of 7.
     return OnboardingShell(
-      step: 2,
-      totalSteps: 5,
-      onBack: () => context.go('/onboarding/name'),
-      illustration: AppImages.envelope(size: 72),
-      illustrationHue: stickerHues[2],
+      step: 1,
+      totalSteps: 7,
+      onBack: () => context.go('/welcome'),
+      customHeader: const OnboardingIconBlock(
+        bg: Color(0xFFDDEEFF),
+        child: Text('✉️', style: TextStyle(fontSize: 30)),
+      ),
       title: 'Create your account',
-      subtitle: "Enter your name and email to get started.",
+      subtitle: 'Enter your name and email to get started.',
       buttonLabel: 'Continue',
       onContinue: _continue,
       child: Form(
@@ -67,7 +69,7 @@ class _OnboardingEmailScreenState
               controller: _nameCtrl,
               label: 'Full name',
               hint: 'Jane Doe',
-              prefixIcon: Icons.badge_outlined,
+              prefixIcon: Icons.person_outline_rounded,
               textInputAction: TextInputAction.next,
               validator: (v) => v != null && v.trim().isNotEmpty
                   ? null
@@ -79,11 +81,22 @@ class _OnboardingEmailScreenState
               label: 'Email',
               hint: 'you@example.com',
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_outlined,
+              prefixIcon: Icons.mail_outline_rounded,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _continue(),
               validator: (v) =>
                   v != null && v.contains('@') ? null : 'Enter a valid email',
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'By continuing you agree to our Terms of Service and Privacy Policy.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF7A6A52)
+                    : const Color(0xFF8A7060),
+                height: 1.4,
+              ),
             ),
           ],
         ),

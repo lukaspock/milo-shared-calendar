@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/google_sign_in_button.dart';
+
 
 // ── Apple emoji assets ────────────────────────────────────────────────────────
 
@@ -56,16 +58,12 @@ class WelcomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<AuthState>(authProvider, (_, state) {
-      if (state.status == AuthStatus.authenticated) context.go('/home');
-    });
-
     final isMobile = MediaQuery.sizeOf(context).width < 700;
 
     if (isMobile) {
       return _MobileLanding(
-        onGetStarted: () => context.go('/onboarding/name'),
         onSignIn: () => context.go('/login'),
+        onEmail: () => context.go('/onboarding/email'),
       );
     }
 
@@ -78,7 +76,7 @@ class WelcomeScreen extends ConsumerWidget {
             children: [
               _LandingNav(),
               _HeroSection(
-                onGetStarted: () => context.go('/onboarding/name'),
+                onGetStarted: () => context.go('/web-onboarding'),
                 onSignIn: () => context.go('/login'),
               ),
               _BuiltForRow(),
@@ -87,7 +85,7 @@ class WelcomeScreen extends ConsumerWidget {
               _GoogleSyncSection(),
               _MiniFeatureGrid(),
               _CtaSection(
-                onGetStarted: () => context.go('/onboarding/name'),
+                onGetStarted: () => context.go('/web-onboarding'),
                 onSignIn: () => context.go('/login'),
               ),
               _LandingFooter(),
@@ -141,7 +139,7 @@ class _LandingNav extends StatelessWidget {
           _PillButton(
             label: 'Get Started',
             small: true,
-            onTap: () => context.go('/onboarding/name'),
+            onTap: () => context.go('/web-onboarding'),
           ),
         ],
       ),
@@ -1579,15 +1577,30 @@ class _PillButton extends StatelessWidget {
   }
 }
 
-// ── Mobile landing ────────────────────────────────────────────────────────────
+// ── Mobile landing (S1 — Welcome) ────────────────────────────────────────────
+// Shows logo, eyebrow, title, social-proof pill, and 3 auth buttons directly.
+// No progress dots, no back arrow — matches the handoff S1 spec.
 
-class _MobileLanding extends StatelessWidget {
-  const _MobileLanding({required this.onGetStarted, required this.onSignIn});
-  final VoidCallback onGetStarted;
+class _MobileLanding extends ConsumerStatefulWidget {
+  const _MobileLanding({required this.onSignIn, required this.onEmail});
   final VoidCallback onSignIn;
+  final VoidCallback onEmail;
 
   @override
+  ConsumerState<_MobileLanding> createState() => _MobileLandingState();
+}
+
+class _MobileLandingState extends ConsumerState<_MobileLanding> {
+  @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (_, state) {
+      if (state.status == AuthStatus.authenticated && mounted) {
+        context.go('/onboarding/calendar');
+      }
+    });
+
+    final isLoading = ref.watch(authProvider).status == AuthStatus.loading;
+
     return Scaffold(
       backgroundColor: _bg(context),
       body: SafeArea(
@@ -1597,33 +1610,37 @@ class _MobileLanding extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              // App icon
+
+              // Logo
               ClipRRect(
-                borderRadius: BorderRadius.circular(26),
-                child: Image.asset('assets/icons/app_icon.png', width: 108, height: 108),
+                borderRadius: BorderRadius.circular(22),
+                child: Image.asset('assets/icons/app_icon.png', width: 90, height: 90),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 6),
+
               // Eyebrow
               Text(
                 'SHARED CALENDARS FOR FRIENDS',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: _kAccent2, letterSpacing: 1.2,
+                  fontSize: 11, fontWeight: FontWeight.w800,
+                  color: const Color(0xFFD88818), letterSpacing: 0.7,
                 ),
               ),
               const SizedBox(height: 14),
+
               // Title
               Text(
                 'Welcome to milo',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 42, fontWeight: FontWeight.w800,
+                  fontSize: 38, fontWeight: FontWeight.w800,
                   color: _txt(context), letterSpacing: -1.5, height: 1.05,
                 ),
               ),
-              const SizedBox(height: 14),
-              // Subtitle
+              const SizedBox(height: 12),
+
+              // Tagline
               Text(
                 'Plan together. See who\'s free.\nNever miss out again.',
                 textAlign: TextAlign.center,
@@ -1632,25 +1649,69 @@ class _MobileLanding extends StatelessWidget {
                   color: _txt2(context), height: 1.55,
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
+
+              // Social proof pill
               _MobileSocialProofPill(),
+
               const Spacer(flex: 3),
+
+              // ── Auth buttons ───────────────────────────────────────────
+              GoogleSignInButton(
+                isLoading: isLoading,
+                onSignedIn: (idToken) =>
+                    ref.read(authProvider.notifier).googleSignIn(idToken),
+                onError: (e) => ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(e))),
+              ),
+              const SizedBox(height: 10),
+
               SizedBox(
                 width: double.infinity,
-                child: _PillButton(
-                  label: 'Get Started — it\'s free',
-                  large: true,
-                  onTap: onGetStarted,
+                child: GestureDetector(
+                  onTap: widget.onEmail,
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kAccent.withValues(alpha: 0.38),
+                          blurRadius: 20, offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Create account',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16, fontWeight: FontWeight.w700, color: _kText,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 18),
-              GestureDetector(
-                onTap: onSignIn,
-                child: Text(
-                  'Sign in →',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15, fontWeight: FontWeight.w600,
-                    color: _txt2(context),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: GestureDetector(
+                  onTap: widget.onSignIn,
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: _surf2(context), width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Sign in',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16, fontWeight: FontWeight.w700, color: _txt(context),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1661,6 +1722,123 @@ class _MobileLanding extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MobileAuthBtn extends StatelessWidget {
+  const _MobileAuthBtn({
+    required this.label,
+    required this.bgColor,
+    required this.textColor,
+    required this.borderColor,
+    required this.isLoading,
+    required this.leading,
+    required this.onTap,
+  });
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+  final Color borderColor;
+  final bool isLoading;
+  final Widget leading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            leading,
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 18,
+      height: 18,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    // Simplified Google "G" coloured segments
+    final Paint p = Paint()..style = PaintingStyle.fill;
+
+    // Blue segment (right)
+    p.color = const Color(0xFF4285F4);
+    canvas.drawArc(Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2),
+        -0.3, 1.8, true, p);
+
+    // Red segment (top-left)
+    p.color = const Color(0xFFEA4335);
+    canvas.drawArc(Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2),
+        -1.57, 1.3, true, p);
+
+    // Yellow segment (bottom-left)
+    p.color = const Color(0xFFFBBC05);
+    canvas.drawArc(Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2),
+        2.42, 0.7, true, p);
+
+    // Green segment (bottom-right)
+    p.color = const Color(0xFF34A853);
+    canvas.drawArc(Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2),
+        3.14, 0.7, true, p);
+
+    // White center circle
+    p.color = Colors.white;
+    canvas.drawCircle(Offset(s / 2, s / 2), s * 0.3, p);
+
+    // White horizontal bar for the "G" cutout
+    p.color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(s * 0.5, s * 0.38, s * 0.5, s * 0.24), p);
+  }
+
+  @override
+  bool shouldRepaint(_GoogleLogoPainter _) => false;
+}
+
+void _showAppleDialog(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: const Text('Apple Sign-In'),
+      content: const Text('Apple Sign-In is not yet implemented.\nUse email or Google for now.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Got it'),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Mobile social proof pill ──────────────────────────────────────────────────

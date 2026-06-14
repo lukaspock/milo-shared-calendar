@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/device_calendar_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/app_image.dart';
 import '../onboarding/onboarding_shell.dart';
 
 class OnboardingCalendarScreen extends ConsumerStatefulWidget {
@@ -59,11 +58,13 @@ class _OnboardingCalendarScreenState
 
     return OnboardingShell(
       step: 4,
-      totalSteps: 6,
+      totalSteps: 7,
       onBack: null,
-      illustration: AppImages.calendar(size: 72),
-      illustrationHue: stickerHues[2],
-      title: 'Connect Your Calendars',
+      customHeader: const OnboardingIconBlock(
+        bg: Color(0xFFE8F0FF),
+        child: Text('📅', style: TextStyle(fontSize: 30)),
+      ),
+      title: 'Connect your calendars',
       subtitle:
           'Sync your events automatically. Connect one or both — you can always add more later.',
       buttonLabel: anyConnected ? 'Continue' : 'Skip for now',
@@ -74,7 +75,7 @@ class _OnboardingCalendarScreenState
         children: [
           // ── Google Calendar ─────────────────────────────────────────────
           _CalendarOptionCard(
-            icon: AppImages.globe(size: 20),
+            icon: const Icon(Icons.language_rounded, size: 20, color: Color(0xFF8A7060)),
             title: 'Google Calendar',
             subtitle: 'Sync via your Google account',
             connected: googleConnected,
@@ -106,7 +107,7 @@ class _OnboardingCalendarScreenState
           // ── Device Calendar ─────────────────────────────────────────────
           if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android))
             _CalendarOptionCard(
-              icon: AppImages.phone(size: 20),
+              icon: const Icon(Icons.phone_iphone_rounded, size: 20, color: Color(0xFF8A7060)),
               title: 'Device Calendar',
               subtitle: 'Sync to your iPhone / Android calendar',
               connected: _deviceConnected,
@@ -141,7 +142,7 @@ class _OnboardingCalendarScreenState
               ),
               child: Row(
                 children: [
-                  AppImages.phone(size: 20),
+                  const Icon(Icons.phone_iphone_rounded, size: 20, color: Color(0xFF8A7060)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(

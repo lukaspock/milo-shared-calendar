@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/app_image.dart';
 import '../../widgets/google_sign_in_button.dart';
 import 'onboarding_shell.dart';
 
@@ -40,8 +39,10 @@ class _OnboardingNameEmailScreenState
       step: 1,
       totalSteps: 5,
       onBack: () => context.go('/welcome'),
-      illustration: AppImages.wave(size: 72),
-      illustrationHue: stickerHues[1],
+      customHeader: const OnboardingIconBlock(
+        bg: Color(0xFFDDEEFF),
+        child: Text('👋', style: TextStyle(fontSize: 30)),
+      ),
       title: "Let's get started",
       subtitle: 'Choose how you\'d like to continue.',
       buttonLabel: '',

@@ -19,6 +19,7 @@ import 'screens/onboarding/onboarding_calendar_screen.dart';
 import 'screens/onboarding/onboarding_avatar_screen.dart';
 import 'screens/onboarding/onboarding_theme_screen.dart';
 import 'screens/onboarding/onboarding_ready_screen.dart';
+import 'screens/onboarding/web_onboarding_screen.dart';
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 
@@ -73,6 +74,7 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/onboarding/ready',
         builder: (_, _s) => const OnboardingReadyScreen()),
+    GoRoute(path: '/web-onboarding', builder: (_, _s) => const WebOnboardingScreen()),
     GoRoute(path: '/home', builder: (_, _s) => const HomeScreen()),
     GoRoute(
       path: '/calendar/:calendarId',

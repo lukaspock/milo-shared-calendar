@@ -172,6 +172,7 @@ class _OnboardingAvatarScreenState
       step: 6,
       totalSteps: 7,
       onBack: () => context.go('/onboarding/notifications'),
+      // step 6 of 7, back button and dots are shown
       customHeader: avatarHeader,
       title: 'Make it yours',
       subtitle:
