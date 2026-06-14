@@ -1638,10 +1638,10 @@ class _ThemeCard extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x20000000), width: 1),
       ),
       child: Column(
@@ -1655,17 +1655,17 @@ class _ThemeCard extends StatelessWidget {
               Text(
                 'June 2026',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 8,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: ink,
                 ),
               ),
               const Spacer(),
-              Icon(Icons.chevron_left_rounded, size: 10, color: muted),
-              Icon(Icons.chevron_right_rounded, size: 10, color: muted),
+              Icon(Icons.chevron_left_rounded, size: 16, color: muted),
+              Icon(Icons.chevron_right_rounded, size: 16, color: muted),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 10),
           // ── Day abbreviations ──────────────────────────────────────────
           Row(
             children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -1675,7 +1675,7 @@ class _ThemeCard extends StatelessWidget {
                       d,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 5.5,
+                        fontSize: 9,
                         color: muted,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1684,18 +1684,18 @@ class _ThemeCard extends StatelessWidget {
                 )
                 .toList(),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           // ── Calendar grid ──────────────────────────────────────────────
           ...weeks.map(
             (week) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 1),
+              padding: const EdgeInsets.symmetric(vertical: 1.5),
               child: Row(
                 children: week.map((d) {
                   final isToday = d == '14';
                   final hasEvent = d == '15' || d == '18' || d == '19';
                   return Expanded(
                     child: Container(
-                      height: 13,
+                      height: 22,
                       alignment: Alignment.center,
                       decoration: isToday
                           ? const BoxDecoration(
@@ -1711,7 +1711,7 @@ class _ThemeCard extends StatelessWidget {
                                 Text(
                                   d,
                                   style: TextStyle(
-                                    fontSize: 5,
+                                    fontSize: 8,
                                     fontWeight: FontWeight.w600,
                                     color: isToday
                                         ? Colors.white
@@ -1722,8 +1722,8 @@ class _ThemeCard extends StatelessWidget {
                                 ),
                                 if (hasEvent)
                                   Container(
-                                    width: 3,
-                                    height: 3,
+                                    width: 4,
+                                    height: 4,
                                     margin: const EdgeInsets.only(top: 1),
                                     decoration: const BoxDecoration(
                                       color: _kAccent,
@@ -1738,7 +1738,7 @@ class _ThemeCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 12),
           // ── Mini event rows ────────────────────────────────────────────
           _MiniEvent(
             surface: surface,
@@ -1746,7 +1746,7 @@ class _ThemeCard extends StatelessWidget {
             label: 'Dinner & drinks',
             ink: ink,
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 6),
           _MiniEvent(
             surface: surface,
             color: const Color(0xFF4A90E2),
@@ -1772,23 +1772,23 @@ class _MiniEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           Container(
-            width: 4,
-            height: 4,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 6,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: ink,
             ),
