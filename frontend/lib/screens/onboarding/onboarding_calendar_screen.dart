@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,7 +76,11 @@ class _OnboardingCalendarScreenState
         children: [
           // ── Google Calendar ─────────────────────────────────────────────
           _CalendarOptionCard(
-            icon: const Icon(Icons.language_rounded, size: 20, color: Color(0xFF8A7060)),
+            icon: const Icon(
+              Icons.language_rounded,
+              size: 20,
+              color: Color(0xFF8A7060),
+            ),
             title: 'Google Calendar',
             subtitle: 'Sync via your Google account',
             connected: googleConnected,
@@ -92,22 +97,32 @@ class _OnboardingCalendarScreenState
               if (url == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text(
-                          'Could not get connect URL. Is backend running?')),
+                    content: Text(
+                      'Could not get connect URL. Is backend running?',
+                    ),
+                  ),
                 );
                 return;
               }
-              await launchUrl(Uri.parse(url),
-                  mode: LaunchMode.externalApplication);
+              await launchUrl(
+                Uri.parse(url),
+                mode: LaunchMode.externalApplication,
+              );
             },
           ),
 
           const SizedBox(height: 12),
 
           // ── Device Calendar ─────────────────────────────────────────────
-          if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android))
+          if (!kIsWeb &&
+              (defaultTargetPlatform == TargetPlatform.iOS ||
+                  defaultTargetPlatform == TargetPlatform.android))
             _CalendarOptionCard(
-              icon: const Icon(Icons.phone_iphone_rounded, size: 20, color: Color(0xFF8A7060)),
+              icon: const Icon(
+                Icons.phone_iphone_rounded,
+                size: 20,
+                color: Color(0xFF8A7060),
+              ),
               title: 'Device Calendar',
               subtitle: 'Sync to your iPhone / Android calendar',
               connected: _deviceConnected,
@@ -126,7 +141,8 @@ class _OnboardingCalendarScreenState
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                          'Could not connect. Please grant calendar permission in Settings.'),
+                        'Could not connect. Please grant calendar permission in Settings.',
+                      ),
                     ),
                   );
                 }
@@ -142,7 +158,11 @@ class _OnboardingCalendarScreenState
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.phone_iphone_rounded, size: 20, color: Color(0xFF8A7060)),
+                  const Icon(
+                    Icons.phone_iphone_rounded,
+                    size: 20,
+                    color: Color(0xFF8A7060),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -210,9 +230,7 @@ class _CalendarOptionCard extends StatelessWidget {
             : context.appColors.surfaceSoft,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: connected
-              ? const Color(0xFF1F9D60)
-              : context.appColors.line,
+          color: connected ? const Color(0xFF1F9D60) : context.appColors.line,
           width: connected ? 1.5 : 1,
         ),
       ),
@@ -248,8 +266,11 @@ class _CalendarOptionCard extends StatelessWidget {
                 ),
               ),
               if (connected)
-                const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF1F9D60), size: 22),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF1F9D60),
+                  size: 22,
+                ),
             ],
           ),
 
@@ -291,8 +312,11 @@ class _CalendarOptionCard extends StatelessWidget {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.add_rounded,
-                              size: 16, color: AppTheme.accent),
+                          const Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: AppTheme.accent,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             connectLabel,

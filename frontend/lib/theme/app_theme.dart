@@ -31,29 +31,34 @@ class AppColors extends ThemeExtension<AppColors> {
   });
 
   static const light = AppColors(
-    bg:          Color(0xFFFFF8F0),
-    surface:     Color(0xFFFFFFFF),
+    bg: Color(0xFFFFF8F0),
+    surface: Color(0xFFFFFFFF),
     surfaceSoft: Color(0xFFFBF1E4),
-    line:        Color(0xFFEFE4D2),
-    ink:         Color(0xFF1F1B16),
-    inkSoft:     Color(0xFF6B6357),
-    inkMuted:    Color(0xFFA39A8C),
+    line: Color(0xFFEFE4D2),
+    ink: Color(0xFF1F1B16),
+    inkSoft: Color(0xFF6B6357),
+    inkMuted: Color(0xFFA39A8C),
   );
 
   static const dark = AppColors(
-    bg:          Color(0xFF1E1916),
-    surface:     Color(0xFF28231F),
+    bg: Color(0xFF1E1916),
+    surface: Color(0xFF28231F),
     surfaceSoft: Color(0xFF322C27),
-    line:        Color(0xFF413B32),
-    ink:         Color(0xFFF5EDE3),
-    inkSoft:     Color(0xFFA89A8C),
-    inkMuted:    Color(0xFF6B5F53),
+    line: Color(0xFF413B32),
+    ink: Color(0xFFF5EDE3),
+    inkSoft: Color(0xFFA89A8C),
+    inkMuted: Color(0xFF6B5F53),
   );
 
   @override
   AppColors copyWith({
-    Color? bg, Color? surface, Color? surfaceSoft, Color? line,
-    Color? ink, Color? inkSoft, Color? inkMuted,
+    Color? bg,
+    Color? surface,
+    Color? surfaceSoft,
+    Color? line,
+    Color? ink,
+    Color? inkSoft,
+    Color? inkMuted,
   }) => AppColors(
     bg: bg ?? this.bg,
     surface: surface ?? this.surface,
@@ -68,13 +73,13 @@ class AppColors extends ThemeExtension<AppColors> {
   AppColors lerp(ThemeExtension<AppColors>? other, double t) {
     if (other is! AppColors) return this;
     return AppColors(
-      bg:          Color.lerp(bg, other.bg, t)!,
-      surface:     Color.lerp(surface, other.surface, t)!,
+      bg: Color.lerp(bg, other.bg, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
       surfaceSoft: Color.lerp(surfaceSoft, other.surfaceSoft, t)!,
-      line:        Color.lerp(line, other.line, t)!,
-      ink:         Color.lerp(ink, other.ink, t)!,
-      inkSoft:     Color.lerp(inkSoft, other.inkSoft, t)!,
-      inkMuted:    Color.lerp(inkMuted, other.inkMuted, t)!,
+      line: Color.lerp(line, other.line, t)!,
+      ink: Color.lerp(ink, other.ink, t)!,
+      inkSoft: Color.lerp(inkSoft, other.inkSoft, t)!,
+      inkMuted: Color.lerp(inkMuted, other.inkMuted, t)!,
     );
   }
 }
@@ -83,38 +88,43 @@ class AppColors extends ThemeExtension<AppColors> {
 
 class AppTheme {
   // Light-mode static consts (kept for backwards compat & const contexts)
-  static const bg          = Color(0xFFFFF8F0);
-  static const surface     = Color(0xFFFFFFFF);
+  static const bg = Color(0xFFFFF8F0);
+  static const surface = Color(0xFFFFFFFF);
   static const surfaceSoft = Color(0xFFFBF1E4);
-  static const line        = Color(0xFFEFE4D2);
+  static const line = Color(0xFFEFE4D2);
 
   // Ink
-  static const ink      = Color(0xFF1F1B16);
-  static const inkSoft  = Color(0xFF6B6357);
+  static const ink = Color(0xFF1F1B16);
+  static const inkSoft = Color(0xFF6B6357);
   static const inkMuted = Color(0xFFA39A8C);
 
   // Accents
-  static const accent  = Color(0xFFFFB347);
+  static const accent = Color(0xFFFFB347);
   static const accent2 = Color(0xFFFF9950);
 
   // Danger
   static const danger = Color(0xFFE85535);
 
   // Legacy aliases so unchanged screens keep compiling
-  static const primary      = ink;
+  static const primary = ink;
   static const primaryLight = inkSoft;
-  static const primaryDark  = ink;
-  static const textPrimary  = ink;
+  static const primaryDark = ink;
+  static const textPrimary = ink;
   static const textSecondary = inkSoft;
-  static const textMuted    = inkMuted;
-  static const surfaceAlt   = surfaceSoft;
-  static const border       = line;
+  static const textMuted = inkMuted;
+  static const surfaceAlt = surfaceSoft;
+  static const border = line;
 
-  static const _emojiFallback = ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'];
+  static const _emojiFallback = [
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Noto Color Emoji',
+  ];
 
   static ThemeData get light {
-    final base = GoogleFonts.plusJakartaSansTextTheme()
-        .apply(fontFamilyFallback: _emojiFallback);
+    final base = GoogleFonts.plusJakartaSansTextTheme().apply(
+      fontFamilyFallback: _emojiFallback,
+    );
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -130,18 +140,49 @@ class AppTheme {
         onSurface: ink,
       ),
       textTheme: base.copyWith(
-        displayLarge:  base.displayLarge?.copyWith(color: ink, fontWeight: FontWeight.w800, letterSpacing: -0.8),
-        displayMedium: base.displayMedium?.copyWith(color: ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineLarge: base.headlineLarge?.copyWith(color: ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineMedium: base.headlineMedium?.copyWith(color: ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineSmall: base.headlineSmall?.copyWith(color: ink, fontWeight: FontWeight.w600),
-        titleLarge:  base.titleLarge?.copyWith(color: ink, fontWeight: FontWeight.w700),
-        titleMedium: base.titleMedium?.copyWith(color: ink, fontWeight: FontWeight.w600),
-        titleSmall:  base.titleSmall?.copyWith(color: inkSoft, fontWeight: FontWeight.w500),
-        bodyLarge:   base.bodyLarge?.copyWith(color: ink),
-        bodyMedium:  base.bodyMedium?.copyWith(color: inkSoft),
-        bodySmall:   base.bodySmall?.copyWith(color: inkMuted),
-        labelLarge:  base.labelLarge?.copyWith(color: ink, fontWeight: FontWeight.w600),
+        displayLarge: base.displayLarge?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+        displayMedium: base.displayMedium?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineLarge: base.headlineLarge?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineMedium: base.headlineMedium?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineSmall: base.headlineSmall?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: base.titleLarge?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: base.titleMedium?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w600,
+        ),
+        titleSmall: base.titleSmall?.copyWith(
+          color: inkSoft,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: base.bodyLarge?.copyWith(color: ink),
+        bodyMedium: base.bodyMedium?.copyWith(color: inkSoft),
+        bodySmall: base.bodySmall?.copyWith(color: inkMuted),
+        labelLarge: base.labelLarge?.copyWith(
+          color: ink,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -155,7 +196,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: line, width: 1.5),
@@ -177,7 +221,10 @@ class AppTheme {
           borderSide: const BorderSide(color: danger, width: 1.5),
         ),
         labelStyle: GoogleFonts.plusJakartaSans(
-          color: inkMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8,
+          color: inkMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
         hintStyle: GoogleFonts.plusJakartaSans(color: inkMuted),
         prefixIconColor: inkMuted,
@@ -189,8 +236,13 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           minimumSize: const Size(0, 56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
           shadowColor: Colors.transparent,
         ),
       ),
@@ -206,7 +258,9 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.plusJakartaSans(
-          color: ink, fontSize: 17, fontWeight: FontWeight.w700,
+          color: ink,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
         iconTheme: const IconThemeData(color: ink),
       ),
@@ -237,8 +291,9 @@ class AppTheme {
 
   static ThemeData get dark {
     const d = AppColors.dark;
-    final base = GoogleFonts.plusJakartaSansTextTheme()
-        .apply(fontFamilyFallback: _emojiFallback);
+    final base = GoogleFonts.plusJakartaSansTextTheme().apply(
+      fontFamilyFallback: _emojiFallback,
+    );
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -254,18 +309,49 @@ class AppTheme {
         onSurface: d.ink,
       ),
       textTheme: base.copyWith(
-        displayLarge:  base.displayLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w800, letterSpacing: -0.8),
-        displayMedium: base.displayMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineLarge: base.headlineLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineMedium: base.headlineMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w700, letterSpacing: -0.8),
-        headlineSmall: base.headlineSmall?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
-        titleLarge:  base.titleLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w700),
-        titleMedium: base.titleMedium?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
-        titleSmall:  base.titleSmall?.copyWith(color: d.inkSoft, fontWeight: FontWeight.w500),
-        bodyLarge:   base.bodyLarge?.copyWith(color: d.ink),
-        bodyMedium:  base.bodyMedium?.copyWith(color: d.inkSoft),
-        bodySmall:   base.bodySmall?.copyWith(color: d.inkMuted),
-        labelLarge:  base.labelLarge?.copyWith(color: d.ink, fontWeight: FontWeight.w600),
+        displayLarge: base.displayLarge?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+        displayMedium: base.displayMedium?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineLarge: base.headlineLarge?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineMedium: base.headlineMedium?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+        headlineSmall: base.headlineSmall?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: base.titleLarge?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: base.titleMedium?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w600,
+        ),
+        titleSmall: base.titleSmall?.copyWith(
+          color: d.inkSoft,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: base.bodyLarge?.copyWith(color: d.ink),
+        bodyMedium: base.bodyMedium?.copyWith(color: d.inkSoft),
+        bodySmall: base.bodySmall?.copyWith(color: d.inkMuted),
+        labelLarge: base.labelLarge?.copyWith(
+          color: d.ink,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       cardTheme: CardThemeData(
         color: d.surface,
@@ -279,7 +365,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: d.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: d.line, width: 1.5),
@@ -301,7 +390,10 @@ class AppTheme {
           borderSide: const BorderSide(color: danger, width: 1.5),
         ),
         labelStyle: GoogleFonts.plusJakartaSans(
-          color: d.inkMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8,
+          color: d.inkMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
         hintStyle: GoogleFonts.plusJakartaSans(color: d.inkMuted),
         prefixIconColor: d.inkMuted,
@@ -313,8 +405,13 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           minimumSize: const Size(0, 56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
           shadowColor: Colors.transparent,
         ),
       ),
@@ -330,7 +427,9 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.plusJakartaSans(
-          color: d.ink, fontSize: 17, fontWeight: FontWeight.w700,
+          color: d.ink,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
         iconTheme: IconThemeData(color: d.ink),
       ),
@@ -364,23 +463,80 @@ class AppTheme {
 
 class CalHue {
   final String name;
-  final Color bg;      // pastel background (light mode)
-  final Color darkBg;  // muted dark background (dark mode) — different orange tones
-  final Color ink;     // dark text on bg (light mode)
-  final Color dot;     // mid-tone dot / avatar
-  final Color deep;    // saturated shadow / accent
+  final Color bg; // pastel background (light mode)
+  final Color
+  darkBg; // muted dark background (dark mode) — different orange tones
+  final Color ink; // dark text on bg (light mode)
+  final Color dot; // mid-tone dot / avatar
+  final Color deep; // saturated shadow / accent
   const CalHue(this.name, this.bg, this.darkBg, this.ink, this.dot, this.deep);
 }
 
 const List<CalHue> stickerHues = [
-  CalHue('peach',  Color(0xFFFFD9C2), Color(0xFF3D2010), Color(0xFF7A3A1E), Color(0xFFFF8B5C), Color(0xFFFF6B3D)),
-  CalHue('mint',   Color(0xFFC9EBD9), Color(0xFF2A1C0E), Color(0xFF1F5C42), Color(0xFF46B97F), Color(0xFF1F9D60)),
-  CalHue('sky',    Color(0xFFCCE3FF), Color(0xFF321A0A), Color(0xFF1B3F7A), Color(0xFF4F8DEB), Color(0xFF2E6EE0)),
-  CalHue('lilac',  Color(0xFFE2D6FF), Color(0xFF3A1E10), Color(0xFF3F2A85), Color(0xFF9479F0), Color(0xFF7C5CFF)),
-  CalHue('butter', Color(0xFFFFEDB0), Color(0xFF3C2C06), Color(0xFF7A5A14), Color(0xFFE5B130), Color(0xFFC8951A)),
-  CalHue('rose',   Color(0xFFFFD1DE), Color(0xFF3A1812), Color(0xFF7A2840), Color(0xFFEC6F92), Color(0xFFD9486F)),
-  CalHue('sage',   Color(0xFFDBE7C7), Color(0xFF2E2010), Color(0xFF3F5524), Color(0xFF86A55B), Color(0xFF658543)),
-  CalHue('coral',  Color(0xFFFFCFC2), Color(0xFF3E1A08), Color(0xFF7A2A1A), Color(0xFFF37961), Color(0xFFE85535)),
+  CalHue(
+    'peach',
+    Color(0xFFFFD9C2),
+    Color(0xFF3D2010),
+    Color(0xFF7A3A1E),
+    Color(0xFFFF8B5C),
+    Color(0xFFFF6B3D),
+  ),
+  CalHue(
+    'mint',
+    Color(0xFFC9EBD9),
+    Color(0xFF2A1C0E),
+    Color(0xFF1F5C42),
+    Color(0xFF46B97F),
+    Color(0xFF1F9D60),
+  ),
+  CalHue(
+    'sky',
+    Color(0xFFCCE3FF),
+    Color(0xFF321A0A),
+    Color(0xFF1B3F7A),
+    Color(0xFF4F8DEB),
+    Color(0xFF2E6EE0),
+  ),
+  CalHue(
+    'lilac',
+    Color(0xFFE2D6FF),
+    Color(0xFF3A1E10),
+    Color(0xFF3F2A85),
+    Color(0xFF9479F0),
+    Color(0xFF7C5CFF),
+  ),
+  CalHue(
+    'butter',
+    Color(0xFFFFEDB0),
+    Color(0xFF3C2C06),
+    Color(0xFF7A5A14),
+    Color(0xFFE5B130),
+    Color(0xFFC8951A),
+  ),
+  CalHue(
+    'rose',
+    Color(0xFFFFD1DE),
+    Color(0xFF3A1812),
+    Color(0xFF7A2840),
+    Color(0xFFEC6F92),
+    Color(0xFFD9486F),
+  ),
+  CalHue(
+    'sage',
+    Color(0xFFDBE7C7),
+    Color(0xFF2E2010),
+    Color(0xFF3F5524),
+    Color(0xFF86A55B),
+    Color(0xFF658543),
+  ),
+  CalHue(
+    'coral',
+    Color(0xFFFFCFC2),
+    Color(0xFF3E1A08),
+    Color(0xFF7A2A1A),
+    Color(0xFFF37961),
+    Color(0xFFE85535),
+  ),
 ];
 
 // In-memory hue overrides set when a calendar is created/joined.
@@ -481,7 +637,9 @@ final Set<String> _colorPromptedCalendars = {};
 
 Future<void> loadColorPrompted() async {
   final prefs = await SharedPreferences.getInstance();
-  final keys = prefs.getKeys().where((k) => k.startsWith('cal_color_prompted_'));
+  final keys = prefs.getKeys().where(
+    (k) => k.startsWith('cal_color_prompted_'),
+  );
   for (final k in keys) {
     final id = k.substring('cal_color_prompted_'.length);
     if (prefs.getBool(k) == true) _colorPromptedCalendars.add(id);

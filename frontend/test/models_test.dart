@@ -122,7 +122,10 @@ void main() {
 
     test('serialises notificationType as apiValue string', () {
       final user = AppUser(
-        id: 'u1', email: 'a@b.com', name: 'A', color: '#fff',
+        id: 'u1',
+        email: 'a@b.com',
+        name: 'A',
+        color: '#fff',
         notificationType: NotificationType.push,
       );
       expect(user.toJson()['notification_type'], 'push');

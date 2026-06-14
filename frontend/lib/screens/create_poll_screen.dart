@@ -17,8 +17,14 @@ class _Slot {
 }
 
 const _colorPalette = [
-  '#28A745', '#DC3545', '#E5B130', '#2196F3',
-  '#9C27B0', '#FF5722', '#00BCD4', '#FF9800',
+  '#28A745',
+  '#DC3545',
+  '#E5B130',
+  '#2196F3',
+  '#9C27B0',
+  '#FF5722',
+  '#00BCD4',
+  '#FF9800',
 ];
 
 class CreatePollScreen extends ConsumerStatefulWidget {
@@ -94,7 +100,13 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
       ),
     );
     if (time == null || !mounted) return;
-    final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     setState(() {
       if (isStart) {
         slot.start = dt;
@@ -122,8 +134,12 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
         .read(pollsProvider(widget.calendarId).notifier)
         .createPoll(
           title: _titleCtrl.text.trim(),
-          description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-          options: _slots.map((s) => PollOptionInput(start: s.start, end: s.end)).toList(),
+          description: _descCtrl.text.trim().isEmpty
+              ? null
+              : _descCtrl.text.trim(),
+          options: _slots
+              .map((s) => PollOptionInput(start: s.start, end: s.end))
+              .toList(),
           voteOptions: _voteOptions,
           icon: _selectedIcon,
           color: null,
@@ -140,7 +156,20 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
   }
 
   String _fmtDate(DateTime dt) {
-    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mo = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${mo[dt.month - 1]} ${dt.day}';
   }
 
@@ -166,7 +195,8 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
@@ -176,13 +206,15 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
             Text(
               'Pick a color',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 17, fontWeight: FontWeight.w700,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
                 color: context.appColors.ink,
               ),
             ),
             const SizedBox(height: 20),
             Wrap(
-              spacing: 14, runSpacing: 14,
+              spacing: 14,
+              runSpacing: 14,
               children: _colorPalette.map((hex) {
                 final selected = _voteOptions[index].color == hex;
                 final color = _hexToColor(hex);
@@ -193,21 +225,31 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 120),
-                    width: 48, height: 48,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected ? context.appColors.ink : Colors.transparent,
+                        color: selected
+                            ? context.appColors.ink
+                            : Colors.transparent,
                         width: 3,
                       ),
                       boxShadow: [
                         if (selected)
-                          BoxShadow(color: color.withOpacity(0.4), blurRadius: 8),
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 8,
+                          ),
                       ],
                     ),
                     child: selected
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          )
                         : null,
                   ),
                 );
@@ -240,14 +282,21 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                   GestureDetector(
                     onTap: () => context.go('/calendar/${widget.calendarId}'),
                     child: Container(
-                      width: 40, height: 40,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: context.appColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.appColors.line, width: 1.5),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1.5,
+                        ),
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: context.appColors.ink),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: context.appColors.ink,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -255,7 +304,8 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                     child: Text(
                       'New poll',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15, fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: context.appColors.ink,
                       ),
                     ),
@@ -273,14 +323,18 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       child: Center(
                         child: _isLoading
                             ? const SizedBox(
-                                width: 16, height: 16,
+                                width: 16,
+                                height: 16,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : Text(
                                 'Create',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13, fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
                               ),
@@ -306,8 +360,10 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         controller: _titleCtrl,
                         autofocus: true,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 30, fontWeight: FontWeight.w700,
-                          color: context.appColors.ink, letterSpacing: -0.8,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.ink,
+                          letterSpacing: -0.8,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Poll title',
@@ -317,14 +373,17 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           errorBorder: InputBorder.none,
                           focusedErrorBorder: InputBorder.none,
                           hintStyle: GoogleFonts.plusJakartaSans(
-                            fontSize: 30, fontWeight: FontWeight.w700,
-                            color: context.appColors.inkMuted, letterSpacing: -0.8,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.inkMuted,
+                            letterSpacing: -0.8,
                           ),
                           contentPadding: EdgeInsets.zero,
                           filled: false,
                         ),
-                        validator: (v) =>
-                            v != null && v.trim().isNotEmpty ? null : 'Title required',
+                        validator: (v) => v != null && v.trim().isNotEmpty
+                            ? null
+                            : 'Title required',
                       ),
 
                       const SizedBox(height: 6),
@@ -334,11 +393,15 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                         decoration: BoxDecoration(
                           color: context.appColors.surface,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: context.appColors.line, width: 1.5),
+                          border: Border.all(
+                            color: context.appColors.line,
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: context.appColors.line.withOpacity(0.5),
-                              offset: const Offset(0, 4), blurRadius: 0,
+                              offset: const Offset(0, 4),
+                              blurRadius: 0,
                             ),
                           ],
                         ),
@@ -351,80 +414,118 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                                 controller: _descCtrl,
                                 maxLines: 2,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: context.appColors.ink, fontSize: 14,
+                                  color: context.appColors.ink,
+                                  fontSize: 14,
                                 ),
                                 decoration: InputDecoration(
                                   hintText: 'Add a note…',
                                   hintStyle: GoogleFonts.plusJakartaSans(
-                                      color: context.appColors.inkMuted, fontSize: 14),
+                                    color: context.appColors.inkMuted,
+                                    fontSize: 14,
+                                  ),
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
                                   filled: false,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                                  prefixIcon: Padding(
-                                    padding: const EdgeInsets.only(right: 12, top: 16),
-                                    child: Icon(Icons.notes_rounded,
-                                        size: 16, color: context.appColors.inkMuted),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 14,
                                   ),
-                                  prefixIconConstraints:
-                                      const BoxConstraints(minWidth: 0, minHeight: 0),
+                                  prefixIcon: Padding(
+                                    padding: const EdgeInsets.only(
+                                      right: 12,
+                                      top: 16,
+                                    ),
+                                    child: Icon(
+                                      Icons.notes_rounded,
+                                      size: 16,
+                                      color: context.appColors.inkMuted,
+                                    ),
+                                  ),
+                                  prefixIconConstraints: const BoxConstraints(
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                  ),
                                 ),
                               ),
                             ),
                             Container(
                               height: 1,
-                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               color: context.appColors.line,
                             ),
                             // Icon row
                             GestureDetector(
                               onTap: () async {
-                                final picked = await showModalBottomSheet<String>(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (_) => _PollIconPickerSheet(
-                                    current: _selectedIcon,
-                                    surfaceColor: context.appColors.surface,
-                                    lineColor: context.appColors.line,
-                                    inkColor: context.appColors.ink,
-                                    inkMutedColor: context.appColors.inkMuted,
-                                    surfaceSoftColor: context.appColors.surfaceSoft,
-                                  ),
-                                );
+                                final picked =
+                                    await showModalBottomSheet<String>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (_) => _PollIconPickerSheet(
+                                        current: _selectedIcon,
+                                        surfaceColor: context.appColors.surface,
+                                        lineColor: context.appColors.line,
+                                        inkColor: context.appColors.ink,
+                                        inkMutedColor:
+                                            context.appColors.inkMuted,
+                                        surfaceSoftColor:
+                                            context.appColors.surfaceSoft,
+                                      ),
+                                    );
                                 if (picked != null && mounted) {
                                   setState(() => _selectedIcon = picked);
                                 }
                               },
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  14,
+                                ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 36, height: 36,
+                                      width: 36,
+                                      height: 36,
                                       decoration: BoxDecoration(
                                         color: _selectedIcon != null
                                             ? calHue.bg
                                             : context.appColors.surfaceSoft,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                            color: context.appColors.line, width: 1.5),
+                                          color: context.appColors.line,
+                                          width: 1.5,
+                                        ),
                                       ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: _selectedIcon != null &&
-                                                _selectedIcon!.startsWith('http')
-                                            ? Image.network(_selectedIcon!,
-                                                width: 36, height: 36, fit: BoxFit.cover)
+                                        child:
+                                            _selectedIcon != null &&
+                                                _selectedIcon!.startsWith(
+                                                  'http',
+                                                )
+                                            ? Image.network(
+                                                _selectedIcon!,
+                                                width: 36,
+                                                height: 36,
+                                                fit: BoxFit.cover,
+                                              )
                                             : Center(
                                                 child: Text(
                                                   _selectedIcon ?? '✨',
                                                   style: TextStyle(
-                                                    fontSize: _selectedIcon != null ? 20 : 16,
+                                                    fontSize:
+                                                        _selectedIcon != null
+                                                        ? 20
+                                                        : 16,
                                                     color: _selectedIcon != null
                                                         ? null
-                                                        : context.appColors.inkMuted,
+                                                        : context
+                                                              .appColors
+                                                              .inkMuted,
                                                   ),
                                                 ),
                                               ),
@@ -433,19 +534,24 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _selectedIcon != null ? 'Event icon' : 'Add icon',
+                                            _selectedIcon != null
+                                                ? 'Event icon'
+                                                : 'Add icon',
                                             style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 14, fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
                                               color: context.appColors.ink,
                                             ),
                                           ),
                                           Text(
                                             'Shown when poll is confirmed',
                                             style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 11, color: context.appColors.inkMuted,
+                                              fontSize: 11,
+                                              color: context.appColors.inkMuted,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -454,13 +560,21 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                                     ),
                                     if (_selectedIcon != null)
                                       GestureDetector(
-                                        onTap: () => setState(() => _selectedIcon = null),
-                                        child: Icon(Icons.close_rounded,
-                                            size: 16, color: context.appColors.inkMuted),
+                                        onTap: () => setState(
+                                          () => _selectedIcon = null,
+                                        ),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          size: 16,
+                                          color: context.appColors.inkMuted,
+                                        ),
                                       )
                                     else
-                                      Icon(Icons.chevron_right_rounded,
-                                          size: 16, color: context.appColors.inkMuted),
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        size: 16,
+                                        color: context.appColors.inkMuted,
+                                      ),
                                   ],
                                 ),
                               ),
@@ -500,10 +614,12 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                           onTap: () {
                             final last = _slots.last;
                             setState(() {
-                              _slots.add(_Slot(
-                                last.start.add(const Duration(days: 1)),
-                                last.end.add(const Duration(days: 1)),
-                              ));
+                              _slots.add(
+                                _Slot(
+                                  last.start.add(const Duration(days: 1)),
+                                  last.end.add(const Duration(days: 1)),
+                                ),
+                              );
                             });
                           },
                           child: Container(
@@ -513,18 +629,24 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                               color: context.appColors.surfaceSoft,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: context.appColors.line, width: 1.5),
+                                color: context.appColors.line,
+                                width: 1.5,
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_circle_outline_rounded,
-                                    size: 16, color: calHue.deep),
+                                Icon(
+                                  Icons.add_circle_outline_rounded,
+                                  size: 16,
+                                  color: calHue.deep,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Add time option',
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13, fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
                                     color: calHue.deep,
                                   ),
                                 ),
@@ -540,7 +662,8 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                       const SizedBox(height: 10),
 
                       Wrap(
-                        spacing: 8, runSpacing: 8,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           ..._voteOptions.asMap().entries.map((entry) {
                             final i = entry.key;
@@ -552,42 +675,58 @@ class _CreatePollScreenState extends ConsumerState<CreatePollScreen> {
                               onEditLabel: (newLabel) =>
                                   setState(() => vo.label = newLabel),
                               onPickColor: () => _pickVoteOptionColor(i),
-                              onRemove: () => setState(() => _voteOptions.removeAt(i)),
+                              onRemove: () =>
+                                  setState(() => _voteOptions.removeAt(i)),
                             );
                           }),
                           if (_voteOptions.length < 5)
                             GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  final usedColors = _voteOptions.map((o) => o.color).toSet();
+                                  final usedColors = _voteOptions
+                                      .map((o) => o.color)
+                                      .toSet();
                                   final nextColor = _colorPalette.firstWhere(
                                     (c) => !usedColors.contains(c),
                                     orElse: () =>
-                                        _colorPalette[_voteOptions.length % _colorPalette.length],
+                                        _colorPalette[_voteOptions.length %
+                                            _colorPalette.length],
                                   );
                                   _voteOptions.add(
-                                      PollVoteOptionInput(label: '', color: nextColor));
+                                    PollVoteOptionInput(
+                                      label: '',
+                                      color: nextColor,
+                                    ),
+                                  );
                                 });
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10),
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: context.appColors.surfaceSoft,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: context.appColors.line, width: 1.5),
+                                    color: context.appColors.line,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.add_rounded,
-                                        size: 14, color: context.appColors.inkSoft),
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 14,
+                                      color: context.appColors.inkSoft,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Add option',
                                       style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13, fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
                                         color: context.appColors.inkSoft,
                                       ),
                                     ),
@@ -619,12 +758,14 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        label,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 11, fontWeight: FontWeight.w800,
-          color: context.appColors.inkMuted, letterSpacing: 0.9,
-        ),
-      );
+    label,
+    style: GoogleFonts.plusJakartaSans(
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      color: context.appColors.inkMuted,
+      letterSpacing: 0.9,
+    ),
+  );
 }
 
 // ── Slot card ─────────────────────────────────────────────────────────────────
@@ -664,7 +805,8 @@ class _SlotCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: context.appColors.line.withOpacity(0.5),
-            offset: const Offset(0, 4), blurRadius: 0,
+            offset: const Offset(0, 4),
+            blurRadius: 0,
           ),
         ],
       ),
@@ -674,13 +816,19 @@ class _SlotCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Container(
-              width: 28, height: 28,
-              decoration: BoxDecoration(color: accentBg, shape: BoxShape.circle),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: accentBg,
+                shape: BoxShape.circle,
+              ),
               child: Center(
                 child: Text(
                   '${index + 1}',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13, fontWeight: FontWeight.w800, color: accentColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: accentColor,
                   ),
                 ),
               ),
@@ -703,23 +851,29 @@ class _SlotCard extends StatelessWidget {
                               Text(
                                 'START',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9, fontWeight: FontWeight.w800,
-                                  color: context.appColors.inkMuted, letterSpacing: 0.8,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.appColors.inkMuted,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${fmtDate(slot.start)}  ${fmtTime(slot.start)}',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                   color: context.appColors.ink,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.edit_calendar_outlined,
-                            size: 15, color: context.appColors.inkMuted),
+                        Icon(
+                          Icons.edit_calendar_outlined,
+                          size: 15,
+                          color: context.appColors.inkMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -742,23 +896,29 @@ class _SlotCard extends StatelessWidget {
                               Text(
                                 'END',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9, fontWeight: FontWeight.w800,
-                                  color: context.appColors.inkMuted, letterSpacing: 0.8,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.appColors.inkMuted,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${fmtDate(slot.end)}  ${fmtTime(slot.end)}',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                   color: context.appColors.ink,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.edit_calendar_outlined,
-                            size: 15, color: context.appColors.inkMuted),
+                        Icon(
+                          Icons.edit_calendar_outlined,
+                          size: 15,
+                          color: context.appColors.inkMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -773,14 +933,18 @@ class _SlotCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(right: 14),
                 child: Container(
-                  width: 28, height: 28,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: context.appColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: context.appColors.line, width: 1),
                   ),
-                  child: Icon(Icons.close_rounded,
-                      size: 14, color: context.appColors.inkMuted),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: context.appColors.inkMuted,
+                  ),
                 ),
               ),
             ),
@@ -844,9 +1008,14 @@ class _VoteOptionChipState extends State<_VoteOptionChip> {
           GestureDetector(
             onTap: widget.onPickColor,
             child: Container(
-              width: 24, height: 24,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: const Icon(Icons.edit_rounded, size: 11, color: Colors.white),
+              child: const Icon(
+                Icons.edit_rounded,
+                size: 11,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 6),
@@ -855,12 +1024,16 @@ class _VoteOptionChipState extends State<_VoteOptionChip> {
               controller: _ctrl,
               onChanged: widget.onEditLabel,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 13, fontWeight: FontWeight.w700, color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: color,
               ),
               decoration: InputDecoration(
                 hintText: 'Label',
                 hintStyle: GoogleFonts.plusJakartaSans(
-                    fontSize: 13, color: color.withOpacity(0.5)),
+                  fontSize: 13,
+                  color: color.withOpacity(0.5),
+                ),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -871,7 +1044,11 @@ class _VoteOptionChipState extends State<_VoteOptionChip> {
             const SizedBox(width: 4),
             GestureDetector(
               onTap: widget.onRemove,
-              child: Icon(Icons.close_rounded, size: 13, color: color.withOpacity(0.6)),
+              child: Icon(
+                Icons.close_rounded,
+                size: 13,
+                color: color.withOpacity(0.6),
+              ),
             ),
           ],
         ],
@@ -883,9 +1060,30 @@ class _VoteOptionChipState extends State<_VoteOptionChip> {
 // ── Poll icon picker ──────────────────────────────────────────────────────────
 
 const _pollPresetIcons = [
-  '📅', '🗓️', '🏠', '💼', '🎓', '🏋️', '✈️', '🎵',
-  '👨‍👩‍👧', '🎉', '⚽', '🍕', '🌿', '📚', '🤝', '🏖️',
-  '🎨', '💡', '🎤', '🌟', '🎮', '🐾', '🍳', '❤️',
+  '📅',
+  '🗓️',
+  '🏠',
+  '💼',
+  '🎓',
+  '🏋️',
+  '✈️',
+  '🎵',
+  '👨‍👩‍👧',
+  '🎉',
+  '⚽',
+  '🍕',
+  '🌿',
+  '📚',
+  '🤝',
+  '🏖️',
+  '🎨',
+  '💡',
+  '🎤',
+  '🌟',
+  '🎮',
+  '🐾',
+  '🍳',
+  '❤️',
 ];
 
 class _PollModeTab extends StatelessWidget {
@@ -902,16 +1100,16 @@ class _PollModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-            color: active ? inkColor : inkColor.withOpacity(0.4),
-          ),
-        ),
-      );
+    onTap: onTap,
+    child: Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+        color: active ? inkColor : inkColor.withOpacity(0.4),
+      ),
+    ),
+  );
 }
 
 class _PollIconPickerSheet extends StatefulWidget {
@@ -941,8 +1139,11 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 256, maxHeight: 256, imageQuality: 85);
+      source: ImageSource.gallery,
+      maxWidth: 256,
+      maxHeight: 256,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
     setState(() => _uploading = true);
     try {
@@ -954,8 +1155,9 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
         setState(() => _uploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: ${e.message}')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: ${e.message}')));
       }
     }
   }
@@ -968,42 +1170,69 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
-          16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+        16,
+        12,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
-                color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+              color: widget.lineColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(height: 16),
-          Row(children: [
-            Text('Event icon',
+          Row(
+            children: [
+              Text(
+                'Event icon',
                 style: GoogleFonts.plusJakartaSans(
-                    fontSize: 17, fontWeight: FontWeight.w700,
-                    color: widget.inkColor)),
-            const Spacer(),
-            _PollModeTab(label: 'Presets', active: _mode == 'presets',
-                inkColor: widget.inkColor, onTap: () => setState(() => _mode = 'presets')),
-            const SizedBox(width: 10),
-            _PollModeTab(label: 'Emoji', active: _mode == 'emoji',
-                inkColor: widget.inkColor, onTap: () => setState(() => _mode = 'emoji')),
-            const SizedBox(width: 10),
-            _PollModeTab(label: 'Photo', active: _mode == 'photo',
-                inkColor: widget.inkColor, onTap: () => setState(() => _mode = 'photo')),
-          ]),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: widget.inkColor,
+                ),
+              ),
+              const Spacer(),
+              _PollModeTab(
+                label: 'Presets',
+                active: _mode == 'presets',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'presets'),
+              ),
+              const SizedBox(width: 10),
+              _PollModeTab(
+                label: 'Emoji',
+                active: _mode == 'emoji',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'emoji'),
+              ),
+              const SizedBox(width: 10),
+              _PollModeTab(
+                label: 'Photo',
+                active: _mode == 'photo',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'photo'),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           if (_mode == 'presets')
             Wrap(
-              spacing: 8, runSpacing: 8,
+              spacing: 8,
+              runSpacing: 8,
               children: _pollPresetIcons.map((e) {
                 final selected = e == widget.current;
                 return GestureDetector(
                   onTap: () => Navigator.pop(context, e),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 100),
-                    width: 52, height: 52,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: selected
                           ? widget.inkColor.withOpacity(0.1)
@@ -1016,7 +1245,9 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
                         width: selected ? 2 : 1.5,
                       ),
                     ),
-                    child: Center(child: Text(e, style: const TextStyle(fontSize: 26))),
+                    child: Center(
+                      child: Text(e, style: const TextStyle(fontSize: 26)),
+                    ),
                   ),
                 );
               }).toList(),
@@ -1025,19 +1256,26 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
             SizedBox(
               height: 320,
               child: epf.EmojiPicker(
-                onEmojiSelected: (_, emoji) => Navigator.pop(context, emoji.emoji),
+                onEmojiSelected: (_, emoji) =>
+                    Navigator.pop(context, emoji.emoji),
                 config: epf.Config(
                   emojiViewConfig: epf.EmojiViewConfig(
-                      backgroundColor: widget.surfaceColor, emojiSizeMax: 28),
+                    backgroundColor: widget.surfaceColor,
+                    emojiSizeMax: 28,
+                  ),
                   searchViewConfig: epf.SearchViewConfig(
-                      backgroundColor: widget.surfaceColor,
-                      buttonIconColor: widget.inkColor),
+                    backgroundColor: widget.surfaceColor,
+                    buttonIconColor: widget.inkColor,
+                  ),
                   categoryViewConfig: epf.CategoryViewConfig(
-                      backgroundColor: widget.surfaceColor,
-                      iconColor: widget.inkColor.withOpacity(0.4),
-                      iconColorSelected: widget.inkColor,
-                      indicatorColor: widget.inkColor),
-                  bottomActionBarConfig: const epf.BottomActionBarConfig(enabled: false),
+                    backgroundColor: widget.surfaceColor,
+                    iconColor: widget.inkColor.withOpacity(0.4),
+                    iconColorSelected: widget.inkColor,
+                    indicatorColor: widget.inkColor,
+                  ),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(
+                    enabled: false,
+                  ),
                 ),
               ),
             )
@@ -1045,25 +1283,37 @@ class _PollIconPickerSheetState extends State<_PollIconPickerSheet> {
             GestureDetector(
               onTap: _uploading ? null : _pickPhoto,
               child: Container(
-                width: double.infinity, height: 120,
+                width: double.infinity,
+                height: 120,
                 decoration: BoxDecoration(
                   color: widget.surfaceSoftColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: widget.lineColor, width: 1.5),
                 ),
                 child: _uploading
-                    ? Center(child: CircularProgressIndicator(
-                        color: widget.inkColor, strokeWidth: 2))
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: widget.inkColor,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 32, color: widget.inkMutedColor),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 32,
+                            color: widget.inkMutedColor,
+                          ),
                           const SizedBox(height: 8),
-                          Text('Pick from gallery',
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w600,
-                                  color: widget.inkMutedColor)),
+                          Text(
+                            'Pick from gallery',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: widget.inkMutedColor,
+                            ),
+                          ),
                         ],
                       ),
               ),

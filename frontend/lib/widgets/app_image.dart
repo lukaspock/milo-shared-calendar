@@ -40,10 +40,8 @@ class AppImage extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Text(
-        fallbackEmoji,
-        style: TextStyle(fontSize: size, height: 1.0),
-      ),
+      errorBuilder: (_, __, ___) =>
+          Text(fallbackEmoji, style: TextStyle(fontSize: size, height: 1.0)),
     );
   }
 }

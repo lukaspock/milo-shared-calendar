@@ -16,8 +16,7 @@ class OnboardingVerifyScreen extends ConsumerStatefulWidget {
       _OnboardingVerifyScreenState();
 }
 
-class _OnboardingVerifyScreenState
-    extends ConsumerState<OnboardingVerifyScreen>
+class _OnboardingVerifyScreenState extends ConsumerState<OnboardingVerifyScreen>
     with SingleTickerProviderStateMixin {
   Timer? _pollTimer;
   late AnimationController _pulseCtrl;
@@ -29,16 +28,19 @@ class _OnboardingVerifyScreenState
   void initState() {
     super.initState();
     _pollTimer = Timer.periodic(
-        const Duration(seconds: 5), (_) => ref.read(authProvider.notifier).refreshUser());
+      const Duration(seconds: 5),
+      (_) => ref.read(authProvider.notifier).refreshUser(),
+    );
 
     _pulseCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
     )..repeat(reverse: true);
 
-    _pulse = Tween<double>(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
+    _pulse = Tween<double>(
+      begin: 1.0,
+      end: 1.06,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -148,9 +150,11 @@ class _OnboardingVerifyScreenState
                         _resent = ok;
                       });
                       if (!ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('Could not send email. Try again.'),
-                        ));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not send email. Try again.'),
+                          ),
+                        );
                       }
                     },
               child: _resent

@@ -2060,7 +2060,9 @@ class _RsvpButton extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? palette.border : context.appColors.inkMuted,
+                  color: isSelected
+                      ? palette.border
+                      : context.appColors.inkMuted,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

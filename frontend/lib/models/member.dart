@@ -18,14 +18,14 @@ class CalendarMember {
   });
 
   factory CalendarMember.fromJson(Map<String, dynamic> json) => CalendarMember(
-        id: json['id'] as String,
-        email: json['email'] as String,
-        name: json['name'] as String,
-        color: json['color'] as String,
-        role: json['role'] as String,
-        joinedAt: DateTime.parse(json['joined_at'] as String),
-        avatarUrl: json['avatar_url'] as String?,
-      );
+    id: json['id'] as String,
+    email: json['email'] as String,
+    name: json['name'] as String,
+    color: json['color'] as String,
+    role: json['role'] as String,
+    joinedAt: DateTime.parse(json['joined_at'] as String),
+    avatarUrl: json['avatar_url'] as String?,
+  );
 
   bool get isOwner => role == 'owner';
 }

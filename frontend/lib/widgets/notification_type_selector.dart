@@ -85,13 +85,20 @@ class _Option extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon,
-                    size: 20,
-                    color: selected ? AppTheme.accent : context.appColors.inkMuted),
+                Icon(
+                  icon,
+                  size: 20,
+                  color: selected
+                      ? AppTheme.accent
+                      : context.appColors.inkMuted,
+                ),
                 const Spacer(),
                 if (selected)
-                  const Icon(Icons.check_circle_rounded,
-                      size: 18, color: AppTheme.accent),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: AppTheme.accent,
+                  ),
               ],
             ),
             const SizedBox(height: 10),

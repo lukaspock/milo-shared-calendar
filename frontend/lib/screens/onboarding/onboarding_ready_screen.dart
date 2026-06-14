@@ -26,8 +26,10 @@ class _OnboardingReadyScreenState extends ConsumerState<OnboardingReadyScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 1.0, end: 1.06)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _pulse = Tween<double>(
+      begin: 1.0,
+      end: 1.06,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -184,8 +186,11 @@ class _CheckCard extends StatelessWidget {
               ),
             ),
           ),
-          const Icon(Icons.check_circle_rounded,
-              color: Color(0xFF4FA870), size: 20),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF4FA870),
+            size: 20,
+          ),
         ],
       ),
     );
@@ -201,24 +206,25 @@ class _Confetti extends StatefulWidget {
   State<_Confetti> createState() => _ConfettiState();
 }
 
-class _ConfettiState extends State<_Confetti> with SingleTickerProviderStateMixin {
+class _ConfettiState extends State<_Confetti>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
   static const _particles = [
-    _P(x: 0.15, color: Color(0xFFF5A623), shape: true,  delay: 0.0,  dur: 1.6),
-    _P(x: 0.28, color: Color(0xFFF06292), shape: false, delay: 0.2,  dur: 2.0),
-    _P(x: 0.42, color: Color(0xFF4285F4), shape: true,  delay: 0.4,  dur: 1.4),
-    _P(x: 0.55, color: Color(0xFF4FA870), shape: false, delay: 0.6,  dur: 1.8),
-    _P(x: 0.68, color: Color(0xFF9B59B6), shape: true,  delay: 0.8,  dur: 2.2),
-    _P(x: 0.80, color: Color(0xFFEF5350), shape: false, delay: 1.0,  dur: 1.5),
-    _P(x: 0.10, color: Color(0xFFFBBC05), shape: true,  delay: 0.3,  dur: 1.9),
-    _P(x: 0.35, color: Color(0xFF26C6A4), shape: false, delay: 0.9,  dur: 1.7),
-    _P(x: 0.50, color: Color(0xFFFF7043), shape: true,  delay: 1.2,  dur: 2.1),
-    _P(x: 0.72, color: Color(0xFF42A5F5), shape: false, delay: 0.5,  dur: 1.6),
-    _P(x: 0.90, color: Color(0xFF66BB6A), shape: true,  delay: 1.5,  dur: 1.4),
-    _P(x: 0.22, color: Color(0xFFAB47BC), shape: false, delay: 0.7,  dur: 2.0),
-    _P(x: 0.60, color: Color(0xFFF5A623), shape: true,  delay: 1.1,  dur: 1.8),
-    _P(x: 0.85, color: Color(0xFFF06292), shape: false, delay: 1.8,  dur: 1.5),
+    _P(x: 0.15, color: Color(0xFFF5A623), shape: true, delay: 0.0, dur: 1.6),
+    _P(x: 0.28, color: Color(0xFFF06292), shape: false, delay: 0.2, dur: 2.0),
+    _P(x: 0.42, color: Color(0xFF4285F4), shape: true, delay: 0.4, dur: 1.4),
+    _P(x: 0.55, color: Color(0xFF4FA870), shape: false, delay: 0.6, dur: 1.8),
+    _P(x: 0.68, color: Color(0xFF9B59B6), shape: true, delay: 0.8, dur: 2.2),
+    _P(x: 0.80, color: Color(0xFFEF5350), shape: false, delay: 1.0, dur: 1.5),
+    _P(x: 0.10, color: Color(0xFFFBBC05), shape: true, delay: 0.3, dur: 1.9),
+    _P(x: 0.35, color: Color(0xFF26C6A4), shape: false, delay: 0.9, dur: 1.7),
+    _P(x: 0.50, color: Color(0xFFFF7043), shape: true, delay: 1.2, dur: 2.1),
+    _P(x: 0.72, color: Color(0xFF42A5F5), shape: false, delay: 0.5, dur: 1.6),
+    _P(x: 0.90, color: Color(0xFF66BB6A), shape: true, delay: 1.5, dur: 1.4),
+    _P(x: 0.22, color: Color(0xFFAB47BC), shape: false, delay: 0.7, dur: 2.0),
+    _P(x: 0.60, color: Color(0xFFF5A623), shape: true, delay: 1.1, dur: 1.8),
+    _P(x: 0.85, color: Color(0xFFF06292), shape: false, delay: 1.8, dur: 1.5),
   ];
 
   @override
@@ -247,9 +253,9 @@ class _ConfettiState extends State<_Confetti> with SingleTickerProviderStateMixi
           child: Stack(
             children: _particles.map((p) {
               final raw = (_ctrl.value - p.delay / 2.2).clamp(0.0, 1.0);
-              final t   = raw / (p.dur / 2.2);
-              final y   = -20.0 + t * 80.0;
-              final op  = 1.0 - t;
+              final t = raw / (p.dur / 2.2);
+              final y = -20.0 + t * 80.0;
+              final op = 1.0 - t;
               return Positioned(
                 left: MediaQuery.sizeOf(context).width * p.x,
                 top: 10 + y,
@@ -258,7 +264,8 @@ class _ConfettiState extends State<_Confetti> with SingleTickerProviderStateMixi
                   child: Transform.rotate(
                     angle: t * 6.28,
                     child: Container(
-                      width: 7, height: 7,
+                      width: 7,
+                      height: 7,
                       decoration: BoxDecoration(
                         color: p.color,
                         shape: p.shape ? BoxShape.rectangle : BoxShape.circle,
@@ -280,6 +287,11 @@ class _P {
   final double x, delay, dur;
   final Color color;
   final bool shape; // true = square, false = circle
-  const _P({required this.x, required this.color, required this.shape,
-             required this.delay, required this.dur});
+  const _P({
+    required this.x,
+    required this.color,
+    required this.shape,
+    required this.delay,
+    required this.dur,
+  });
 }

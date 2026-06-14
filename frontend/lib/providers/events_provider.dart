@@ -232,7 +232,8 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       DeviceCalendarService().syncEvent(event);
       // Schedule a local reminder for events created by others — they won't
       // have one yet since scheduleEventReminder is only called on self-creation.
-      if (event.source == EventSource.sharedcal && event.startTime.isAfter(DateTime.now())) {
+      if (event.source == EventSource.sharedcal &&
+          event.startTime.isAfter(DateTime.now())) {
         LocalNotificationService().scheduleEventReminder(event);
       }
     } else if (type == 'event_updated') {
@@ -244,8 +245,11 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
       _setMergedState();
       // Keep the scheduled reminder in sync with the (possibly new) start time.
       LocalNotificationService().cancelEventReminder(event.id);
-      if (event.source == EventSource.sharedcal && event.startTime.isAfter(DateTime.now())) {
-        LocalNotificationService().loadReminderPreference(event.id).then((saved) {
+      if (event.source == EventSource.sharedcal &&
+          event.startTime.isAfter(DateTime.now())) {
+        LocalNotificationService().loadReminderPreference(event.id).then((
+          saved,
+        ) {
           LocalNotificationService().scheduleEventReminder(
             event,
             reminderMinutes: saved ?? 30,

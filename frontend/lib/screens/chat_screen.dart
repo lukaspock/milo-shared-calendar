@@ -59,7 +59,9 @@ class _ChatViewState extends ConsumerState<ChatView> {
     setState(() => _sending = true);
     _textController.clear();
     try {
-      await ref.read(chatProvider(widget.calendarId).notifier).sendMessage(content);
+      await ref
+          .read(chatProvider(widget.calendarId).notifier)
+          .sendMessage(content);
       if (mounted && _scrollController.hasClients) {
         _scrollController.animateTo(
           0,
@@ -87,47 +89,51 @@ class _ChatViewState extends ConsumerState<ChatView> {
                   ),
                 )
               : messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Noch keine Nachrichten.\nSchreibe die erste!',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: context.appColors.inkMuted,
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      itemCount: messages.length +
-                          (chatState.isLoading && messages.isNotEmpty ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == messages.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        final msg = messages[index];
-                        final prevMsg =
-                            index + 1 < messages.length ? messages[index + 1] : null;
-                        final isOwn = msg.userId == widget.currentUserId;
-                        final isFirstInGroup =
-                            prevMsg == null || prevMsg.userId != msg.userId;
-                        return _MessageTile(
-                          message: msg,
-                          isOwn: isOwn,
-                          showSender: isFirstInGroup && !isOwn,
-                          calDeepColor: widget.calDeepColor,
-                          onDelete: isOwn && !msg.isDeleted
-                              ? () => _confirmDelete(context, msg)
-                              : null,
-                        );
-                      },
+              ? Center(
+                  child: Text(
+                    'Noch keine Nachrichten.\nSchreibe die erste!',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: context.appColors.inkMuted,
+                      fontSize: 14,
                     ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount:
+                      messages.length +
+                      (chatState.isLoading && messages.isNotEmpty ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == messages.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final msg = messages[index];
+                    final prevMsg = index + 1 < messages.length
+                        ? messages[index + 1]
+                        : null;
+                    final isOwn = msg.userId == widget.currentUserId;
+                    final isFirstInGroup =
+                        prevMsg == null || prevMsg.userId != msg.userId;
+                    return _MessageTile(
+                      message: msg,
+                      isOwn: isOwn,
+                      showSender: isFirstInGroup && !isOwn,
+                      calDeepColor: widget.calDeepColor,
+                      onDelete: isOwn && !msg.isDeleted
+                          ? () => _confirmDelete(context, msg)
+                          : null,
+                    );
+                  },
+                ),
         ),
         _InputBar(
           controller: _textController,
@@ -261,18 +267,19 @@ class _MessageTile extends StatelessWidget {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
+            bottomLeft: isOwn
+                ? const Radius.circular(16)
+                : const Radius.circular(4),
+            bottomRight: isOwn
+                ? const Radius.circular(4)
+                : const Radius.circular(16),
           ),
           border: Border.all(color: borderColor, width: 1.5),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           message.content,
-          style: GoogleFonts.plusJakartaSans(
-            color: textColor,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.plusJakartaSans(color: textColor, fontSize: 14),
         ),
       ),
     );
@@ -280,14 +287,12 @@ class _MessageTile extends StatelessWidget {
     if (isOwn) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 4),
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: bubble,
-        ),
+        child: Align(alignment: Alignment.centerRight, child: bubble),
       );
     }
 
-    final avatarColor = _hexToColor(message.senderColor) ?? const Color(0xFF6C63FF);
+    final avatarColor =
+        _hexToColor(message.senderColor) ?? const Color(0xFF6C63FF);
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -359,8 +364,7 @@ class _SenderAvatar extends StatelessWidget {
         backgroundImage: NetworkImage(avatarUrl!),
       );
     }
-    final initial =
-        name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return CircleAvatar(
       radius: 16,
       backgroundColor: color,
@@ -424,8 +428,10 @@ class _InputBar extends StatelessWidget {
                   fontSize: 14,
                 ),
                 border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 8,
+                ),
               ),
               onSubmitted: (_) => onSend(),
             ),
@@ -451,8 +457,11 @@ class _InputBar extends StatelessWidget {
                         ),
                       ),
                     )
-                  : const Icon(Icons.send_rounded,
-                      size: 18, color: Colors.white),
+                  : const Icon(
+                      Icons.send_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
             ),
           ),
         ],

@@ -12,9 +12,9 @@ class EventReaction {
   });
 
   factory EventReaction.fromJson(Map<String, dynamic> json) => EventReaction(
-        emoji: json['emoji'] as String,
-        userId: json['user_id'] as String,
-        userName: json['user_name'] as String? ?? 'Unknown',
-        createdAt: DateTime.parse(json['created_at'] as String),
-      );
+    emoji: json['emoji'] as String,
+    userId: json['user_id'] as String,
+    userName: json['user_name'] as String? ?? 'Unknown',
+    createdAt: DateTime.parse(json['created_at'] as String),
+  );
 }

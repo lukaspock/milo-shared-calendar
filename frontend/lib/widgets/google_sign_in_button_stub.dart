@@ -10,8 +10,9 @@ const _kMacOSClientId =
     '583283682704-ethnu73r7o8rblkvra89qsibo0tlq7pp.apps.googleusercontent.com';
 
 final _gsi = GoogleSignIn(
-  clientId:
-      defaultTargetPlatform == TargetPlatform.macOS ? _kMacOSClientId : null,
+  clientId: defaultTargetPlatform == TargetPlatform.macOS
+      ? _kMacOSClientId
+      : null,
   serverClientId: _kWebClientId,
   scopes: ['email', 'openid'],
 );
@@ -68,7 +69,8 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: context.appColors.line, width: 1.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28)),
+            borderRadius: BorderRadius.circular(28),
+          ),
           backgroundColor: context.appColors.surface,
         ),
         child: Row(

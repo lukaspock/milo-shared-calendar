@@ -41,7 +41,10 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24,
+        24,
+        16,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -67,7 +70,11 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                 hue: hueFor(widget.calendar),
                 size: 36,
                 radius: 10,
-                child: const Icon(Icons.people_rounded, size: 16, color: Colors.black54),
+                child: const Icon(
+                  Icons.people_rounded,
+                  size: 16,
+                  color: Colors.black54,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -82,7 +89,10 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ],
           ),
@@ -96,7 +106,11 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator(color: context.appColors.ink)),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: context.appColors.ink,
+                    ),
+                  ),
                 );
               }
               if (snapshot.hasError) {
@@ -129,11 +143,16 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                         icon: const Icon(Icons.refresh_rounded, size: 16),
                         label: Text(
                           'Retry',
-                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: context.appColors.ink,
-                          side: BorderSide(color: context.appColors.line, width: 1.5),
+                          side: BorderSide(
+                            color: context.appColors.line,
+                            width: 1.5,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -160,11 +179,17 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                     final memberColor = _parseHexColor(m.color);
 
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: context.appColors.surfaceSoft,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.appColors.line, width: 1),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -177,11 +202,16 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                     width: 40,
                                     height: 40,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _MemberInitialsAvatar(
-                                      name: m.name, color: memberColor,
-                                    ),
+                                    errorBuilder: (_, __, ___) =>
+                                        _MemberInitialsAvatar(
+                                          name: m.name,
+                                          color: memberColor,
+                                        ),
                                   )
-                                : _MemberInitialsAvatar(name: m.name, color: memberColor),
+                                : _MemberInitialsAvatar(
+                                    name: m.name,
+                                    color: memberColor,
+                                  ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -212,12 +242,19 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
 
                           // Role chip
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: m.isOwner ? hue.bg : context.appColors.surface,
+                              color: m.isOwner
+                                  ? hue.bg
+                                  : context.appColors.surface,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: m.isOwner ? hue.dot : context.appColors.line,
+                                color: m.isOwner
+                                    ? hue.dot
+                                    : context.appColors.line,
                               ),
                             ),
                             child: Text(
@@ -225,7 +262,9 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: m.isOwner ? hue.ink : context.appColors.inkSoft,
+                                color: m.isOwner
+                                    ? hue.ink
+                                    : context.appColors.inkSoft,
                               ),
                             ),
                           ),
@@ -242,7 +281,9 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                   _refresh();
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('${m.name} removed')),
+                                      SnackBar(
+                                        content: Text('${m.name} removed'),
+                                      ),
                                     );
                                   }
                                 }
@@ -253,10 +294,15 @@ class _MembersSheetState extends ConsumerState<MembersSheet> {
                                 decoration: BoxDecoration(
                                   color: context.appColors.surface,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: context.appColors.line),
+                                  border: Border.all(
+                                    color: context.appColors.line,
+                                  ),
                                 ),
-                                child: const Icon(Icons.person_remove_rounded,
-                                    size: 14, color: AppTheme.danger),
+                                child: const Icon(
+                                  Icons.person_remove_rounded,
+                                  size: 14,
+                                  color: AppTheme.danger,
+                                ),
                               ),
                             ),
                           ],
@@ -289,28 +335,28 @@ class _MemberInitialsAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
+    width: 40,
+    height: 40,
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.15),
+      boxShadow: [
+        BoxShadow(
           color: color.withOpacity(0.15),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              offset: const Offset(0, 3),
-              blurRadius: 0,
-            ),
-          ],
+          offset: const Offset(0, 3),
+          blurRadius: 0,
         ),
-        alignment: Alignment.center,
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
-        ),
-      );
+      ],
+    ),
+    alignment: Alignment.center,
+    child: Text(
+      name.isNotEmpty ? name[0].toUpperCase() : '?',
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: color,
+      ),
+    ),
+  );
 }
 
 // Alias kept so any old references compile

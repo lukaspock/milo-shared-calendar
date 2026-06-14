@@ -24,17 +24,17 @@ class CalendarModel {
   });
 
   factory CalendarModel.fromJson(Map<String, dynamic> json) => CalendarModel(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        ownerId: json['owner_id'] as String,
-        inviteCode: json['invite_code'] as String,
-        role: json['role'] as String? ?? 'member',
-        memberCount: int.tryParse(json['member_count']?.toString() ?? '1') ?? 1,
-        createdAt: DateTime.parse(json['created_at'] as String),
-        photoMode: json['photo_mode'] as bool? ?? false,
-        hueIndex: (json['hue_index'] as int?) ?? 0,
-        icon: json['icon'] as String?,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String,
+    ownerId: json['owner_id'] as String,
+    inviteCode: json['invite_code'] as String,
+    role: json['role'] as String? ?? 'member',
+    memberCount: int.tryParse(json['member_count']?.toString() ?? '1') ?? 1,
+    createdAt: DateTime.parse(json['created_at'] as String),
+    photoMode: json['photo_mode'] as bool? ?? false,
+    hueIndex: (json['hue_index'] as int?) ?? 0,
+    icon: json['icon'] as String?,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -51,18 +51,23 @@ class CalendarModel {
 
   bool get isOwner => role == 'owner';
 
-  CalendarModel copyWith({int? memberCount, int? hueIndex, String? icon, bool clearIcon = false}) => CalendarModel(
-        id: id,
-        name: name,
-        ownerId: ownerId,
-        inviteCode: inviteCode,
-        role: role,
-        memberCount: memberCount ?? this.memberCount,
-        createdAt: createdAt,
-        photoMode: photoMode,
-        hueIndex: hueIndex ?? this.hueIndex,
-        icon: clearIcon ? null : (icon ?? this.icon),
-      );
+  CalendarModel copyWith({
+    int? memberCount,
+    int? hueIndex,
+    String? icon,
+    bool clearIcon = false,
+  }) => CalendarModel(
+    id: id,
+    name: name,
+    ownerId: ownerId,
+    inviteCode: inviteCode,
+    role: role,
+    memberCount: memberCount ?? this.memberCount,
+    createdAt: createdAt,
+    photoMode: photoMode,
+    hueIndex: hueIndex ?? this.hueIndex,
+    icon: clearIcon ? null : (icon ?? this.icon),
+  );
 
   CalendarModel copyWithMemberCount(int count) => copyWith(memberCount: count);
 }

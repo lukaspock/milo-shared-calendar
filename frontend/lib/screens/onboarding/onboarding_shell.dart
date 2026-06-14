@@ -13,10 +13,10 @@ const _kBorder = Color(0x17000000); // rgba(26,16,8,0.09)
 class OnboardingShell extends StatelessWidget {
   const OnboardingShell({
     super.key,
-    required this.step,       // 1-based, used to position the filled dot
+    required this.step, // 1-based, used to position the filled dot
     required this.totalSteps, // total number of dots shown
     required this.onBack,
-    this.customHeader,        // centred at top of form (avatar circle, etc.)
+    this.customHeader, // centred at top of form (avatar circle, etc.)
     required this.title,
     required this.subtitle,
     required this.buttonLabel,
@@ -192,7 +192,7 @@ class _BackBtn extends StatelessWidget {
 
 class _ProgDots extends StatelessWidget {
   const _ProgDots({required this.step, required this.total});
-  final int step;  // 1-based current step
+  final int step; // 1-based current step
   final int total; // total dots
 
   @override

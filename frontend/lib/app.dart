@@ -30,51 +30,61 @@ final appRouter = GoRouter(
     GoRoute(path: '/welcome', builder: (_, _s) => const WelcomeScreen()),
     GoRoute(path: '/login', builder: (_, _s) => const LoginScreen()),
     GoRoute(path: '/register', builder: (_, _s) => const RegisterScreen()),
-    GoRoute(
-      path: '/onboarding',
-      redirect: (_, __) => '/onboarding/name',
-    ),
+    GoRoute(path: '/onboarding', redirect: (_, __) => '/onboarding/name'),
     // Step 1 — name + auth method choice
     GoRoute(
-        path: '/onboarding/name',
-        builder: (_, _s) => const OnboardingNameEmailScreen()),
+      path: '/onboarding/name',
+      builder: (_, _s) => const OnboardingNameEmailScreen(),
+    ),
     // Keep old path as alias so existing deep-links don't break
     GoRoute(
-        path: '/onboarding/name-email',
-        redirect: (_, __) => '/onboarding/name'),
+      path: '/onboarding/name-email',
+      redirect: (_, __) => '/onboarding/name',
+    ),
     // Step 2 (email path) — email address
     GoRoute(
-        path: '/onboarding/email',
-        builder: (_, _s) => const OnboardingEmailScreen()),
+      path: '/onboarding/email',
+      builder: (_, _s) => const OnboardingEmailScreen(),
+    ),
     // Step 3 (email path) — notification type choice
     GoRoute(
-        path: '/onboarding/notifications',
-        builder: (_, _s) => const OnboardingNotificationsScreen()),
+      path: '/onboarding/notifications',
+      builder: (_, _s) => const OnboardingNotificationsScreen(),
+    ),
     // Step 4 (email path) — password + registers account
     GoRoute(
-        path: '/onboarding/password',
-        builder: (_, _s) => const OnboardingPasswordScreen()),
+      path: '/onboarding/password',
+      builder: (_, _s) => const OnboardingPasswordScreen(),
+    ),
     // Step 3b (email path) — verify inbox
     GoRoute(
-        path: '/onboarding/verify',
-        builder: (_, _s) => const OnboardingVerifyScreen()),
+      path: '/onboarding/verify',
+      builder: (_, _s) => const OnboardingVerifyScreen(),
+    ),
     // Step 4 (all paths) — Google Calendar connect
     GoRoute(
-        path: '/onboarding/calendar',
-        builder: (_, _s) => const OnboardingCalendarScreen()),
+      path: '/onboarding/calendar',
+      builder: (_, _s) => const OnboardingCalendarScreen(),
+    ),
     // Step 6 — profile photo
     GoRoute(
-        path: '/onboarding/avatar',
-        builder: (_, _s) => const OnboardingAvatarScreen()),
+      path: '/onboarding/avatar',
+      builder: (_, _s) => const OnboardingAvatarScreen(),
+    ),
     // Step 7 — appearance / theme picker
     GoRoute(
-        path: '/onboarding/theme',
-        builder: (_, _s) => const OnboardingThemeScreen()),
+      path: '/onboarding/theme',
+      builder: (_, _s) => const OnboardingThemeScreen(),
+    ),
     // Final — celebration screen
     GoRoute(
-        path: '/onboarding/ready',
-        builder: (_, _s) => const OnboardingReadyScreen()),
-    GoRoute(path: '/web-onboarding', builder: (_, _s) => const WebOnboardingScreen()),
+      path: '/onboarding/ready',
+      builder: (_, _s) => const OnboardingReadyScreen(),
+    ),
+    GoRoute(
+      path: '/web-onboarding',
+      builder: (_, _s) => const WebOnboardingScreen(),
+    ),
     GoRoute(path: '/home', builder: (_, _s) => const HomeScreen()),
     GoRoute(
       path: '/calendar/:calendarId',
@@ -91,9 +101,8 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: 'polls/new',
-          builder: (_, state) => CreatePollScreen(
-            calendarId: state.pathParameters['calendarId']!,
-          ),
+          builder: (_, state) =>
+              CreatePollScreen(calendarId: state.pathParameters['calendarId']!),
         ),
         GoRoute(
           path: 'polls/:pollId',

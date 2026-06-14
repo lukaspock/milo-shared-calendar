@@ -12,11 +12,11 @@ class RsvpUser {
   });
 
   factory RsvpUser.fromJson(Map<String, dynamic> json) => RsvpUser(
-        userId: json['user_id'] as String,
-        userName: json['user_name'] as String,
-        avatarUrl: json['avatar_url'] as String?,
-        color: json['color'] as String?,
-      );
+    userId: json['user_id'] as String,
+    userName: json['user_name'] as String,
+    avatarUrl: json['avatar_url'] as String?,
+    color: json['color'] as String?,
+  );
 }
 
 class EventRsvpDetail {
@@ -33,12 +33,13 @@ class EventRsvpDetail {
   });
 
   const EventRsvpDetail.empty()
-      : attending = const [],
-        notAttending = const [],
-        unsure = const [],
-        myStatus = null;
+    : attending = const [],
+      notAttending = const [],
+      unsure = const [],
+      myStatus = null;
 
-  factory EventRsvpDetail.fromJson(Map<String, dynamic> json) => EventRsvpDetail(
+  factory EventRsvpDetail.fromJson(Map<String, dynamic> json) =>
+      EventRsvpDetail(
         attending: (json['attending'] as List<dynamic>)
             .map((e) => RsvpUser.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -66,9 +67,9 @@ class RsvpSummary {
   });
 
   factory RsvpSummary.fromJson(Map<String, dynamic> json) => RsvpSummary(
-        attendingCount: json['attending_count'] as int? ?? 0,
-        notAttendingCount: json['not_attending_count'] as int? ?? 0,
-        unsureCount: json['unsure_count'] as int? ?? 0,
-        myStatus: json['my_status'] as String?,
-      );
+    attendingCount: json['attending_count'] as int? ?? 0,
+    notAttendingCount: json['not_attending_count'] as int? ?? 0,
+    unsureCount: json['unsure_count'] as int? ?? 0,
+    myStatus: json['my_status'] as String?,
+  );
 }

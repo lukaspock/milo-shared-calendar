@@ -20,7 +20,7 @@ class OnboardingNotificationsScreen extends ConsumerStatefulWidget {
 
 class _OnboardingNotificationsScreenState
     extends ConsumerState<OnboardingNotificationsScreen> {
-  bool _push  = true;
+  bool _push = true;
   bool _email = false;
   bool _saving = false;
 
@@ -29,7 +29,7 @@ class _OnboardingNotificationsScreenState
     super.initState();
     final user = ref.read(authProvider).user;
     if (user != null) {
-      _push  = user.notificationType == NotificationType.push;
+      _push = user.notificationType == NotificationType.push;
       _email = user.notificationType == NotificationType.email;
     }
   }
@@ -174,7 +174,11 @@ class _NotifRow extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: selected
-                  ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    )
                   : null,
             ),
           ],

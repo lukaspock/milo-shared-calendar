@@ -13,28 +13,28 @@ import 'package:shared_cal/models/event.dart';
 void main() {
   group('RecurrenceRule', () {
     test('fromApi maps known strings', () {
-      expect(RecurrenceRule.fromApi('daily'),   RecurrenceRule.daily);
-      expect(RecurrenceRule.fromApi('weekly'),  RecurrenceRule.weekly);
+      expect(RecurrenceRule.fromApi('daily'), RecurrenceRule.daily);
+      expect(RecurrenceRule.fromApi('weekly'), RecurrenceRule.weekly);
       expect(RecurrenceRule.fromApi('monthly'), RecurrenceRule.monthly);
     });
 
     test('fromApi falls back to none for unknown values', () {
-      expect(RecurrenceRule.fromApi(null),      RecurrenceRule.none);
-      expect(RecurrenceRule.fromApi(''),        RecurrenceRule.none);
-      expect(RecurrenceRule.fromApi('hourly'),  RecurrenceRule.none);
+      expect(RecurrenceRule.fromApi(null), RecurrenceRule.none);
+      expect(RecurrenceRule.fromApi(''), RecurrenceRule.none);
+      expect(RecurrenceRule.fromApi('hourly'), RecurrenceRule.none);
     });
 
     test('apiValue is null for none, string otherwise', () {
-      expect(RecurrenceRule.none.apiValue,    isNull);
-      expect(RecurrenceRule.daily.apiValue,   'daily');
-      expect(RecurrenceRule.weekly.apiValue,  'weekly');
+      expect(RecurrenceRule.none.apiValue, isNull);
+      expect(RecurrenceRule.daily.apiValue, 'daily');
+      expect(RecurrenceRule.weekly.apiValue, 'weekly');
       expect(RecurrenceRule.monthly.apiValue, 'monthly');
     });
 
     test('labels are human-readable', () {
-      expect(RecurrenceRule.none.label,    'Does not repeat');
-      expect(RecurrenceRule.daily.label,   'Daily');
-      expect(RecurrenceRule.weekly.label,  'Weekly');
+      expect(RecurrenceRule.none.label, 'Does not repeat');
+      expect(RecurrenceRule.daily.label, 'Daily');
+      expect(RecurrenceRule.weekly.label, 'Weekly');
       expect(RecurrenceRule.monthly.label, 'Monthly');
     });
   });
@@ -47,7 +47,7 @@ void main() {
       'title': 'Team Standup',
       'description': 'Daily sync',
       'start_time': '2026-06-01T09:00:00.000Z',
-      'end_time':   '2026-06-01T09:30:00.000Z',
+      'end_time': '2026-06-01T09:30:00.000Z',
       'color': '#43B89C',
       'creator_name': 'Alice',
       'creator_color': '#6C63FF',
@@ -100,10 +100,12 @@ void main() {
 
   group('CalendarEvent.copyWith', () {
     final base = CalendarEvent.fromJson({
-      'id': 'e1', 'calendar_id': 'c1', 'created_by': 'u1',
+      'id': 'e1',
+      'calendar_id': 'c1',
+      'created_by': 'u1',
       'title': 'Original',
       'start_time': '2026-06-01T10:00:00.000Z',
-      'end_time':   '2026-06-01T11:00:00.000Z',
+      'end_time': '2026-06-01T11:00:00.000Z',
       'color': '#FF6584',
       'created_at': '2026-05-01T00:00:00.000Z',
       'updated_at': '2026-05-01T00:00:00.000Z',

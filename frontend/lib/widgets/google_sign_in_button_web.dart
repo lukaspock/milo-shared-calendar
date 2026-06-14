@@ -38,10 +38,12 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     try {
       final plugin = GoogleSignInPlatform.instance as GoogleSignInPlugin;
       // Initialize GIS with the web client ID so renderButton works.
-      await plugin.initWithParams(SignInInitParameters(
-        clientId: _kWebClientId,
-        scopes: ['email', 'openid'],
-      ));
+      await plugin.initWithParams(
+        SignInInitParameters(
+          clientId: _kWebClientId,
+          scopes: ['email', 'openid'],
+        ),
+      );
       _sub = plugin.userDataEvents?.listen(_handleUserData);
       if (mounted) setState(() => _ready = true);
     } catch (_) {
@@ -76,7 +78,8 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: context.appColors.line, width: 1.5),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28)),
+              borderRadius: BorderRadius.circular(28),
+            ),
             backgroundColor: context.appColors.surface,
           ),
           child: Row(

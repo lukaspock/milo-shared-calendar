@@ -16,12 +16,11 @@ class OnboardingData {
     String? name,
     String? email,
     NotificationType? notificationType,
-  }) =>
-      OnboardingData(
-        name: name ?? this.name,
-        email: email ?? this.email,
-        notificationType: notificationType ?? this.notificationType,
-      );
+  }) => OnboardingData(
+    name: name ?? this.name,
+    email: email ?? this.email,
+    notificationType: notificationType ?? this.notificationType,
+  );
 }
 
 class OnboardingNotifier extends StateNotifier<OnboardingData> {
@@ -42,5 +41,5 @@ class OnboardingNotifier extends StateNotifier<OnboardingData> {
 
 final onboardingProvider =
     StateNotifierProvider<OnboardingNotifier, OnboardingData>(
-  (_) => OnboardingNotifier(),
-);
+      (_) => OnboardingNotifier(),
+    );

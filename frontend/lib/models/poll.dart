@@ -31,11 +31,11 @@ class PollVoteOption {
   }
 
   factory PollVoteOption.fromJson(Map<String, dynamic> json) => PollVoteOption(
-        id: json['id'] as String,
-        label: json['label'] as String,
-        color: json['color'] as String? ?? '#6C63FF',
-        position: json['position'] as int? ?? 0,
-      );
+    id: json['id'] as String,
+    label: json['label'] as String,
+    color: json['color'] as String? ?? '#6C63FF',
+    position: json['position'] as int? ?? 0,
+  );
 }
 
 class PollVote {
@@ -50,10 +50,10 @@ class PollVote {
   });
 
   factory PollVote.fromJson(Map<String, dynamic> json) => PollVote(
-        userId: json['user_id'] as String? ?? '',
-        userName: json['user_name'] as String? ?? 'Unknown',
-        vote: json['vote'] as String,
-      );
+    userId: json['user_id'] as String? ?? '',
+    userName: json['user_name'] as String? ?? 'Unknown',
+    vote: json['vote'] as String,
+  );
 }
 
 class PollOption {
@@ -87,14 +87,14 @@ class PollOption {
   }
 
   factory PollOption.fromJson(Map<String, dynamic> json) => PollOption(
-        id: json['id'] as String,
-        pollId: json['poll_id'] as String? ?? '',
-        startTime: DateTime.parse(json['start_time'] as String).toLocal(),
-        endTime: DateTime.parse(json['end_time'] as String).toLocal(),
-        votes: (json['votes'] as List? ?? [])
-            .map((v) => PollVote.fromJson(v as Map<String, dynamic>))
-            .toList(),
-      );
+    id: json['id'] as String,
+    pollId: json['poll_id'] as String? ?? '',
+    startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+    endTime: DateTime.parse(json['end_time'] as String).toLocal(),
+    votes: (json['votes'] as List? ?? [])
+        .map((v) => PollVote.fromJson(v as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class EventPoll {
@@ -141,22 +141,22 @@ class EventPoll {
   }
 
   factory EventPoll.fromJson(Map<String, dynamic> json) => EventPoll(
-        id: json['id'] as String,
-        calendarId: json['calendar_id'] as String,
-        createdBy: json['created_by'] as String? ?? '',
-        creatorName: json['creator_name'] as String?,
-        title: json['title'] as String,
-        description: json['description'] as String?,
-        icon: json['icon'] as String?,
-        color: json['color'] as String?,
-        closed: json['closed'] as bool? ?? false,
-        confirmedOptionId: json['confirmed_option_id'] as String?,
-        options: (json['options'] as List? ?? [])
-            .map((o) => PollOption.fromJson(o as Map<String, dynamic>))
-            .toList(),
-        voteOptions: (json['vote_options'] as List? ?? [])
-            .map((o) => PollVoteOption.fromJson(o as Map<String, dynamic>))
-            .toList(),
-        createdAt: DateTime.parse(json['created_at'] as String),
-      );
+    id: json['id'] as String,
+    calendarId: json['calendar_id'] as String,
+    createdBy: json['created_by'] as String? ?? '',
+    creatorName: json['creator_name'] as String?,
+    title: json['title'] as String,
+    description: json['description'] as String?,
+    icon: json['icon'] as String?,
+    color: json['color'] as String?,
+    closed: json['closed'] as bool? ?? false,
+    confirmedOptionId: json['confirmed_option_id'] as String?,
+    options: (json['options'] as List? ?? [])
+        .map((o) => PollOption.fromJson(o as Map<String, dynamic>))
+        .toList(),
+    voteOptions: (json['vote_options'] as List? ?? [])
+        .map((o) => PollVoteOption.fromJson(o as Map<String, dynamic>))
+        .toList(),
+    createdAt: DateTime.parse(json['created_at'] as String),
+  );
 }
