@@ -66,6 +66,9 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- Photo library permission (avatar & event icon picker) -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Milo needs access to your photo library to set your profile photo.</string>
 	<!-- Calendar permissions -->
 	<key>NSCalendarsUsageDescription</key>
 	<string>SharedCal syncs your events to your device calendar.</string>

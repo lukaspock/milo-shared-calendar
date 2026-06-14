@@ -171,11 +171,13 @@ class CalendarEvent {
     RecurrenceRule? recurrenceRule,
     DateTime? recurrenceEnd,
     String? creatorColor,
+    String? createdBy,
+    List<ImportedByUser>? importedBy,
   }) {
     return CalendarEvent(
       id: id,
       calendarId: calendarId,
-      createdBy: createdBy,
+      createdBy: createdBy ?? this.createdBy,
       title: title ?? this.title,
       description: description ?? this.description,
       startTime: startTime ?? this.startTime,
@@ -190,7 +192,7 @@ class CalendarEvent {
       recurrenceEnd: recurrenceEnd ?? this.recurrenceEnd,
       parentEventId: parentEventId,
       source: source,
-      importedBy: importedBy,
+      importedBy: importedBy ?? this.importedBy,
     );
   }
 }

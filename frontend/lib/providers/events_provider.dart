@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/event.dart';
 export '../models/event.dart' show RecurrenceRule;
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../services/cache_service.dart';
 import '../services/device_calendar_service.dart';
 import '../services/local_notification_service.dart';
@@ -108,8 +109,23 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
           .where((e) => e.source == EventSource.deviceImport)
           .map((e) => e.id)
           .toSet();
+      // Annotate local-only device events with the current user's identity so
+      // that the availability view can attribute them to the correct member.
+      final currentUser = AuthService().cachedUser;
       _deviceEvents = localDeviceEvents
           .where((e) => !apiDeviceIds.contains(e.id))
+          .map((e) => currentUser == null
+              ? e
+              : e.copyWith(
+                  createdBy: currentUser.id,
+                  importedBy: [
+                    ImportedByUser(
+                      userId: currentUser.id,
+                      name: currentUser.name,
+                      color: currentUser.color,
+                    ),
+                  ],
+                ))
           .toList();
 
       debugPrint(

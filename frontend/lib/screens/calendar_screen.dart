@@ -4032,8 +4032,8 @@ class _AvailabilityViewState extends ConsumerState<_AvailabilityView> {
   Widget _statusCell(_AvailStatus status, double w, double h) {
     const freeBg = Color(0xFFD8EDD9);
     const freeFg = Color(0xFF2E7D32);
-    final busyBg = context.appColors.surfaceSoft;
-    final busyFg = context.appColors.inkSoft;
+    const busyBg = Color(0xFFFFDDD9);
+    const busyFg = Color(0xFFC62828);
 
     final bg = status == _AvailStatus.free ? freeBg : busyBg;
     final fg = status == _AvailStatus.free ? freeFg : busyFg;
