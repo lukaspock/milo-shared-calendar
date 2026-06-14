@@ -91,7 +91,10 @@ class ApiService {
     }
   }
 
-  Future<String> _uploadToCloudinary(XFile file, {required String folder}) async {
+  Future<String> _uploadToCloudinary(
+    XFile file, {
+    required String folder,
+  }) async {
     try {
       final uploadDio = Dio();
       final bytes = await file.readAsBytes();
@@ -105,12 +108,17 @@ class ApiService {
         data: formData,
       );
       final url = (res.data as Map<String, dynamic>)['secure_url'] as String?;
-      if (url == null) throw CloudinaryUploadException('No secure_url in response');
+      if (url == null) {
+        throw CloudinaryUploadException('No secure_url in response');
+      }
       return url;
     } on DioException catch (e) {
       final body = e.response?.data;
       final errMap = body is Map ? body['error'] : null;
-      final msg = (errMap is Map ? errMap['message'] : null) as String? ?? e.message ?? 'Unknown error';
+      final msg =
+          (errMap is Map ? errMap['message'] : null) as String? ??
+          e.message ??
+          'Unknown error';
       throw CloudinaryUploadException(msg.toString());
     } catch (e) {
       throw CloudinaryUploadException(e.toString());
@@ -120,7 +128,10 @@ class ApiService {
   // ── Event photos ──────────────────────────────────────────────────────────
 
   Future<EventPhoto> addEventPhoto(String eventId, String photoUrl) async {
-    final res = await post('/events/$eventId/photos', data: {'photo_url': photoUrl});
+    final res = await post(
+      '/events/$eventId/photos',
+      data: {'photo_url': photoUrl},
+    );
     return EventPhoto.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -146,22 +157,28 @@ class ApiService {
     String? icon,
     String? color,
   }) async {
-    final res = await post('/calendars/$calendarId/polls', data: {
-      'title': title,
-      if (description != null && description.isNotEmpty) 'description': description,
-      if (icon != null) 'icon': icon,
-      if (color != null) 'color': color,
-      'options': options
-          .map((o) => {
+    final res = await post(
+      '/calendars/$calendarId/polls',
+      data: {
+        'title': title,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (icon != null) 'icon': icon,
+        if (color != null) 'color': color,
+        'options': options
+            .map(
+              (o) => {
                 'start_time': o.start.toUtc().toIso8601String(),
                 'end_time': o.end.toUtc().toIso8601String(),
-              })
-          .toList(),
-      if (voteOptions != null && voteOptions.length >= 2)
-        'vote_options': voteOptions
-            .map((o) => {'label': o.label, 'color': o.color})
+              },
+            )
             .toList(),
-    });
+        if (voteOptions != null && voteOptions.length >= 2)
+          'vote_options': voteOptions
+              .map((o) => {'label': o.label, 'color': o.color})
+              .toList(),
+      },
+    );
     return EventPoll.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -182,8 +199,10 @@ class ApiService {
     required String optionId,
     required String vote,
   }) async {
-    final res = await post('/polls/$pollId/vote',
-        data: {'option_id': optionId, 'vote': vote});
+    final res = await post(
+      '/polls/$pollId/vote',
+      data: {'option_id': optionId, 'vote': vote},
+    );
     return EventPoll.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -191,8 +210,10 @@ class ApiService {
     required String pollId,
     required String optionId,
   }) async {
-    final res =
-        await post('/polls/$pollId/confirm', data: {'option_id': optionId});
+    final res = await post(
+      '/polls/$pollId/confirm',
+      data: {'option_id': optionId},
+    );
     return res.data as Map<String, dynamic>;
   }
 
@@ -201,10 +222,13 @@ class ApiService {
     required DateTime startTime,
     required DateTime endTime,
   }) async {
-    final res = await post('/polls/$pollId/options', data: {
-      'start_time': startTime.toUtc().toIso8601String(),
-      'end_time': endTime.toUtc().toIso8601String(),
-    });
+    final res = await post(
+      '/polls/$pollId/options',
+      data: {
+        'start_time': startTime.toUtc().toIso8601String(),
+        'end_time': endTime.toUtc().toIso8601String(),
+      },
+    );
     return EventPoll.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -222,7 +246,10 @@ class ApiService {
   }
 
   Future<List<EventReaction>> addReaction(String eventId, String emoji) async {
-    final res = await post('/events/$eventId/reactions', data: {'emoji': emoji});
+    final res = await post(
+      '/events/$eventId/reactions',
+      data: {'emoji': emoji},
+    );
     return (res.data as List)
         .map((e) => EventReaction.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -234,9 +261,16 @@ class ApiService {
 
   // ── Chat ───────────────────────────────────────────────────────────────────
 
-  Future<List<ChatMessage>> getChatMessages(String calendarId, {String? before}) async {
-    final query = before != null ? '?before=${Uri.encodeComponent(before)}' : '';
-    final resp = await _dio.get<List<dynamic>>('/calendars/$calendarId/messages$query');
+  Future<List<ChatMessage>> getChatMessages(
+    String calendarId, {
+    String? before,
+  }) async {
+    final query = before != null
+        ? '?before=${Uri.encodeComponent(before)}'
+        : '';
+    final resp = await _dio.get<List<dynamic>>(
+      '/calendars/$calendarId/messages$query',
+    );
     return (resp.data as List)
         .map((j) => ChatMessage.fromJson(j as Map<String, dynamic>))
         .toList();

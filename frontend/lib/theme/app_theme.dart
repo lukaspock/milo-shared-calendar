@@ -110,8 +110,11 @@ class AppTheme {
   static const surfaceAlt   = surfaceSoft;
   static const border       = line;
 
+  static const _emojiFallback = ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'];
+
   static ThemeData get light {
-    final base = GoogleFonts.plusJakartaSansTextTheme();
+    final base = GoogleFonts.plusJakartaSansTextTheme()
+        .apply(fontFamilyFallback: _emojiFallback);
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -234,7 +237,8 @@ class AppTheme {
 
   static ThemeData get dark {
     const d = AppColors.dark;
-    final base = GoogleFonts.plusJakartaSansTextTheme();
+    final base = GoogleFonts.plusJakartaSansTextTheme()
+        .apply(fontFamilyFallback: _emojiFallback);
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,

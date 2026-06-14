@@ -1,6 +1,6 @@
-
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as epf;
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,13 +53,22 @@ class HomeScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: context.appColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.appColors.line, width: 1.5),
+                    border: Border.all(
+                      color: context.appColors.line,
+                      width: 1.5,
+                    ),
                   ),
-                  child: Icon(Icons.cloud_off_rounded, color: context.appColors.inkMuted, size: 28),
+                  child: Icon(
+                    Icons.cloud_off_rounded,
+                    color: context.appColors.inkMuted,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                Text('Could not load calendars',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Could not load calendars',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => ref.read(calendarProvider.notifier).fetch(),
@@ -141,7 +150,8 @@ class HomeScreen extends ConsumerWidget {
                     SliverToBoxAdapter(
                       child: _UpcomingEventsRow(
                         calendars: calendars,
-                        onTapCalendar: (cal) => _openCalendar(context, ref, cal),
+                        onTapCalendar: (cal) =>
+                            _openCalendar(context, ref, cal),
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 28)),
@@ -152,7 +162,10 @@ class HomeScreen extends ConsumerWidget {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                        child: _SectionHeader(title: 'My calendars', count: myCalendars.length),
+                        child: _SectionHeader(
+                          title: 'My calendars',
+                          count: myCalendars.length,
+                        ),
                       ),
                     ),
                     SliverPadding(
@@ -165,7 +178,8 @@ class HomeScreen extends ConsumerWidget {
                           return Dismissible(
                             key: ValueKey(cal.id),
                             direction: DismissDirection.endToStart,
-                            confirmDismiss: (_) => _confirmDeleteCalendar(ctx, cal.name),
+                            confirmDismiss: (_) =>
+                                _confirmDeleteCalendar(ctx, cal.name),
                             onDismissed: (_) => ref
                                 .read(calendarProvider.notifier)
                                 .deleteCalendar(cal.id),
@@ -177,9 +191,14 @@ class HomeScreen extends ConsumerWidget {
                               calendar: cal,
                               onTap: () => _openCalendar(context, ref, cal),
                               onDelete: () async {
-                                final ok = await _confirmDeleteCalendar(ctx, cal.name);
+                                final ok = await _confirmDeleteCalendar(
+                                  ctx,
+                                  cal.name,
+                                );
                                 if (ok == true && ctx.mounted) {
-                                  ref.read(calendarProvider.notifier).deleteCalendar(cal.id);
+                                  ref
+                                      .read(calendarProvider.notifier)
+                                      .deleteCalendar(cal.id);
                                 }
                               },
                             ),
@@ -195,7 +214,10 @@ class HomeScreen extends ConsumerWidget {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-                        child: _SectionHeader(title: 'Shared with me', count: sharedCalendars.length),
+                        child: _SectionHeader(
+                          title: 'Shared with me',
+                          count: sharedCalendars.length,
+                        ),
                       ),
                     ),
                     SliverPadding(
@@ -208,7 +230,8 @@ class HomeScreen extends ConsumerWidget {
                           return Dismissible(
                             key: ValueKey(cal.id),
                             direction: DismissDirection.endToStart,
-                            confirmDismiss: (_) => _confirmLeaveCalendar(ctx, cal.name),
+                            confirmDismiss: (_) =>
+                                _confirmLeaveCalendar(ctx, cal.name),
                             onDismissed: (_) => ref
                                 .read(calendarProvider.notifier)
                                 .leaveCalendar(cal.id),
@@ -220,9 +243,14 @@ class HomeScreen extends ConsumerWidget {
                               calendar: cal,
                               onTap: () => _openCalendar(context, ref, cal),
                               onDelete: () async {
-                                final ok = await _confirmLeaveCalendar(ctx, cal.name);
+                                final ok = await _confirmLeaveCalendar(
+                                  ctx,
+                                  cal.name,
+                                );
                                 if (ok == true && ctx.mounted) {
-                                  ref.read(calendarProvider.notifier).leaveCalendar(cal.id);
+                                  ref
+                                      .read(calendarProvider.notifier)
+                                      .leaveCalendar(cal.id);
                                 }
                               },
                             ),
@@ -235,7 +263,9 @@ class HomeScreen extends ConsumerWidget {
 
                   if (calendars.isEmpty)
                     SliverFillRemaining(
-                      child: _EmptyState(onCreateTap: () => _showCreateSheet(context, ref)),
+                      child: _EmptyState(
+                        onCreateTap: () => _showCreateSheet(context, ref),
+                      ),
                     ),
 
                   // bottom FAB padding
@@ -280,7 +310,9 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Delete "$name"?'),
-        content: const Text('This will permanently delete the calendar and all its events and polls.'),
+        content: const Text(
+          'This will permanently delete the calendar and all its events and polls.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -309,7 +341,9 @@ class HomeScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFE87A35)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE87A35),
+            ),
             child: const Text('Leave'),
           ),
         ],
@@ -440,8 +474,20 @@ class _UpcomingEventCard extends ConsumerWidget {
     if (day == today) return 'Today';
     if (day == today.add(const Duration(days: 1))) return 'Tomorrow';
     const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mo = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${wd[dt.weekday - 1]}, ${mo[dt.month - 1]} ${dt.day}';
   }
 
@@ -529,7 +575,10 @@ class _UpcomingEventCard extends ConsumerWidget {
               children: [
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark ? hue.darkBg : hue.bg,
                       borderRadius: BorderRadius.circular(6),
@@ -549,27 +598,30 @@ class _UpcomingEventCard extends ConsumerWidget {
                 if (attendingCount > 0 || myStatus != null) ...[
                   const SizedBox(width: 5),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: myStatus == null
                           ? const Color(0xFFFFF3CD)
                           : myStatus == 'attending'
-                              ? const Color(0xFFD4EDDA)
-                              : myStatus == 'not_attending'
-                                  ? const Color(0xFFF8D7DA)
-                                  : const Color(0xFFFFF3CD),
+                          ? const Color(0xFFD4EDDA)
+                          : myStatus == 'not_attending'
+                          ? const Color(0xFFF8D7DA)
+                          : const Color(0xFFFFF3CD),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       attendingCount > 0
                           ? '$attendingCount ✅'
                           : myStatus == null
-                              ? 'Vote?'
-                              : myStatus == 'attending'
-                                  ? '✅'
-                                  : myStatus == 'not_attending'
-                                      ? '❌'
-                                      : '🤔',
+                          ? 'Vote?'
+                          : myStatus == 'attending'
+                          ? '✅'
+                          : myStatus == 'not_attending'
+                          ? '❌'
+                          : '🤔',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -636,7 +688,11 @@ class _SectionHeader extends StatelessWidget {
 // ── Calendar card ─────────────────────────────────────────────────────────────
 
 class _CalendarCard extends ConsumerStatefulWidget {
-  const _CalendarCard({required this.calendar, required this.onTap, this.onDelete});
+  const _CalendarCard({
+    required this.calendar,
+    required this.onTap,
+    this.onDelete,
+  });
   final CalendarModel calendar;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
@@ -664,12 +720,14 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
       ),
     );
     if (result != null) {
-      await ref.read(calendarProvider.notifier).updateCalendarAppearance(
-        widget.calendar.id,
-        hueIndex: result.hue,
-        icon: result.icon,
-        clearIcon: result.icon == null,
-      );
+      await ref
+          .read(calendarProvider.notifier)
+          .updateCalendarAppearance(
+            widget.calendar.id,
+            hueIndex: result.hue,
+            icon: result.icon,
+            clearIcon: result.icon == null,
+          );
     }
   }
 
@@ -679,7 +737,10 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
@@ -749,24 +810,32 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
                       ),
                       const SizedBox(width: 8),
                       // Role chip
-                      Builder(builder: (context) {
-                        final isDark = Theme.of(context).brightness == Brightness.dark;
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isDark ? hue.darkBg : hue.bg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            widget.calendar.isOwner ? 'Owner' : 'Member',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? context.appColors.inkSoft : hue.ink,
+                      Builder(
+                        builder: (context) {
+                          final isDark =
+                              Theme.of(context).brightness == Brightness.dark;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
                             ),
-                          ),
-                        );
-                      }),
+                            decoration: BoxDecoration(
+                              color: isDark ? hue.darkBg : hue.bg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              widget.calendar.isOwner ? 'Owner' : 'Member',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? context.appColors.inkSoft
+                                    : hue.ink,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -776,9 +845,15 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
                   // Footer
                   GestureDetector(
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: widget.calendar.inviteCode));
+                      Clipboard.setData(
+                        ClipboardData(text: widget.calendar.inviteCode),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Code copied: ${widget.calendar.inviteCode}')),
+                        SnackBar(
+                          content: Text(
+                            'Code copied: ${widget.calendar.inviteCode}',
+                          ),
+                        ),
                       );
                     },
                     child: Text(
@@ -812,7 +887,11 @@ class _CalendarCardState extends ConsumerState<_CalendarCard> {
                 ),
               )
             else
-              Icon(Icons.chevron_right_rounded, color: context.appColors.inkMuted, size: 20),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: context.appColors.inkMuted,
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -844,12 +923,19 @@ class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
   Widget build(BuildContext context) {
     final chatUnread = ref.watch(chatProvider(widget.calendarId)).unreadCount;
     final polls = ref.watch(pollsProvider(widget.calendarId)).valueOrNull ?? [];
-    final currentUserId = ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
-    final unansweredPolls = polls.where((p) =>
-      !p.closed && !p.options.any((o) => o.voteFor(currentUserId) != null)
-    ).length;
-    final rsvpMap = ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
-    final events = ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
+    final currentUserId =
+        ref.watch(authProvider.select((s) => s.user?.id)) ?? '';
+    final unansweredPolls = polls
+        .where(
+          (p) =>
+              !p.closed &&
+              !p.options.any((o) => o.voteFor(currentUserId) != null),
+        )
+        .length;
+    final rsvpMap =
+        ref.watch(rsvpProvider(widget.calendarId)).valueOrNull ?? {};
+    final events =
+        ref.watch(eventsProvider(widget.calendarId)).valueOrNull ?? [];
     final now = DateTime.now();
     final pendingRsvp = events.where((e) {
       if (e.source != EventSource.sharedcal) return false;
@@ -875,13 +961,15 @@ class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
         if (unansweredPolls > 0)
           _BadgeChip(
             icon: Icons.how_to_vote_rounded,
-            label: '$unansweredPolls open poll${unansweredPolls == 1 ? '' : 's'}',
+            label:
+                '$unansweredPolls open poll${unansweredPolls == 1 ? '' : 's'}',
             color: const Color(0xFFE87A35),
           ),
         if (pendingRsvp > 0)
           _BadgeChip(
             icon: Icons.how_to_reg_rounded,
-            label: '$pendingRsvp event${pendingRsvp == 1 ? '' : 's'} need your RSVP',
+            label:
+                '$pendingRsvp event${pendingRsvp == 1 ? '' : 's'} need your RSVP',
             color: const Color(0xFF28A745),
           ),
       ],
@@ -890,7 +978,11 @@ class _CalendarBadgeRowState extends ConsumerState<_CalendarBadgeRow> {
 }
 
 class _BadgeChip extends StatelessWidget {
-  const _BadgeChip({required this.icon, required this.label, required this.color});
+  const _BadgeChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
   final IconData icon;
   final String label;
   final Color color;
@@ -934,18 +1026,21 @@ class _MemberDots extends StatelessWidget {
       width: 8.0 + show * 14.0,
       height: 20,
       child: Stack(
-        children: List.generate(show, (i) => Positioned(
-          left: i * 14.0,
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: hue.dot,
-              shape: BoxShape.circle,
-              border: Border.all(color: context.appColors.surface, width: 2),
+        children: List.generate(
+          show,
+          (i) => Positioned(
+            left: i * 14.0,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: hue.dot,
+                shape: BoxShape.circle,
+                border: Border.all(color: context.appColors.surface, width: 2),
+              ),
             ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -1008,7 +1103,9 @@ class _PillFAB extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(28),
-          border: isSecondary ? Border.all(color: context.appColors.line, width: 1.5) : null,
+          border: isSecondary
+              ? Border.all(color: context.appColors.line, width: 1.5)
+              : null,
           boxShadow: [
             BoxShadow(
               color: isSecondary
@@ -1074,8 +1171,10 @@ class _EmptyState extends StatelessWidget {
               child: AppImages.calendar(size: 34),
             ),
             const SizedBox(height: 24),
-            Text('No calendars yet',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'No calendars yet',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(
               'Create a calendar to get started, or join one with an invite code.',
@@ -1102,9 +1201,30 @@ class _EmptyState extends StatelessWidget {
 const _calendarQuickIcons = ['📅', '🏠', '💼', '🎓', '🎵', '🎉', '✈️', '🌿'];
 
 const _calendarPresetIcons = [
-  '📅', '🗓️', '🏠', '💼', '🎓', '🏋️', '✈️', '🎵',
-  '👨‍👩‍👧', '🎉', '⚽', '🍕', '🌿', '📚', '🤝', '🏖️',
-  '🎨', '💡', '🎤', '🌟', '🎮', '🐾', '🍳', '❤️',
+  '📅',
+  '🗓️',
+  '🏠',
+  '💼',
+  '🎓',
+  '🏋️',
+  '✈️',
+  '🎵',
+  '👨‍👩‍👧',
+  '🎉',
+  '⚽',
+  '🍕',
+  '🌿',
+  '📚',
+  '🤝',
+  '🏖️',
+  '🎨',
+  '💡',
+  '🎤',
+  '🌟',
+  '🎮',
+  '🐾',
+  '🍳',
+  '❤️',
 ];
 
 Widget _calendarIconChild(
@@ -1113,7 +1233,11 @@ Widget _calendarIconChild(
   required Color fallbackColor,
 }) {
   if (icon == null) {
-    return Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor);
+    return Icon(
+      Icons.calendar_today_rounded,
+      size: tileSize * 0.42,
+      color: fallbackColor,
+    );
   }
   if (icon.startsWith('http://') || icon.startsWith('https://')) {
     final photoSize = tileSize * 0.75;
@@ -1124,8 +1248,11 @@ Widget _calendarIconChild(
         width: photoSize,
         height: photoSize,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
-            Icon(Icons.calendar_today_rounded, size: tileSize * 0.42, color: fallbackColor),
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.calendar_today_rounded,
+          size: tileSize * 0.42,
+          color: fallbackColor,
+        ),
       ),
     );
   }
@@ -1154,7 +1281,10 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24,
+        24,
+        16,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1187,7 +1317,10 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ],
           ),
@@ -1217,8 +1350,10 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                 child: Text(
                   'CALENDAR NAME',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    color: context.appColors.inkMuted, letterSpacing: 0.9,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.inkMuted,
+                    letterSpacing: 0.9,
                   ),
                 ),
               ),
@@ -1232,13 +1367,19 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                   controller: widget.ctrl,
                   autofocus: true,
                   style: GoogleFonts.plusJakartaSans(
-                    color: context.appColors.ink, fontWeight: FontWeight.w500,
+                    color: context.appColors.ink,
+                    fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Family, Work, Friends…',
-                    hintStyle: GoogleFonts.plusJakartaSans(color: context.appColors.inkMuted),
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      color: context.appColors.inkMuted,
+                    ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -1250,8 +1391,10 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
           Text(
             'ICON',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 10, fontWeight: FontWeight.w700,
-              color: context.appColors.inkMuted, letterSpacing: 0.9,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.inkMuted,
+              letterSpacing: 0.9,
             ),
           ),
           const SizedBox(height: 8),
@@ -1280,8 +1423,11 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                         width: _selectedIcon == null ? 2 : 1.5,
                       ),
                     ),
-                    child: Icon(Icons.calendar_today_rounded,
-                        size: 18, color: context.appColors.inkMuted),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: context.appColors.inkMuted,
+                    ),
                   ),
                 ),
                 // Quick preset emojis
@@ -1338,10 +1484,16 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     decoration: BoxDecoration(
                       color: context.appColors.surfaceSoft,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.appColors.line, width: 1.5),
+                      border: Border.all(
+                        color: context.appColors.line,
+                        width: 1.5,
+                      ),
                     ),
-                    child: Icon(Icons.more_horiz_rounded,
-                        size: 20, color: context.appColors.inkMuted),
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: context.appColors.inkMuted,
+                    ),
                   ),
                 ),
               ],
@@ -1353,8 +1505,10 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
           Text(
             'COLOR',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 10, fontWeight: FontWeight.w700,
-              color: context.appColors.inkMuted, letterSpacing: 0.9,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.inkMuted,
+              letterSpacing: 0.9,
             ),
           ),
           const SizedBox(height: 8),
@@ -1375,7 +1529,9 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                       color: stickerHues[i].bg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selected ? context.appColors.ink : Colors.transparent,
+                        color: selected
+                            ? context.appColors.ink
+                            : Colors.transparent,
                         width: 2.5,
                       ),
                     ),
@@ -1448,7 +1604,9 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                   ),
                   child: Text(
                     'Cancel',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -1465,18 +1623,27 @@ class _CreateCalendarSheetState extends State<_CreateCalendarSheet> {
                     Navigator.pop(context);
                     final cal = await widget.ref
                         .read(calendarProvider.notifier)
-                        .createCalendar(name, photoMode: chosenPhotoMode, hueIndex: chosenHue, icon: chosenIcon);
+                        .createCalendar(
+                          name,
+                          photoMode: chosenPhotoMode,
+                          hueIndex: chosenHue,
+                          icon: chosenIcon,
+                        );
                     if (cal != null) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Created! Code: ${cal.inviteCode}')),
+                          SnackBar(
+                            content: Text('Created! Code: ${cal.inviteCode}'),
+                          ),
                         );
                       }
                     }
                   },
                   child: Text(
                     'Create calendar',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -1504,16 +1671,16 @@ class _ModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-            color: active ? inkColor : inkColor.withOpacity(0.4),
-          ),
-        ),
-      );
+    onTap: onTap,
+    child: Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+        color: active ? inkColor : inkColor.withOpacity(0.4),
+      ),
+    ),
+  );
 }
 
 // ── Calendar icon picker sheet ────────────────────────────────────────────────
@@ -1536,7 +1703,8 @@ class _CalendarIconPickerSheet extends StatefulWidget {
   final Color surfaceSoftColor;
 
   @override
-  State<_CalendarIconPickerSheet> createState() => _CalendarIconPickerSheetState();
+  State<_CalendarIconPickerSheet> createState() =>
+      _CalendarIconPickerSheetState();
 }
 
 class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
@@ -1562,9 +1730,9 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
         setState(() => _uploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: ${e.message}')));
       }
     }
   }
@@ -1577,14 +1745,21 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
-          16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
+        16,
+        12,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
-                color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+              color: widget.lineColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -1592,28 +1767,32 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
               Text(
                 'Calendar icon',
                 style: GoogleFonts.plusJakartaSans(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: widget.inkColor),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: widget.inkColor,
+                ),
               ),
               const Spacer(),
               _ModeTab(
-                  label: 'Presets',
-                  active: _mode == 'presets',
-                  inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'presets')),
+                label: 'Presets',
+                active: _mode == 'presets',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'presets'),
+              ),
               const SizedBox(width: 10),
               _ModeTab(
-                  label: 'Emoji',
-                  active: _mode == 'emoji',
-                  inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'emoji')),
+                label: 'Emoji',
+                active: _mode == 'emoji',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'emoji'),
+              ),
               const SizedBox(width: 10),
               _ModeTab(
-                  label: 'Photo',
-                  active: _mode == 'photo',
-                  inkColor: widget.inkColor,
-                  onTap: () => setState(() => _mode = 'photo')),
+                label: 'Photo',
+                active: _mode == 'photo',
+                inkColor: widget.inkColor,
+                onTap: () => setState(() => _mode = 'photo'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1642,8 +1821,8 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
                       ),
                     ),
                     child: Center(
-                        child: Text(e,
-                            style: const TextStyle(fontSize: 26))),
+                      child: Text(e, style: const TextStyle(fontSize: 26)),
+                    ),
                   ),
                 );
               }).toList(),
@@ -1669,8 +1848,9 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
                     iconColorSelected: widget.inkColor,
                     indicatorColor: widget.inkColor,
                   ),
-                  bottomActionBarConfig:
-                      const epf.BottomActionBarConfig(enabled: false),
+                  bottomActionBarConfig: const epf.BottomActionBarConfig(
+                    enabled: false,
+                  ),
                 ),
               ),
             )
@@ -1688,12 +1868,18 @@ class _CalendarIconPickerSheetState extends State<_CalendarIconPickerSheet> {
                 child: _uploading
                     ? Center(
                         child: CircularProgressIndicator(
-                            color: widget.inkColor, strokeWidth: 2))
+                          color: widget.inkColor,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 32, color: widget.inkMutedColor),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 32,
+                            color: widget.inkMutedColor,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Pick from gallery',
@@ -1734,10 +1920,12 @@ class _CalendarAppearancePickerSheet extends StatefulWidget {
   final Color surfaceSoftColor;
 
   @override
-  State<_CalendarAppearancePickerSheet> createState() => _CalendarAppearancePickerSheetState();
+  State<_CalendarAppearancePickerSheet> createState() =>
+      _CalendarAppearancePickerSheetState();
 }
 
-class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePickerSheet> {
+class _CalendarAppearancePickerSheetState
+    extends State<_CalendarAppearancePickerSheet> {
   late int _selectedHue;
   late String? _selectedIcon;
 
@@ -1755,21 +1943,38 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
         color: widget.surfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        16,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(color: widget.lineColor, borderRadius: BorderRadius.circular(2)),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: widget.lineColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Text('Appearance', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: widget.inkColor, letterSpacing: -0.5)),
+              Text(
+                'Appearance',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: widget.inkColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
@@ -1785,13 +1990,25 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
               hue: stickerHues[_selectedHue],
               size: 80,
               radius: 22,
-              child: _calendarIconChild(_selectedIcon, tileSize: 80, fallbackColor: widget.inkMutedColor),
+              child: _calendarIconChild(
+                _selectedIcon,
+                tileSize: 80,
+                fallbackColor: widget.inkMutedColor,
+              ),
             ),
           ),
           const SizedBox(height: 20),
 
           // Icon row
-          Text('ICON', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: widget.inkMutedColor, letterSpacing: 0.9)),
+          Text(
+            'ICON',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: widget.inkMutedColor,
+              letterSpacing: 0.9,
+            ),
+          ),
           const SizedBox(height: 8),
           SizedBox(
             height: 48,
@@ -1803,14 +2020,24 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
                   return GestureDetector(
                     onTap: () => setState(() => _selectedIcon = e),
                     child: Container(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: selected ? widget.inkColor.withOpacity(0.1) : widget.surfaceSoftColor,
+                        color: selected
+                            ? widget.inkColor.withOpacity(0.1)
+                            : widget.surfaceSoftColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: selected ? widget.inkColor.withOpacity(0.5) : widget.lineColor, width: selected ? 2 : 1.5),
+                        border: Border.all(
+                          color: selected
+                              ? widget.inkColor.withOpacity(0.5)
+                              : widget.lineColor,
+                          width: selected ? 2 : 1.5,
+                        ),
                       ),
-                      child: Center(child: Text(e, style: const TextStyle(fontSize: 22))),
+                      child: Center(
+                        child: Text(e, style: const TextStyle(fontSize: 22)),
+                      ),
                     ),
                   );
                 }),
@@ -1829,16 +2056,23 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
                         surfaceSoftColor: widget.surfaceSoftColor,
                       ),
                     );
-                    if (picked != null && mounted) setState(() => _selectedIcon = picked);
+                    if (picked != null && mounted) {
+                      setState(() => _selectedIcon = picked);
+                    }
                   },
                   child: Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: widget.surfaceSoftColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: widget.lineColor, width: 1.5),
                     ),
-                    child: Icon(Icons.more_horiz_rounded, size: 20, color: widget.inkMutedColor),
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: widget.inkMutedColor,
+                    ),
                   ),
                 ),
               ],
@@ -1847,7 +2081,15 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
           const SizedBox(height: 16),
 
           // Color swatches
-          Text('COLOR', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: widget.inkMutedColor, letterSpacing: 0.9)),
+          Text(
+            'COLOR',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: widget.inkMutedColor,
+              letterSpacing: 0.9,
+            ),
+          ),
           const SizedBox(height: 8),
           SizedBox(
             height: 48,
@@ -1860,11 +2102,15 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
                 return GestureDetector(
                   onTap: () => setState(() => _selectedHue = i),
                   child: Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: stickerHues[i].bg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: selected ? widget.inkColor : Colors.transparent, width: 2.5),
+                      border: Border.all(
+                        color: selected ? widget.inkColor : Colors.transparent,
+                        width: 2.5,
+                      ),
                     ),
                   ),
                 );
@@ -1876,12 +2122,20 @@ class _CalendarAppearancePickerSheetState extends State<_CalendarAppearancePicke
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context, (hue: _selectedHue, icon: _selectedIcon)),
+              onPressed: () => Navigator.pop(context, (
+                hue: _selectedHue,
+                icon: _selectedIcon,
+              )),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
               ),
-              child: Text('Save', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+              child: Text(
+                'Save',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
         ],
@@ -1963,10 +2217,12 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    final avatarColor =
-        user != null ? _parseUserColor(user.color) : AppTheme.accent;
+    final avatarColor = user != null
+        ? _parseUserColor(user.color)
+        : AppTheme.accent;
     final initials = user != null ? _initials(user.name) : '?';
-    final bottomPad = MediaQuery.of(context).viewInsets.bottom +
+    final bottomPad =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom +
         24;
 
@@ -1998,411 +2254,330 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                 ),
               ),
             ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // ── Header ───────────────────────────────────────────────────────
-          Row(
-            children: [
-              Text(
-                'Settings',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: context.appColors.ink,
-                  letterSpacing: -0.5,
+            // ── Header ───────────────────────────────────────────────────────
+            Row(
+              children: [
+                Text(
+                  'Settings',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.ink,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: context.appColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: context.appColors.line, width: 1),
-                  ),
-                  child: Icon(Icons.close_rounded,
-                      size: 16, color: context.appColors.inkMuted),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // ── Account tile ─────────────────────────────────────────────────
-          GestureDetector(
-            onTap: _showEditProfileSheet,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.appColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.appColors.line, width: 1),
-              ),
-              child: Row(
-                children: [
-                  // Avatar — photo if set, otherwise colour initials
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: user?.avatarUrl != null
-                        ? Image.network(
-                            user!.avatarUrl!,
-                            width: 48, height: 48, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _InitialsAvatar(
-                              initials: initials, color: avatarColor, size: 48),
-                          )
-                        : _InitialsAvatar(
-                            initials: initials, color: avatarColor, size: 48),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.name ?? '—',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: context.appColors.ink,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          user?.email ?? '—',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: context.appColors.inkMuted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      color: context.appColors.surface,
+                      color: context.appColors.surfaceSoft,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: context.appColors.line, width: 1),
-                    ),
-                    child: Text(
-                      'Edit',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: context.appColors.inkSoft,
+                      border: Border.all(
+                        color: context.appColors.line,
+                        width: 1,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Email verification (only when not verified) ───────────────────
-          if (user?.emailVerified == false) ...[
-            _SheetSection(label: 'ACCOUNT'),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8A020), width: 1),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.mail_outline_rounded,
-                      color: Color(0xFFB07000), size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Email not verified',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF7A4C00),
-                      ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: context.appColors.inkMuted,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _resending
-                        ? null
-                        : () async {
-                            setState(() => _resending = true);
-                            await ref
-                                .read(authProvider.notifier)
-                                .resendVerification();
-                            if (!mounted) return;
-                            setState(() => _resending = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Verification email sent!')),
-                            );
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8A020),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: _resending
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(
-                              'Resend',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
-          ],
 
-          // ── Notifications ─────────────────────────────────────────────────
-          _SheetSection(label: 'NOTIFICATIONS'),
-          const SizedBox(height: 12),
-          NotificationTypeSelector(
-            value: user?.notificationType ?? NotificationType.email,
-            onChanged: (type) async {
-              if (type == NotificationType.push) {
-                await LocalNotificationService().requestPermission();
-              }
-              await ref
-                  .read(authProvider.notifier)
-                  .updateNotificationType(type);
-            },
-          ),
-          const SizedBox(height: 20),
-
-          // ── Connected calendars ───────────────────────────────────────────
-          _SheetSection(label: 'CALENDARS'),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: context.appColors.surfaceSoft,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: context.appColors.line, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                GestureDetector(
-                  onTap: () =>
-                      setState(() => _calendarsExpanded = !_calendarsExpanded),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        AppImages.calendar(size: 16),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Connected calendars',
+            // ── Account tile ─────────────────────────────────────────────────
+            GestureDetector(
+              onTap: _showEditProfileSheet,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.appColors.surfaceSoft,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.appColors.line, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    // Avatar — photo if set, otherwise colour initials
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: user?.avatarUrl != null
+                          ? Image.network(
+                              user!.avatarUrl!,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _InitialsAvatar(
+                                initials: initials,
+                                color: avatarColor,
+                                size: 48,
+                              ),
+                            )
+                          : _InitialsAvatar(
+                              initials: initials,
+                              color: avatarColor,
+                              size: 48,
+                            ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.name ?? '—',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
                               color: context.appColors.ink,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        // count badge
-                        Builder(builder: (_) {
-                          final count =
-                              (user?.hasGoogleCalendar == true ? 1 : 0) +
-                                  (_deviceCalendarConnected ? 1 : 0);
-                          final connected = count > 0;
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: connected
-                                  ? const Color(0xFFC9EBD9)
-                                  : context.appColors.line,
-                              borderRadius: BorderRadius.circular(8),
+                          const SizedBox(height: 2),
+                          Text(
+                            user?.email ?? '—',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: context.appColors.inkMuted,
+                              fontWeight: FontWeight.w500,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.appColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: context.appColors.line,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'Edit',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.inkSoft,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Email verification (only when not verified) ───────────────────
+            if (user?.emailVerified == false) ...[
+              _SheetSection(label: 'ACCOUNT'),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE8A020), width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.mail_outline_rounded,
+                      color: Color(0xFFB07000),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Email not verified',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF7A4C00),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _resending
+                          ? null
+                          : () async {
+                              setState(() => _resending = true);
+                              await ref
+                                  .read(authProvider.notifier)
+                                  .resendVerification();
+                              if (!mounted) return;
+                              setState(() => _resending = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Verification email sent!'),
+                                ),
+                              );
+                            },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8A020),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: _resending
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Resend',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Notifications ─────────────────────────────────────────────────
+            _SheetSection(label: 'NOTIFICATIONS'),
+            const SizedBox(height: 12),
+            NotificationTypeSelector(
+              value: user?.notificationType ?? NotificationType.email,
+              onChanged: (type) async {
+                if (type == NotificationType.push) {
+                  await LocalNotificationService().requestPermission();
+                }
+                await ref
+                    .read(authProvider.notifier)
+                    .updateNotificationType(type);
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // ── Connected calendars ───────────────────────────────────────────
+            _SheetSection(label: 'CALENDARS'),
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.appColors.line, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(
+                      () => _calendarsExpanded = !_calendarsExpanded,
+                    ),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          AppImages.calendar(size: 16),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Text(
-                              '$count',
+                              'Connected calendars',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: connected
-                                    ? const Color(0xFF1F5C42)
-                                    : context.appColors.inkMuted,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: context.appColors.ink,
                               ),
                             ),
-                          );
-                        }),
-                        const SizedBox(width: 8),
-                        AnimatedRotation(
-                          duration: const Duration(milliseconds: 200),
-                          turns: _calendarsExpanded ? 0.25 : 0,
-                          child: Icon(Icons.chevron_right_rounded,
-                              size: 18, color: context.appColors.inkMuted),
-                        ),
-                      ],
+                          ),
+                          // count badge
+                          Builder(
+                            builder: (_) {
+                              final count =
+                                  (user?.hasGoogleCalendar == true ? 1 : 0) +
+                                  (_deviceCalendarConnected ? 1 : 0);
+                              final connected = count > 0;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: connected
+                                      ? const Color(0xFFC9EBD9)
+                                      : context.appColors.line,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: connected
+                                        ? const Color(0xFF1F5C42)
+                                        : context.appColors.inkMuted,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedRotation(
+                            duration: const Duration(milliseconds: 200),
+                            turns: _calendarsExpanded ? 0.25 : 0,
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: context.appColors.inkMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                if (_calendarsExpanded) ...[
-                  Divider(
+                  if (_calendarsExpanded) ...[
+                    Divider(
                       color: context.appColors.line,
                       height: 1,
                       indent: 14,
-                      endIndent: 14),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (user?.hasGoogleCalendar == true)
-                          Row(
-                            children: [
-                              AppImages.check(size: 15),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Google Calendar connected',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF1F5C42),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () async {
-                                  final ok = await ref
-                                      .read(authProvider.notifier)
-                                      .disconnectGoogleCalendar();
-                                  if (!mounted) return;
-                                  if (!ok) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Could not disconnect. Please try again.')),
-                                    );
-                                  }
-                                },
-                                child: Text(
-                                  'Disconnect',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.danger,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          GestureDetector(
-                            onTap: _connecting
-                                ? null
-                                : () async {
-                                    setState(() => _connecting = true);
-                                    final url = await ref
-                                        .read(authProvider.notifier)
-                                        .getGoogleCalendarConnectUrl();
-                                    if (!mounted) return;
-                                    setState(() => _connecting = false);
-                                    if (url == null) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Could not get connect URL. Is the backend running?')),
-                                      );
-                                      return;
-                                    }
-                                    await launchUrl(Uri.parse(url),
-                                        mode: LaunchMode.externalApplication);
-                                  },
-                            child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 11),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accent.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: AppTheme.accent.withOpacity(0.25),
-                                    width: 1),
-                              ),
-                              alignment: Alignment.center,
-                              child: _connecting
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppTheme.accent),
-                                    )
-                                  : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.add_rounded,
-                                            size: 16, color: AppTheme.accent),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Connect Google Calendar',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppTheme.accent,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                        // ── Device Calendar ───────────────────────────────
-                        const SizedBox(height: 16),
-                        Divider(color: context.appColors.line, height: 1),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            AppImages.phone(size: 13),
-                            const SizedBox(width: 6),
-                            Text(
-                              'DEVICE CALENDAR',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: context.appColors.inkMuted,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android))
-                          if (_deviceCalendarConnected)
+                      endIndent: 14,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (user?.hasGoogleCalendar == true)
                             Row(
                               children: [
                                 AppImages.check(size: 15),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Device calendar connected',
+                                    'Google Calendar connected',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -2412,10 +2587,20 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                 ),
                                 GestureDetector(
                                   onTap: () async {
-                                    await DeviceCalendarService().disconnect();
-                                    if (mounted) {
-                                      setState(
-                                          () => _deviceCalendarConnected = false);
+                                    final ok = await ref
+                                        .read(authProvider.notifier)
+                                        .disconnectGoogleCalendar();
+                                    if (!mounted) return;
+                                    if (!ok) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Could not disconnect. Please try again.',
+                                          ),
+                                        ),
+                                      );
                                     }
                                   },
                                   child: Text(
@@ -2431,51 +2616,46 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                             )
                           else
                             GestureDetector(
-                              onTap: _connectingDevice
+                              onTap: _connecting
                                   ? null
                                   : () async {
-                                      setState(
-                                          () => _connectingDevice = true);
-                                      final ok =
-                                          await DeviceCalendarService()
-                                              .connect();
+                                      setState(() => _connecting = true);
+                                      final url = await ref
+                                          .read(authProvider.notifier)
+                                          .getGoogleCalendarConnectUrl();
                                       if (!mounted) return;
-                                      setState(() {
-                                        _connectingDevice = false;
-                                        _deviceCalendarConnected = ok;
-                                      });
-                                      if (ok) {
-                                        // Re-fetch device events for all active calendars
-                                        final cals = ref.read(calendarProvider).valueOrNull ?? [];
-                                        for (final cal in cals) {
-                                          ref.read(eventsProvider(cal.id).notifier).fetch();
-                                        }
-                                      }
-                                      if (!ok) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                      setState(() => _connecting = false);
+                                      if (url == null) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                              'Could not connect. Please grant calendar permission in Settings.',
+                                              'Could not get connect URL. Is the backend running?',
                                             ),
                                           ),
                                         );
+                                        return;
                                       }
+                                      await launchUrl(
+                                        Uri.parse(url),
+                                        mode: LaunchMode.externalApplication,
+                                      );
                                     },
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 11),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 11,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.accent.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color:
-                                        AppTheme.accent.withOpacity(0.25),
+                                    color: AppTheme.accent.withOpacity(0.25),
                                     width: 1,
                                   ),
                                 ),
                                 alignment: Alignment.center,
-                                child: _connectingDevice
+                                child: _connecting
                                     ? const SizedBox(
                                         width: 16,
                                         height: 16,
@@ -2487,14 +2667,15 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                     : Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.add_rounded,
-                                              size: 16,
-                                              color: AppTheme.accent),
+                                          const Icon(
+                                            Icons.add_rounded,
+                                            size: 16,
+                                            color: AppTheme.accent,
+                                          ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Connect Device Calendar',
-                                            style:
-                                                GoogleFonts.plusJakartaSans(
+                                            'Connect Google Calendar',
+                                            style: GoogleFonts.plusJakartaSans(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w700,
                                               color: AppTheme.accent,
@@ -2503,57 +2684,206 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
                                         ],
                                       ),
                               ),
-                            )
-                        else
-                          Text(
-                            'Device Calendar sync is only available on iPhone and Android.',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.inkMuted,
-                              height: 1.4,
                             ),
+                          // ── Device Calendar ───────────────────────────────
+                          const SizedBox(height: 16),
+                          Divider(color: context.appColors.line, height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              AppImages.phone(size: 13),
+                              const SizedBox(width: 6),
+                              Text(
+                                'DEVICE CALENDAR',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.appColors.inkMuted,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
                           ),
-                      ],
+                          const SizedBox(height: 8),
+                          if (!kIsWeb &&
+                              (defaultTargetPlatform == TargetPlatform.iOS ||
+                                  defaultTargetPlatform ==
+                                      TargetPlatform.android))
+                            if (_deviceCalendarConnected)
+                              Row(
+                                children: [
+                                  AppImages.check(size: 15),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Device calendar connected',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1F5C42),
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      await DeviceCalendarService()
+                                          .disconnect();
+                                      if (mounted) {
+                                        setState(
+                                          () =>
+                                              _deviceCalendarConnected = false,
+                                        );
+                                      }
+                                    },
+                                    child: Text(
+                                      'Disconnect',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.danger,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              GestureDetector(
+                                onTap: _connectingDevice
+                                    ? null
+                                    : () async {
+                                        setState(
+                                          () => _connectingDevice = true,
+                                        );
+                                        final ok = await DeviceCalendarService()
+                                            .connect();
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _connectingDevice = false;
+                                          _deviceCalendarConnected = ok;
+                                        });
+                                        if (ok) {
+                                          // Re-fetch device events for all active calendars
+                                          final cals =
+                                              ref
+                                                  .read(calendarProvider)
+                                                  .valueOrNull ??
+                                              [];
+                                          for (final cal in cals) {
+                                            ref
+                                                .read(
+                                                  eventsProvider(
+                                                    cal.id,
+                                                  ).notifier,
+                                                )
+                                                .fetch();
+                                          }
+                                        }
+                                        if (!ok) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Could not connect. Please grant calendar permission in Settings.',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 11,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accent.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppTheme.accent.withOpacity(0.25),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: _connectingDevice
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppTheme.accent,
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.add_rounded,
+                                              size: 16,
+                                              color: AppTheme.accent,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Connect Device Calendar',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppTheme.accent,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              )
+                          else
+                            Text(
+                              'Device Calendar sync is only available on iPhone and Android.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: context.appColors.inkMuted,
+                                height: 1.4,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // ── Appearance ────────────────────────────────────────────────────
-          _SheetSection(label: 'APPEARANCE'),
-          const SizedBox(height: 10),
-          _ThemePicker(),
+            // ── Appearance ────────────────────────────────────────────────────
+            _SheetSection(label: 'APPEARANCE'),
+            const SizedBox(height: 10),
+            _ThemePicker(),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // ── Sign out ──────────────────────────────────────────────────────
-          _SheetActionRow(
-            icon: Icons.logout_rounded,
-            label: 'Sign out',
-            onTap: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (!mounted) return;
-              context.go('/welcome');
-            },
-          ),
-          const SizedBox(height: 8),
+            // ── Sign out ──────────────────────────────────────────────────────
+            _SheetActionRow(
+              icon: Icons.logout_rounded,
+              label: 'Sign out',
+              onTap: () async {
+                await ref.read(authProvider.notifier).logout();
+                if (!mounted) return;
+                context.go('/welcome');
+              },
+            ),
+            const SizedBox(height: 8),
 
-          // ── Delete account ────────────────────────────────────────────────
-          _SheetActionRow(
-            icon: Icons.person_off_outlined,
-            label: 'Delete account',
-            isDanger: true,
-            onTap: _confirmDeleteAccount,
-          ),
+            // ── Delete account ────────────────────────────────────────────────
+            _SheetActionRow(
+              icon: Icons.person_off_outlined,
+              label: 'Delete account',
+              isDanger: true,
+              onTap: _confirmDeleteAccount,
+            ),
 
-          const SizedBox(height: 4),
-        ],
-      ),
+            const SizedBox(height: 4),
+          ],
+        ),
       ), // SingleChildScrollView
     ); // Container
   }
@@ -2588,7 +2918,8 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Could not delete account. Please try again.')),
+          content: Text('Could not delete account. Please try again.'),
+        ),
       );
     }
   }
@@ -2646,8 +2977,9 @@ class _SheetActionRow extends StatelessWidget {
               : context.appColors.surfaceSoft,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                isDanger ? AppTheme.danger.withOpacity(0.2) : context.appColors.line,
+            color: isDanger
+                ? AppTheme.danger.withOpacity(0.2)
+                : context.appColors.line,
             width: 1,
           ),
         ),
@@ -2685,7 +3017,10 @@ class _JoinCalendarSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24,
+        24,
+        16,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2707,14 +3042,19 @@ class _JoinCalendarSheet extends StatelessWidget {
               Text(
                 'Join calendar',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20, fontWeight: FontWeight.w700,
-                  color: context.appColors.ink, letterSpacing: -0.5,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.ink,
+                  letterSpacing: -0.5,
                 ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close_rounded, color: context.appColors.inkMuted),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ],
           ),
@@ -2727,8 +3067,10 @@ class _JoinCalendarSheet extends StatelessWidget {
                 child: Text(
                   'INVITE CODE',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    color: context.appColors.inkMuted, letterSpacing: 0.9,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.inkMuted,
+                    letterSpacing: 0.9,
                   ),
                 ),
               ),
@@ -2743,16 +3085,21 @@ class _JoinCalendarSheet extends StatelessWidget {
                   autofocus: true,
                   textCapitalization: TextCapitalization.characters,
                   style: GoogleFonts.plusJakartaSans(
-                    color: context.appColors.ink, fontWeight: FontWeight.w600,
+                    color: context.appColors.ink,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 1.5,
                   ),
                   decoration: InputDecoration(
                     hintText: 'AB3X7Y2Z',
                     hintStyle: GoogleFonts.plusJakartaSans(
-                      color: context.appColors.inkMuted, letterSpacing: 0,
+                      color: context.appColors.inkMuted,
+                      letterSpacing: 0,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -2772,9 +3119,11 @@ class _JoinCalendarSheet extends StatelessWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(cal != null
-                          ? 'Joined "${cal.name}"!'
-                          : 'Invalid invite code.'),
+                      content: Text(
+                        cal != null
+                            ? 'Joined "${cal.name}"!'
+                            : 'Invalid invite code.',
+                      ),
                     ),
                   );
                 }
@@ -2800,8 +3149,8 @@ class _ThemePicker extends ConsumerWidget {
 
     const options = [
       (ThemeMode.system, Icons.brightness_auto_rounded, 'System'),
-      (ThemeMode.light,  Icons.light_mode_rounded,      'Light'),
-      (ThemeMode.dark,   Icons.dark_mode_rounded,        'Dark'),
+      (ThemeMode.light, Icons.light_mode_rounded, 'Light'),
+      (ThemeMode.dark, Icons.dark_mode_rounded, 'Dark'),
     ];
 
     return Container(
@@ -2846,8 +3195,9 @@ class _ThemePicker extends ConsumerWidget {
                       label,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: selected
                             ? AppTheme.accent
                             : context.appColors.inkMuted,
@@ -2902,8 +3252,14 @@ class _InitialsAvatar extends StatelessWidget {
 // ── Edit profile sheet ────────────────────────────────────────────────────────
 
 const _profileColors = [
-  '#6C63FF', '#FF6584', '#43B89C', '#F5A623',
-  '#4A90E2', '#E74C3C', '#2ECC71', '#9B59B6',
+  '#6C63FF',
+  '#FF6584',
+  '#43B89C',
+  '#F5A623',
+  '#4A90E2',
+  '#E74C3C',
+  '#2ECC71',
+  '#9B59B6',
 ];
 
 class _EditProfileSheet extends StatefulWidget {
@@ -2965,7 +3321,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     setState(() => _uploading = true);
     try {
       final url = await ApiService().uploadAvatarToCloudinary(picked);
-      if (mounted) setState(() { _uploading = false; _avatarUrl = url; });
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _avatarUrl = url;
+        });
+      }
     } on CloudinaryUploadException catch (e) {
       if (mounted) {
         setState(() => _uploading = false);
@@ -2980,12 +3341,14 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
-    final ok = await widget.ref.read(authProvider.notifier).updateProfile(
-      name: name,
-      color: _selectedColor,
-      avatarUrl: _avatarUrl != widget.user.avatarUrl ? _avatarUrl : null,
-      clearAvatar: _avatarUrl == null && widget.user.avatarUrl != null,
-    );
+    final ok = await widget.ref
+        .read(authProvider.notifier)
+        .updateProfile(
+          name: name,
+          color: _selectedColor,
+          avatarUrl: _avatarUrl != widget.user.avatarUrl ? _avatarUrl : null,
+          clearAvatar: _avatarUrl == null && widget.user.avatarUrl != null,
+        );
     if (mounted) {
       setState(() => _saving = false);
       if (ok) {
@@ -3001,7 +3364,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   @override
   Widget build(BuildContext context) {
     final previewColor = _parseColor(_selectedColor);
-    final initials = _initials(_nameCtrl.text.isEmpty ? widget.user.name : _nameCtrl.text);
+    final initials = _initials(
+      _nameCtrl.text.isEmpty ? widget.user.name : _nameCtrl.text,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -3009,7 +3374,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24, 16, 24,
+        24,
+        16,
+        24,
         MediaQuery.of(context).viewInsets.bottom + 32,
       ),
       child: Column(
@@ -3019,7 +3386,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           // Grabber
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: context.appColors.line,
                 borderRadius: BorderRadius.circular(2),
@@ -3031,7 +3399,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           Text(
             'Edit profile',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 18, fontWeight: FontWeight.w700, color: context.appColors.ink),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.ink,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -3044,26 +3415,50 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   ClipOval(
                     child: _uploading
                         ? Container(
-                            width: 80, height: 80,
+                            width: 80,
+                            height: 80,
                             color: context.appColors.surfaceSoft,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                           )
                         : (_avatarUrl != null
-                            ? Image.network(_avatarUrl!, width: 80, height: 80, fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _InitialsAvatar(initials: initials, color: previewColor, size: 80))
-                            : _InitialsAvatar(initials: initials, color: previewColor, size: 80)),
+                              ? Image.network(
+                                  _avatarUrl!,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _InitialsAvatar(
+                                    initials: initials,
+                                    color: previewColor,
+                                    size: 80,
+                                  ),
+                                )
+                              : _InitialsAvatar(
+                                  initials: initials,
+                                  color: previewColor,
+                                  size: 80,
+                                )),
                   ),
                   Positioned(
-                    right: 0, bottom: 0,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
-                      width: 26, height: 26,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
                         color: context.appColors.ink,
                         shape: BoxShape.circle,
-                        border: Border.all(color: context.appColors.surface, width: 2),
+                        border: Border.all(
+                          color: context.appColors.surface,
+                          width: 2,
+                        ),
                       ),
-                      child: Icon(Icons.camera_alt_rounded, size: 13, color: context.appColors.surface),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        size: 13,
+                        color: context.appColors.surface,
+                      ),
                     ),
                   ),
                 ],
@@ -3079,7 +3474,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 child: Text(
                   'Remove photo',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12, fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: context.appColors.inkMuted,
                   ),
                 ),
@@ -3093,8 +3489,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           Text(
             'NAME',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 11, fontWeight: FontWeight.w800,
-              color: context.appColors.inkMuted, letterSpacing: 0.8),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.inkMuted,
+              letterSpacing: 0.8,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -3108,11 +3507,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               controller: _nameCtrl,
               onChanged: (_) => setState(() {}),
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15, fontWeight: FontWeight.w600, color: context.appColors.ink),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: context.appColors.ink,
+              ),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Your name',
-                hintStyle: GoogleFonts.plusJakartaSans(color: context.appColors.inkMuted),
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  color: context.appColors.inkMuted,
+                ),
               ),
             ),
           ),
@@ -3123,12 +3527,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           Text(
             'COLOUR',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 11, fontWeight: FontWeight.w800,
-              color: context.appColors.inkMuted, letterSpacing: 0.8),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.inkMuted,
+              letterSpacing: 0.8,
+            ),
           ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 10, runSpacing: 10,
+            spacing: 10,
+            runSpacing: 10,
             children: _profileColors.map((hex) {
               final c = _parseColor(hex);
               final selected = hex == _selectedColor;
@@ -3136,20 +3544,33 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 onTap: () => setState(() => _selectedColor = hex),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 120),
-                  width: 36, height: 36,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: c,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected ? context.appColors.ink : Colors.transparent,
+                      color: selected
+                          ? context.appColors.ink
+                          : Colors.transparent,
                       width: 3,
                     ),
                     boxShadow: selected
-                        ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 6, offset: const Offset(0, 2))]
+                        ? [
+                            BoxShadow(
+                              color: c.withOpacity(0.5),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
                         : null,
                   ),
                   child: selected
-                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        )
                       : null,
                 ),
               );
@@ -3174,12 +3595,19 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               onPressed: (_saving || _uploading) ? null : _save,
               child: _saving
                   ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : Text(
                       'Save changes',
-                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
             ),
           ),
@@ -3188,4 +3616,3 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     );
   }
 }
-
