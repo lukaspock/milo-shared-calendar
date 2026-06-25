@@ -347,7 +347,7 @@ export async function googleAuth(ctx: RequestContext): Promise<Response> {
     console.log("[GoogleAuth] ✓ new user created:", user.id);
   }
 
-  const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${user.id}`;
+  const gcal = await db`SELECT 1 FROM google_calendar_tokens WHERE user_id = ${user.id as string}`;
   const token = await signToken({ sub: user.id as string, email: user.email as string, name: user.name as string });
   console.log("[GoogleAuth] ✓ returning JWT for", user.email, "| isNew:", isNew, "| has_google_calendar:", gcal.length > 0);
   return json({

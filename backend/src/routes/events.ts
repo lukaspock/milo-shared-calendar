@@ -98,7 +98,7 @@ export async function createEvent(ctx: RequestContext): Promise<Response> {
   let eventColor = color;
   if (!eventColor) {
     const users = await db`SELECT color FROM users WHERE id = ${userId}`;
-    eventColor = users[0]?.color ?? "#6C63FF";
+    eventColor = (users[0]?.color as string | undefined) ?? "#6C63FF";
   }
 
   const events = await db`

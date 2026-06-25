@@ -349,9 +349,9 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
             ? new Date(newTokens.expiry_date)
             : new Date(Date.now() + 3_600_000);
           if (updates.access_token && updates.refresh_token) {
-            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, refresh_token = ${updates.refresh_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id}`;
+            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, refresh_token = ${updates.refresh_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id as string}`;
           } else if (updates.access_token) {
-            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id}`;
+            await db`UPDATE google_calendar_tokens SET access_token = ${updates.access_token as string}, expiry = ${newExpiry} WHERE user_id = ${member.user_id as string}`;
           }
           D(`      ✓ refreshed token persisted`);
           console.log(`[gcal import] refreshed token persisted for user ${member.user_id}`);
@@ -435,7 +435,7 @@ export async function fetchAndCacheGoogleEventsForCalendar(params: {
       if (status === 401 || status === 403) {
         D(`    revoking token for userId=${member.user_id} (${status})`);
         console.warn(`[gcal import] revoking token for user ${member.user_id}: HTTP ${status}`);
-        await db`DELETE FROM google_calendar_tokens WHERE user_id = ${member.user_id}`;
+        await db`DELETE FROM google_calendar_tokens WHERE user_id = ${member.user_id as string}`;
       } else {
         console.error(`[gcal import] member ${member.user_id} failed:`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
       }
