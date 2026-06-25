@@ -227,6 +227,18 @@ router.get("/calendars/:id/messages", getMessages, [authMiddleware]);
 router.post("/calendars/:id/messages", postMessage, [authMiddleware]);
 router.delete("/calendars/:id/messages/:msgId", deleteMessage, [authMiddleware]);
 
+// Prevent transient Postgres connection-close events from crashing the process.
+// bun:sql reconnects automatically on the next query; we just need to suppress
+// the unhandled rejection so the process stays alive.
+process.on("unhandledRejection", (reason) => {
+  const code = (reason as any)?.code;
+  if (code === "ERR_POSTGRES_CONNECTION_CLOSED" || code === "ERR_POSTGRES_CONNECTION_TIMEOUT") {
+    console.warn("[db] postgres connection dropped — will reconnect on next query");
+    return;
+  }
+  console.error("[unhandledRejection]", reason);
+});
+
 const PORT = Number(process.env.PORT ?? 3000);
 
 // Run DB migrations (idempotent)
