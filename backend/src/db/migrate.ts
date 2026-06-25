@@ -1,6 +1,13 @@
 import db from "./client";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function runMigrations(): Promise<void> {
+  // Run base schema first so migrations work on a fresh database too.
+  // All statements use CREATE TABLE IF NOT EXISTS — safe to re-run.
+  const schema = readFileSync(join(import.meta.dir, "schema.sql"), "utf-8");
+  await db.unsafe(schema);
+
   await db`
     ALTER TABLE users
       ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
