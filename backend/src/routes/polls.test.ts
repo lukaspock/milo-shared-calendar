@@ -174,6 +174,7 @@ describe("confirmPoll", () => {
       .mockResolvedValueOnce([])                     // votes
       .mockResolvedValueOnce([])                     // poll_vote_options (assemblePoll)
       .mockResolvedValueOnce([{ name: "Test" }])     // creator name
+      .mockResolvedValueOnce([createdEvent])          // eventWithCreator (broadcast payload)
       // fire-and-forget email:
       .mockResolvedValueOnce([])                     // members
       .mockResolvedValueOnce([{ name: "Cal" }]);     // calendar name
